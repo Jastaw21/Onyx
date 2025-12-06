@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Onyx", "Onyx\Onyx.csproj", "{3FBB1587-1AE3-4BFE-AEE4-804EED68F3FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnyxTests", "OnyxTests\OnyxTests.csproj", "{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3FBB1587-1AE3-4BFE-AEE4-804EED68F3FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FBB1587-1AE3-4BFE-AEE4-804EED68F3FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FBB1587-1AE3-4BFE-AEE4-804EED68F3FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FBB1587-1AE3-4BFE-AEE4-804EED68F3FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
