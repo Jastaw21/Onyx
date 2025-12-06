@@ -166,4 +166,21 @@ public class CoreTests
             Assert.That(board.SquareOccupied(new Square(i)), Is.False);
         }
     }
+
+    [Test]
+    public void MoveUCI()
+    {
+        var fullMove = new Move(new Piece(PieceType.Bishop,Colour.White), new Square(0,0), new Square(7,7));
+        Assert.That(fullMove.Notation, Is.EqualTo("a1h8"));
+    }
+
+    [Test]
+    public void BitBoardFromFen()
+    {
+        var board = new Bitboards(Fen.DefaultFen);
+        Assert.That(board.SquareOccupied(new Square(0)), Is.True);
+        
+        Assert.That(board.GetByPiece(new Piece(PieceType. Pawn, Colour.White)), Is.EqualTo(0xff00));
+        Assert.That(board.GetByPiece(new Piece(PieceType. Pawn, Colour.Black)), Is.EqualTo(0xff000000000000));
+    }
 }
