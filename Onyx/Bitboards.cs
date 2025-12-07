@@ -53,7 +53,7 @@ public class Bitboards
             else
             {
                 var piece = Fen.GetPieceFromChar(Fenstring[currentIndex]);
-                SetOn(new Square(rankIndex, fileIndex), piece);
+                SetOn(piece, new Square(rankIndex, fileIndex));
                 fileIndex++;
             }
 
@@ -82,7 +82,7 @@ public class Bitboards
         boards[index] = boardByPiece;
     }
 
-    public void SetZero(Square square)
+    public void SetAllOff(Square square)
     {
         for (var i = 0; i < boards.Length; i++)
         {
@@ -90,15 +90,28 @@ public class Bitboards
         }
     }
 
-    public void SetOn(Square square, Piece piece)
+    public void SetOff(Piece piece, Square square)
     {
-        var col = (int)piece.Colour;
-        var type = (int)piece.Type;
-        var index = col * Enum.GetValues<PieceType>().Length + type;
+        var index = Index(piece);
+        var mask = ~(1ul << square.SquareIndex);
+        boards[index] &= mask;
+    }
+
+    public void SetOn(Piece piece, Square square)
+    {
+        var index = Index(piece);
 
         var value = 1ul << square.SquareIndex;
 
         boards[index] |= value;
+    }
+
+    private static int Index(Piece piece)
+    {
+        var col = (int)piece.Colour;
+        var type = (int)piece.Type;
+        var index = col * Enum.GetValues<PieceType>().Length + type;
+        return index;
     }
 
     public bool SquareOccupied(Square squareToTest)

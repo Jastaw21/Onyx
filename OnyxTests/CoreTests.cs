@@ -133,7 +133,7 @@ public class CoreTests
         }
 
 
-        board.SetZero(new Square(0));
+        board.SetAllOff(new Square(0));
 
         for (int rank = 0; rank < 8; rank++)
         for (int file = 0; file < 8; file++)
@@ -155,7 +155,7 @@ public class CoreTests
         var board = new Bitboards();
 
         // put a pawn on a1
-        board.SetOn(new Square(0), new Piece(PieceType.Pawn, Colour.White));
+        board.SetOn(new Piece(PieceType.Pawn, Colour.White), new Square(0));
 
         // should be occupied
         Assert.That(board.SquareOccupied(new Square(0)), Is.True);
@@ -252,5 +252,12 @@ public class CoreTests
 
         board.LoadFen(Fen.KiwiPeteFen);
         Assert.That(board.ToFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R"));
+    }
+
+    [Test]
+    public void SquareFromFen()
+    {
+        Assert.That(new Square("a1").Notation, Is.EqualTo("a1"));
+        Assert.That(new Square("c6").Notation, Is.EqualTo("c6"));
     }
 }

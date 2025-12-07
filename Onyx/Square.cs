@@ -20,4 +20,12 @@ public readonly struct Square
         RankIndex = squareIndex / 8;
         FileIndex = squareIndex % 8;
     }
+
+    public Square(string fen)
+    {
+        var file = fen[0] - 'a';
+        var rank = fen[1] - '1';
+        RankIndex = rank;
+        FileIndex = file;
+    }
 }
