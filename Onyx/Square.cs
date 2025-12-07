@@ -29,3 +29,21 @@ public readonly struct Square
         FileIndex = file;
     }
 }
+
+public static class RankAndFileHelpers
+{
+    public static int RankIndex(int square)
+    {
+        return square / 8;
+    }
+
+    public static int FileIndex(int square)
+    {
+        return square % 8;
+    }
+
+    public static int SquareIndex(int rank, int file)
+    {
+        return rank * 8 + file;
+    }
+}

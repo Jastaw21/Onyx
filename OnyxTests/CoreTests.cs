@@ -290,3 +290,41 @@ public class CoreTests
         Assert.That(Piece.MakePiece(PieceType.King, Colour.White).ToString(), Is.EqualTo("White King"));
     }
 }
+
+class HelperTests
+{
+    [Test]
+    public void RankAndFileHelpersTest()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(RankAndFileHelpers.FileIndex(0), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.FileIndex(1), Is.EqualTo(1));
+            Assert.That(RankAndFileHelpers.FileIndex(2), Is.EqualTo(2));
+            Assert.That(RankAndFileHelpers.FileIndex(3), Is.EqualTo(3));
+            Assert.That(RankAndFileHelpers.FileIndex(4), Is.EqualTo(4));
+            Assert.That(RankAndFileHelpers.FileIndex(5), Is.EqualTo(5));
+            Assert.That(RankAndFileHelpers.FileIndex(6), Is.EqualTo(6));
+            Assert.That(RankAndFileHelpers.FileIndex(7), Is.EqualTo(7));
+        });
+        Assert.Multiple(() =>
+        {
+            Assert.That(RankAndFileHelpers.RankIndex(0), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.RankIndex(8), Is.EqualTo(1));
+            Assert.That(RankAndFileHelpers.RankIndex(16), Is.EqualTo(2));
+            Assert.That(RankAndFileHelpers.RankIndex(24), Is.EqualTo(3));
+            Assert.That(RankAndFileHelpers.RankIndex(32), Is.EqualTo(4));
+            Assert.That(RankAndFileHelpers.RankIndex(40), Is.EqualTo(5));
+            Assert.That(RankAndFileHelpers.RankIndex(48), Is.EqualTo(6));
+            Assert.That(RankAndFileHelpers.RankIndex(56), Is.EqualTo(7));
+        });
+        Assert.Multiple(() =>
+        {
+            Assert.That(RankAndFileHelpers.SquareIndex(0, 0), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.SquareIndex(1, 0), Is.EqualTo(8));
+            Assert.That(RankAndFileHelpers.SquareIndex(1, 7), Is.EqualTo(15));
+            Assert.That(RankAndFileHelpers.SquareIndex(2, 1), Is.EqualTo(17));
+        });
+    }
+    
+}
