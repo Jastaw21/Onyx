@@ -25,7 +25,7 @@ public readonly struct Piece(PieceType type, Colour colour)
     {
         return $"{Colour} {Type}";
     }
-    
+
     public static List<Piece> All()
     {
         List<Piece> pieces = [];
@@ -34,5 +34,10 @@ public readonly struct Piece(PieceType type, Colour colour)
             select new Piece(type, colour));
 
         return pieces;
+    }
+
+    public static Piece MakePiece(PieceType piece, Colour colour)
+    {
+        return new Piece(piece, colour);
     }
 }

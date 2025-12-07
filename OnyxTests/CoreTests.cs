@@ -248,10 +248,10 @@ public class CoreTests
     public void GetFenFromBitboard()
     {
         var board = new Bitboards(Fen.DefaultFen);
-        Assert.That(board.ToFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
+        Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
 
         board.LoadFen(Fen.KiwiPeteFen);
-        Assert.That(board.ToFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R"));
+        Assert.That(board.GetFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R"));
     }
 
     [Test]
@@ -259,5 +259,34 @@ public class CoreTests
     {
         Assert.That(new Square("a1").Notation, Is.EqualTo("a1"));
         Assert.That(new Square("c6").Notation, Is.EqualTo("c6"));
+    }
+
+    [Test]
+    public void MoveFromNotation()
+    {
+        var move = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "a2a4");
+        Assert.Multiple(() =>
+            {
+                Assert.That(move.PieceMoved, Is.EqualTo(Piece.MakePiece(PieceType.Pawn, Colour.White)));
+                Assert.That(move.From.FileIndex, Is.EqualTo(0));
+                Assert.That(move.From.RankIndex, Is.EqualTo(1));
+
+                Assert.That(move.To.FileIndex, Is.EqualTo(0));
+                Assert.That(move.To.RankIndex, Is.EqualTo(3));
+            }
+        );
+    }
+
+    [Test]
+    public void MoveInitPromotionInferred()
+    {
+        var testMove = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "g7g8q");
+        Assert.That(testMove.PromotedPiece is { Type: PieceType.Queen, Colour: Colour.White });
+    }
+
+    [Test]
+    public void MoveString()
+    {
+        Assert.That(Piece.MakePiece(PieceType.King, Colour.White).ToString(), Is.EqualTo("White King"));
     }
 }

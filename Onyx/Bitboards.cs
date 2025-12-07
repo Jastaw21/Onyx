@@ -133,7 +133,7 @@ public class Bitboards
         return null;
     }
 
-    public string ToFen()
+    public string GetFen()
     {
         var builtFen = "";
 
