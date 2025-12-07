@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\MagicBitboardGenerator\MagicBitboardGenerator.csproj" />
       <ProjectReference Include="..\Onyx\Onyx.csproj" />
     </ItemGroup>
 

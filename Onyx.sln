@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Onyx", "Onyx\Onyx.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnyxTests", "OnyxTests\OnyxTests.csproj", "{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MagicBitboardGenerator", "MagicBitboardGenerator\MagicBitboardGenerator.csproj", "{F34EACD3-18F9-4FC4-AAB3-336E61ADFFCA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACFD6DB7-E257-4F12-BFD0-F9C499FDDDB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F34EACD3-18F9-4FC4-AAB3-336E61ADFFCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F34EACD3-18F9-4FC4-AAB3-336E61ADFFCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F34EACD3-18F9-4FC4-AAB3-336E61ADFFCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F34EACD3-18F9-4FC4-AAB3-336E61ADFFCA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
