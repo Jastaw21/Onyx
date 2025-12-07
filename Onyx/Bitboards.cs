@@ -18,11 +18,15 @@ public class Bitboards
 
     public Bitboards(string Fenstring)
     {
+        LoadFen(Fenstring);
+    }
+
+    public void LoadFen(string Fenstring)
+    {
         var pieceTypeCount = Enum.GetValues<PieceType>().Length;
         var colourCount = Enum.GetValues<Colour>().Length;
-
         boards = new ulong[colourCount * pieceTypeCount];
-        
+
         int rankIndex = 7; // fen starts from the top
         int fileIndex = 0;
 
@@ -40,18 +44,19 @@ public class Bitboards
             // empty cells indicator
             else if (Char.IsAsciiDigit(Fenstring[currentIndex]))
                 fileIndex += Fenstring[currentIndex] - '0';
-            
+
             // break at space, as the rest if=s all castling/en passant stuff, not relevant to us
             else if (Fenstring[currentIndex] == ' ')
                 break;
 
-            // thos os a piece, so set it and move the file on
+            // this os a piece, so set it and move the file on
             else
             {
-                var piece = PieceHelpers.GetPieceFromChar(Fenstring[currentIndex]);
+                var piece = Fen.GetPieceFromChar(Fenstring[currentIndex]);
                 SetOn(new Square(rankIndex, fileIndex), piece);
                 fileIndex++;
             }
+
             currentIndex++;
         }
     }
@@ -99,5 +104,60 @@ public class Bitboards
     public bool SquareOccupied(Square squareToTest)
     {
         return boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest.SquareIndex)) > 0);
+    }
+
+    public Piece? PieceAtSquare(Square squareToTest)
+    {
+        foreach (var piece in Piece.All())
+
+        {
+            var board = GetByPiece(piece);
+            var mask = 1ul << squareToTest.SquareIndex;
+            if ((board & mask) != 0)
+                return piece;
+        }
+
+        return null;
+    }
+
+    public string ToFen()
+    {
+        var builtFen = "";
+
+        for (int rankIndex = 7; rankIndex >= 0; rankIndex--)
+        {
+            var numberEmptySquares = 0;
+
+            for (int fileIndex = 0; fileIndex <= 7; fileIndex++)
+            {
+                var pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
+
+                if (pieceHere.HasValue)
+                {
+                    var key = Fen.GetCharFromPiece(pieceHere.Value);
+
+                    // we were tracking empty squares, so write them first
+                    if (numberEmptySquares > 0)
+                    {
+                        builtFen += numberEmptySquares;
+                        numberEmptySquares = 0; // reset the tracking
+                    }
+
+                    builtFen += key;
+                }
+
+                if (!pieceHere.HasValue)
+                    numberEmptySquares++;
+            }
+
+            // exiting the rank with remaining empty squares
+            if (numberEmptySquares > 0)
+                builtFen += numberEmptySquares;
+
+            if (rankIndex > 0)
+                builtFen += '/';
+        }
+
+        return builtFen;
     }
 }

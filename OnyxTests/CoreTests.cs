@@ -123,7 +123,7 @@ public class CoreTests
     public void SetZero()
     {
         var board = new Bitboards();
-        
+
         // set all on
         foreach (Colour colour in Enum.GetValues<Colour>())
         foreach (PieceType type in Enum.GetValues<PieceType>())
@@ -131,20 +131,20 @@ public class CoreTests
             // fill all with on bits
             board.SetByPiece(new Piece(type, colour), 0xffffffffffffffff);
         }
-        
-        
+
+
         board.SetZero(new Square(0));
-        
-        for (int rank = 0; rank < 8;rank++)
+
+        for (int rank = 0; rank < 8; rank++)
         for (int file = 0; file < 8; file++)
         {
             if (rank == 0 && file == 0)
             {
-                Assert.That(board.SquareOccupied(new Square(rank,file)), Is.False);
+                Assert.That(board.SquareOccupied(new Square(rank, file)), Is.False);
             }
             else
             {
-                Assert.That(board.SquareOccupied(new Square(rank,file)), Is.True);
+                Assert.That(board.SquareOccupied(new Square(rank, file)), Is.True);
             }
         }
     }
@@ -153,10 +153,10 @@ public class CoreTests
     public void SetOn()
     {
         var board = new Bitboards();
-        
+
         // put a pawn on a1
-        board.SetOn(new Square(0), new Piece(PieceType.Pawn,Colour.White));
-        
+        board.SetOn(new Square(0), new Piece(PieceType.Pawn, Colour.White));
+
         // should be occupied
         Assert.That(board.SquareOccupied(new Square(0)), Is.True);
 
@@ -170,7 +170,7 @@ public class CoreTests
     [Test]
     public void MoveUCI()
     {
-        var fullMove = new Move(new Piece(PieceType.Bishop,Colour.White), new Square(0,0), new Square(7,7));
+        var fullMove = new Move(new Piece(PieceType.Bishop, Colour.White), new Square(0, 0), new Square(7, 7));
         Assert.That(fullMove.Notation, Is.EqualTo("a1h8"));
     }
 
@@ -179,8 +179,78 @@ public class CoreTests
     {
         var board = new Bitboards(Fen.DefaultFen);
         Assert.That(board.SquareOccupied(new Square(0)), Is.True);
-        
-        Assert.That(board.GetByPiece(new Piece(PieceType. Pawn, Colour.White)), Is.EqualTo(0xff00));
-        Assert.That(board.GetByPiece(new Piece(PieceType. Pawn, Colour.Black)), Is.EqualTo(0xff000000000000));
+
+        Assert.That(board.GetByPiece(new Piece(PieceType.Pawn, Colour.White)), Is.EqualTo(0xff00));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Rook, Colour.White)), Is.EqualTo(0x81));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Knight, Colour.White)), Is.EqualTo(0x42));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Bishop, Colour.White)), Is.EqualTo(0x24));
+        Assert.That(board.GetByPiece(new Piece(PieceType.King, Colour.White)), Is.EqualTo(0x10));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Queen, Colour.White)), Is.EqualTo(0x8));
+
+        Assert.That(board.GetByPiece(new Piece(PieceType.Pawn, Colour.Black)), Is.EqualTo(0xff000000000000));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Rook, Colour.Black)), Is.EqualTo(0x8100000000000000));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Bishop, Colour.Black)), Is.EqualTo(0x2400000000000000));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Knight, Colour.Black)), Is.EqualTo(0x4200000000000000));
+        Assert.That(board.GetByPiece(new Piece(PieceType.King, Colour.Black)), Is.EqualTo(0x1000000000000000));
+        Assert.That(board.GetByPiece(new Piece(PieceType.Queen, Colour.Black)), Is.EqualTo(0x800000000000000));
+    }
+
+    [Test]
+    public void PieceHelpersAll()
+    {
+        var result = Piece.All();
+        Assert.That(result.Count, Is.EqualTo(12));
+
+        Assert.That(result, Contains.Item(new Piece(PieceType.Pawn, Colour.White)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Rook, Colour.White)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Bishop, Colour.White)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.King, Colour.White)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Queen, Colour.White)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Knight, Colour.White)));
+
+        Assert.That(result, Contains.Item(new Piece(PieceType.Pawn, Colour.Black)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Rook, Colour.Black)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Bishop, Colour.Black)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.King, Colour.Black)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Queen, Colour.Black)));
+        Assert.That(result, Contains.Item(new Piece(PieceType.Knight, Colour.Black)));
+    }
+
+    [Test]
+    public void BitBoardPiece()
+    {
+        var board = new Bitboards(Fen.DefaultFen);
+
+        Assert.That(board.PieceAtSquare(new Square(1, 0)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.White)));
+        Assert.That(board.PieceAtSquare(new Square(6, 7)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.Black)));
+        Assert.That(board.PieceAtSquare(new Square(3, 3)).HasValue, Is.False);
+    }
+
+    [Test]
+    public void CharToFen()
+    {
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Pawn, Colour.White)), Is.EqualTo('P'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Rook, Colour.White)), Is.EqualTo('R'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Queen, Colour.White)), Is.EqualTo('Q'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.King, Colour.White)), Is.EqualTo('K'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Knight, Colour.White)), Is.EqualTo('N'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Bishop, Colour.White)), Is.EqualTo('B'));
+
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Pawn, Colour.Black)), Is.EqualTo('p'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Rook, Colour.Black)), Is.EqualTo('r'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Queen, Colour.Black)), Is.EqualTo('q'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.King, Colour.Black)), Is.EqualTo('k'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Knight, Colour.Black)), Is.EqualTo('n'));
+        Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Bishop, Colour.Black)), Is.EqualTo('b'));
+    }
+
+    [Test]
+    public void GetFenFromBitboard()
+    {
+        var board = new Bitboards(Fen.DefaultFen);
+        Assert.That(board.ToFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
+
+        board.LoadFen(Fen.KiwiPeteFen);
+        Assert.That(board.ToFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R"));
     }
 }

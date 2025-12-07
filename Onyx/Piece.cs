@@ -20,27 +20,19 @@ public readonly struct Piece(PieceType type, Colour colour)
 {
     public Colour Colour { get; } = colour;
     public PieceType Type { get; } = type;
-}
 
-public static class PieceHelpers
-{
-    public static Piece GetPieceFromChar(char pieceChar)
+    public override string ToString()
     {
-        return pieceChar switch
-        {
-            'K' => new Piece(PieceType.King, Colour.White),
-            'B' => new Piece(PieceType.Bishop, Colour.White),
-            'R' => new Piece(PieceType.Rook, Colour.White),
-            'N' => new Piece(PieceType.Knight, Colour.White),
-            'P' => new Piece(PieceType.Pawn, Colour.White),
-            'Q' => new Piece(PieceType.Queen, Colour.White),
-            'k' => new Piece(PieceType.King, Colour.Black),
-            'b' => new Piece(PieceType.Bishop, Colour.Black),
-            'r' => new Piece(PieceType.Rook, Colour.Black),
-            'n' => new Piece(PieceType.Knight, Colour.Black),
-            'p' => new Piece(PieceType.Pawn, Colour.Black),
-            'q' => new Piece(PieceType.Queen, Colour.Black),
-            _ => throw new ArgumentException()
-        };
+        return $"{Colour} {Type}";
+    }
+    
+    public static List<Piece> All()
+    {
+        List<Piece> pieces = [];
+        pieces.AddRange(from type in Enum.GetValues<PieceType>()
+            from colour in Enum.GetValues<Colour>()
+            select new Piece(type, colour));
+
+        return pieces;
     }
 }
