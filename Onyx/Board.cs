@@ -13,27 +13,35 @@ public static class BoardConstants
     public static readonly int h8 = 63;
 }
 
+public class BoardState
+{
+    public Piece? CapturedPiece;
+    public Square? EnPassantSquare;
+    public int CastlingRights;
+}
+
 public class Board
 {
     public Bitboards Bitboards;
     public Colour TurnToMove;
 
-    public int
-        CastlingRights { get; private set; } // bit field - from the lowest bit in this order White : K, Q, Black K,Q
-
-    public Square? EnPassantSquare = null;
+    // bit field - from the lowest bit in this order White : K, Q, Black K,Q
+    public int CastlingRights { get; private set; }
+    public Square? EnPassantSquare;
+    public Stack<BoardState> BoardStateHistory;
 
     public Board(Bitboards bitboards, Colour turnToMove = Colour.White)
     {
-        this.Bitboards = bitboards;
+        Bitboards = bitboards;
         TurnToMove = turnToMove;
+        BoardStateHistory = new Stack<BoardState>();
     }
 
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
-
         ApplyBoardStateFromFen(fen);
+        BoardStateHistory = new Stack<BoardState>();
     }
 
     public string GetFen()
@@ -49,7 +57,7 @@ public class Board
         builtFen += moveChar;
         builtFen += ' ';
 
-        
+
         var castlingRightsString = "";
         if ((CastlingRights & BoardConstants.WhiteKingsideCastling) > 0) castlingRightsString += 'K';
         if ((CastlingRights & BoardConstants.WhiteQueensideCastling) > 0) castlingRightsString += 'Q';
@@ -64,24 +72,24 @@ public class Board
         }
 
         builtFen += castlingRightsString;
-        builtFen += "- 0 1";
+
+        var enPassantString = EnPassantSquare.HasValue ? EnPassantSquare.Value.Notation : "-";
+        builtFen += enPassantString;
+        builtFen += " 0 1";
 
         return builtFen;
     }
 
-    /// <summary>
-    /// Applies a move, which should have been checked for legality first. However, it will scan the move for special flags like castling/promotion etc
-    /// </summary>
-    /// <param name="move">The move to apply. </param>
+
     public void ApplyMove(Move move)
     {
         ApplyMoveFlags(ref move);
-        var opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
 
+        var opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
         Piece? capturedPiece;
         Square? capturedSquare;
 
-        if ((move.MoveFlag & MoveFlags.EnPassant) > 0)
+        if (move.IsEnPassant)
         {
             capturedPiece = Piece.MakePiece(PieceType.Pawn, opponentColour);
             var captureRank = opponentColour == Colour.White ? 3 : 4;
@@ -93,6 +101,13 @@ public class Board
             capturedSquare = move.To;
         }
 
+        var state = new BoardState
+        {
+            CapturedPiece = capturedPiece,
+            EnPassantSquare = EnPassantSquare,
+            CastlingRights = CastlingRights
+        };
+        BoardStateHistory.Push(state);
 
         // action the required change for the moving piece
         MovePiece(move.PieceMoved, move.From, move.To);
@@ -103,7 +118,7 @@ public class Board
 
 
         // action the promotion
-        if ((move.MoveFlag & MoveFlags.Promotion) > 0)
+        if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
             Bitboards.SetOff(move.PieceMoved, move.To);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
@@ -111,7 +126,7 @@ public class Board
 
 
         // handle castling
-        if ((move.MoveFlag & MoveFlags.Castle) > 0)
+        if (move.IsCastling)
         {
             var affectedRook = move.PieceMoved.Colour == Colour.White
                 ? new Piece(PieceType.Rook, Colour.White)
@@ -127,6 +142,60 @@ public class Board
 
         // king moving always sacrifices the castling rights
         UpdateCastlingRights(move);
+
+        // set en passant target square
+        if (move.PieceMoved.Type == PieceType.Pawn && Math.Abs(move.From.RankIndex - move.To.RankIndex) == 2)
+        {
+            var targetRank = move.PieceMoved.Colour == Colour.White ? 2 : 5;
+            EnPassantSquare = new Square(targetRank, move.From.FileIndex);
+        }
+        else
+        {
+            EnPassantSquare = null;
+        }
+
+        SwapTurns();
+    }
+
+    public void UndoMove(Move move)
+    {
+        ApplyMoveFlags(move: ref move);
+
+
+        var previousState = BoardStateHistory.Pop();
+        EnPassantSquare = previousState.EnPassantSquare;
+        CastlingRights = previousState.CastlingRights;
+        if (previousState.CapturedPiece.HasValue)
+        {
+            if (!move.IsEnPassant)
+                Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
+        }
+
+
+        MovePiece(move.PieceMoved, move.To, move.From);
+
+        if (move.IsPromotion && move.PromotedPiece.HasValue)
+        {
+            Bitboards.SetOff(move.PromotedPiece.Value, move.To);
+        }
+
+        if (move.IsCastling)
+        {
+            var rank = move.To.RankIndex;
+            var rookHomeFile = move.To.FileIndex > 4 ? 7 : 0;
+            var rookNewFile = move.To.FileIndex == 2 ? 3 : 5;
+            Bitboards.SetOn(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookHomeFile));
+            Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookNewFile));
+        }
+
+        if (move.IsEnPassant)
+        {
+            var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
+            var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+            Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
+                new Square(pawnHomeRank, move.To.FileIndex));
+        }
+
 
         SwapTurns();
     }
@@ -144,6 +213,9 @@ public class Board
         {
             move.MoveFlag |= MoveFlags.Castle;
         }
+
+        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0)
+            move.MoveFlag |= MoveFlags.EnPassant;
     }
 
     private void UpdateCastlingRights(Move move)

@@ -47,4 +47,8 @@ public struct Move
     public int MoveFlag = MoveFlags.NoFlag;
 
     public string Notation => From.Notation + To.Notation;
+
+    public bool IsPromotion => (this.MoveFlag & MoveFlags.Promotion) > 0;
+    public bool IsCastling => (this.MoveFlag & MoveFlags.Castle) > 0;
+    public bool IsEnPassant => (this.MoveFlag & MoveFlags.EnPassant) > 0;
 }
