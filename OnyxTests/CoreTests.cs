@@ -39,7 +39,7 @@ public class CoreTests
     [Test]
     public void SquareIndexGetProperty()
     {
-        for (int i = 0; i < 64; i++)
+        for (var i = 0; i < 64; i++)
         {
             var thisSquare = new Square(i);
             Assert.That(thisSquare.SquareIndex, Is.EqualTo(i));
@@ -68,8 +68,8 @@ public class CoreTests
         var board = new Bitboards();
 
         ulong testValue = 0;
-        foreach (Colour colour in Enum.GetValues<Colour>())
-        foreach (PieceType type in Enum.GetValues<PieceType>())
+        foreach (var colour in Enum.GetValues<Colour>())
+        foreach (var type in Enum.GetValues<PieceType>())
         {
             board.SetByPiece(new Piece(type, colour), testValue);
             testValue++;
@@ -77,8 +77,8 @@ public class CoreTests
 
         testValue = 0;
 
-        foreach (Colour colour in Enum.GetValues<Colour>())
-        foreach (PieceType type in Enum.GetValues<PieceType>())
+        foreach (var colour in Enum.GetValues<Colour>())
+        foreach (var type in Enum.GetValues<PieceType>())
         {
             Assert.That(board.GetByPiece(new Piece(type, colour)), Is.EqualTo(testValue));
 
@@ -97,7 +97,7 @@ public class CoreTests
         var board = new Bitboards();
         board.SetByPiece(new Piece(PieceType.Pawn, colour: Colour.White), 1ul);
 
-        for (int squareIndex = 0; squareIndex < 64; squareIndex++)
+        for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             if (squareIndex == 0)
                 Assert.That(board.SquareOccupied(new Square(squareIndex)), Is.True);
@@ -106,14 +106,14 @@ public class CoreTests
         }
 
         var allOnBoard = new Bitboards();
-        foreach (Colour colour in Enum.GetValues<Colour>())
-        foreach (PieceType type in Enum.GetValues<PieceType>())
+        foreach (var colour in Enum.GetValues<Colour>())
+        foreach (var type in Enum.GetValues<PieceType>())
         {
             // fill all with on bits
             allOnBoard.SetByPiece(new Piece(type, colour), 0xffffffffffffffff);
         }
 
-        for (int squareIndex = 0; squareIndex < 64; squareIndex++)
+        for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             Assert.That(allOnBoard.SquareOccupied(new Square(squareIndex)), Is.True);
         }
@@ -125,8 +125,8 @@ public class CoreTests
         var board = new Bitboards();
 
         // set all on
-        foreach (Colour colour in Enum.GetValues<Colour>())
-        foreach (PieceType type in Enum.GetValues<PieceType>())
+        foreach (var colour in Enum.GetValues<Colour>())
+        foreach (var type in Enum.GetValues<PieceType>())
         {
             // fill all with on bits
             board.SetByPiece(new Piece(type, colour), 0xffffffffffffffff);
@@ -135,8 +135,8 @@ public class CoreTests
 
         board.SetAllOff(new Square(0));
 
-        for (int rank = 0; rank < 8; rank++)
-        for (int file = 0; file < 8; file++)
+        for (var rank = 0; rank < 8; rank++)
+        for (var file = 0; file < 8; file++)
         {
             if (rank == 0 && file == 0)
             {
@@ -161,7 +161,7 @@ public class CoreTests
         Assert.That(board.SquareOccupied(new Square(0)), Is.True);
 
         // all others should not be
-        for (int i = 1; i < 64; i++)
+        for (var i = 1; i < 64; i++)
         {
             Assert.That(board.SquareOccupied(new Square(i)), Is.False);
         }

@@ -9,8 +9,8 @@ public class Bitboards
 
         boards = new ulong[colourCount * pieceTypeCount];
 
-        for (int colourIndex = 0; colourIndex < colourCount; colourIndex++)
-        for (int pieceTypeIndex = 0; pieceTypeIndex < pieceTypeCount; pieceTypeIndex++)
+        for (var colourIndex = 0; colourIndex < colourCount; colourIndex++)
+        for (var pieceTypeIndex = 0; pieceTypeIndex < pieceTypeCount; pieceTypeIndex++)
         {
             boards[colourIndex * pieceTypeCount + pieceTypeIndex] = 0ul;
         }
@@ -27,10 +27,10 @@ public class Bitboards
         var colourCount = Enum.GetValues<Colour>().Length;
         boards = new ulong[colourCount * pieceTypeCount];
 
-        int rankIndex = 7; // fen starts from the top
-        int fileIndex = 0;
+        var rankIndex = 7; // fen starts from the top
+        var fileIndex = 0;
 
-        int currentIndex = 0;
+        var currentIndex = 0;
 
         while (currentIndex < Fenstring.Length)
         {
@@ -137,11 +137,11 @@ public class Bitboards
     {
         var builtFen = "";
 
-        for (int rankIndex = 7; rankIndex >= 0; rankIndex--)
+        for (var rankIndex = 7; rankIndex >= 0; rankIndex--)
         {
             var numberEmptySquares = 0;
 
-            for (int fileIndex = 0; fileIndex <= 7; fileIndex++)
+            for (var fileIndex = 0; fileIndex <= 7; fileIndex++)
             {
                 var pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
 

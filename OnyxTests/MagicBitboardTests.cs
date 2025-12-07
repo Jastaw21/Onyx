@@ -25,4 +25,20 @@ public class MagicBitboardTests
         });
     }
     
+    [Test]
+    public void GetThisOccupancy_Index0_ReturnsEmpty()
+    {
+        const ulong mask = 0b10101010ul;
+        Assert.That(MaskGenerator.GetThisOccupancy(0, mask), Is.EqualTo(0ul));
+    }
+    [Test]
+    public void ExpectedOccupancyCount()
+    {
+        var mask = MaskGenerator.GenerateDiagonalMoves(43);
+        Assert.That(mask,Is.EqualTo(0x14001422400000));
+        var numberBits = 7;
+        var nuberOccupancyCombinations = 1 << numberBits;
+    }
+
+
 }

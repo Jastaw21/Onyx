@@ -30,7 +30,7 @@ public static class Fen
 
     public static char GetCharFromPiece(Piece piece)
     {
-        char lowerVersion = piece.Type switch
+        var lowerVersion = piece.Type switch
         {
             PieceType.King => 'k',
             PieceType.Queen => 'q',
