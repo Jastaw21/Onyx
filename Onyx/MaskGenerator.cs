@@ -85,14 +85,14 @@ public static class MaskGenerator
             if ((index & (1 << i)) != 0)
             {
                 // index trick - if this number is set in the index, we should keep it
-                occupancy |= (1ul << bottomBitIndex);
+                occupancy |= 1ul << bottomBitIndex;
             }
         }
 
         return occupancy;
     }
 
-    public static ulong GenerateStraightAttacks(int square, ulong occupancies)
+    public static ulong GetStraightAttacks(int square, ulong occupancies)
     {
         var result = 0ul;
         var rank = RankAndFileHelpers.RankIndex(square);
@@ -101,7 +101,7 @@ public static class MaskGenerator
         // move up in the files from current place
         for (var f = file + 1; f < 8; f++)
         {
-            result |= (uint)RankAndFileHelpers.SquareIndex(rank, f);
+            result |= 1ul << RankAndFileHelpers.SquareIndex(rank, f);
 
             if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(rank, f)) > 0)
                 break;
@@ -110,7 +110,7 @@ public static class MaskGenerator
         // move down in the files
         for (var f = file - 1; f >= 0; f--)
         {
-            result |= (uint)RankAndFileHelpers.SquareIndex(rank, f);
+            result |= 1ul << RankAndFileHelpers.SquareIndex(rank, f);
 
             if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(rank, f)) > 0)
                 break;
@@ -118,7 +118,7 @@ public static class MaskGenerator
 
         for (var r = rank + 1; r < 8; r++)
         {
-            result |= (uint)RankAndFileHelpers.SquareIndex(r, file);
+            result |= 1ul << RankAndFileHelpers.SquareIndex(r, file);
 
             if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(r, file)) > 0)
                 break;
@@ -126,7 +126,7 @@ public static class MaskGenerator
 
         for (var r = rank - 1; r >= 0; r--)
         {
-            result |= (uint)RankAndFileHelpers.SquareIndex(r, file);
+            result |= 1ul << RankAndFileHelpers.SquareIndex(r, file);
 
             if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(r, file)) > 0)
                 break;
