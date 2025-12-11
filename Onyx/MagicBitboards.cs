@@ -4,10 +4,10 @@ namespace Onyx;
 
 public struct Magic
 {
-    public ulong Mask = 0ul;
-    public ulong MagicNumber = 0ul;
-    public int Shift = 0;
-    public ulong[] Attacks = [];
+    public readonly ulong Mask = 0ul;
+    public readonly ulong MagicNumber = 0ul;
+    public readonly int Shift = 0;
+    public readonly ulong[] Attacks = [];
 
     public Magic(ulong mask, ulong number, int shift, int numberAttacks)
     {
@@ -24,6 +24,13 @@ public class MagicBitboards
     {
         InitDiagMagics();
         InitStraightMagics();
+
+        for (int square = 0; square < 64; square++)
+        {
+            var sq = new Square(square);
+            BuildKnightMoves(sq);
+            BuildKingMoves(sq);
+        }
     }
 
     private void InitDiagMagics()
@@ -78,8 +85,10 @@ public class MagicBitboards
         }
     }
 
-    private Magic[] _diagMagics = new Magic[64];
-    private Magic[] _straightMagics = new Magic[64];
+    private readonly Magic[] _diagMagics = new Magic[64];
+    private readonly Magic[] _straightMagics = new Magic[64];
+    private readonly ulong[] _knightAttacks = new ulong[64];
+    private readonly ulong[] _kingAttacks = new ulong[64];
 
     public ulong GetMovesByPiece(Piece piece, Square square, ulong boardState)
     {
@@ -87,6 +96,18 @@ public class MagicBitboards
         {
             case PieceType.Queen:
                 return GetDiagAttacks(square, boardState) | GetStraightAttacks(square, boardState);
+            case PieceType.Rook:
+                return GetStraightAttacks(square, boardState);
+            case PieceType.Bishop:
+                return GetDiagAttacks(square, boardState);
+            case PieceType.Pawn:
+                return GetPawnMoves(piece.Colour, square, boardState);
+            case PieceType.Knight:
+                return _knightAttacks[square.SquareIndex];
+            case PieceType.King:
+                return _kingAttacks[square.SquareIndex];
+            default:
+                throw new ArgumentOutOfRangeException();
         }
 
         return 0;
@@ -108,5 +129,80 @@ public class MagicBitboards
         occupancy >>= _straightMagics[square.SquareIndex].Shift;
 
         return _straightMagics[square.SquareIndex].Attacks[occupancy];
+    }
+
+    private void BuildKnightMoves(Square square)
+    {
+        var movesFromHere = 0ul;
+        foreach (var knightMove in BoardConstants.KnightMoves)
+        {
+            var newRank = square.RankIndex + knightMove[0];
+            var newFile = square.FileIndex + knightMove[1];
+            if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
+                continue;
+            var newSquare = new Square(newRank, newFile);
+            movesFromHere |= (1ul << newSquare.SquareIndex);
+        }
+
+        _knightAttacks[square.SquareIndex] = movesFromHere;
+    }
+
+    private void BuildKingMoves(Square square)
+    {
+        var movesFromHere = 0ul;
+        foreach (var kingMove in BoardConstants.KingMoves)
+        {
+            var newRank = square.RankIndex + kingMove[0];
+            var newFile = square.FileIndex + kingMove[1];
+            if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
+                continue;
+            var newSquare = new Square(newRank, newFile);
+            movesFromHere |= (1ul << newSquare.SquareIndex);
+        }
+
+        _kingAttacks[square.SquareIndex] = movesFromHere;
+    }
+
+    private ulong GetPawnMoves(Colour colour, Square square, ulong boardState)
+    {
+        // should never actually have a pawn on these ranks
+        if (square.RankIndex is 7 or 0)
+            return 0ul;
+
+
+        var result = 0ul;
+        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 0;
+        var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
+
+
+        var squareOffset = (colour == Colour.White) ? 8 : -8;
+        result |= 1ul << square.SquareIndex + squareOffset; ;
+
+        // can go right
+        if (square.FileIndex < 7)
+        {
+            var rightIndex = (colour == Colour.White) ? 9 : -7;
+            result |= 1ul << square.SquareIndex + rightIndex;
+        }
+            
+        if (square.FileIndex > 0)
+        {
+            var leftIndex = (colour == Colour.White) ? 7 : -9;
+            result |= 1ul << square.SquareIndex + leftIndex;
+        }
+
+
+        if (isBlackDoublePush || isWhiteDoublePush)
+        {
+            switch (colour)
+            {
+                case Colour.White:
+                    break;
+                case Colour.Black:
+                    break;
+            }
+        }
+
+        return result;
     }
 }

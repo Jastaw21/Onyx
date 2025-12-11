@@ -73,8 +73,58 @@ public class MagicBitboardTests
     [Test]
     public void GetQueenMoves()
     {
-        var mbb = new MagicBitboards();
-        Assert.That(mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Queen, Colour.White), new Square(0), 0ul),
+        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Queen, Colour.White), new Square(0), 0ul),
             Is.EqualTo(0x81412111090503fe));
     }
+
+    [Test]
+    public void GetRookMoves()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), new Square(0), 0ul),
+                Is.EqualTo(0x1010101010101fe));
+
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), new Square(0), 0x10090),
+                Is.EqualTo(0x1011e));
+
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), new Square(20), 0x10090),
+                Is.EqualTo(0x1010101010ef1010));
+        });
+    }
+
+    [Test]
+    public void GetKnightMoves()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black), new Square(0), 0ul),
+                    Is.EqualTo(0x20400));
+
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black), new Square(35), 0ul),
+                Is.EqualTo(0x14220022140000));
+
+            Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black), new Square(46), 0ul),
+                Is.EqualTo(0xa0100010a0000000));
+        });
+    }
+
+    [Test]
+    public void GetKingMoves()
+    {
+        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.King,Colour.White),new Square((0)),0ul),
+            Is.EqualTo(0x302));
+    }
+
+    [Test]
+    public void GetPawnMovesSinglePush()
+    {
+        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Pawn,Colour.White),new Square(8),0),
+            Is.EqualTo(0x30000));
+        
+        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Pawn,Colour.Black),new Square(48),0),
+            Is.EqualTo(0x30000000000));
+    }
+
+    private readonly MagicBitboards _mbb = new MagicBitboards();
 }
