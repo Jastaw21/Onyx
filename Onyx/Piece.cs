@@ -40,7 +40,7 @@ public readonly struct Piece(PieceType type, Colour colour)
     {
         return new Piece(piece, colour);
     }
-    
+
     public static Piece WP => new(PieceType.Pawn, Colour.White);
     public static Piece BP => new(PieceType.Pawn, Colour.Black);
     public static Piece WR => new(PieceType.Rook, Colour.White);
@@ -53,5 +53,17 @@ public readonly struct Piece(PieceType type, Colour colour)
     public static Piece BK => new(PieceType.King, Colour.Black);
     public static Piece WB => new(PieceType.Bishop, Colour.White);
     public static Piece BB => new(PieceType.Bishop, Colour.Black);
-}
 
+    public static Piece[] ByColour(Colour colour)
+    {
+        var pieces = Enum.GetValues<PieceType>();
+        var builtPieces = new Piece[pieces.Length];
+
+        for (var i = 0; i < pieces.Length; i++)
+        {
+            builtPieces[i] = new Piece(pieces[i], colour);
+        }
+
+        return builtPieces;
+    }
+}

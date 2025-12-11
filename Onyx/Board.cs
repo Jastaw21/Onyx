@@ -11,6 +11,9 @@ public static class BoardConstants
     public static readonly int h1 = 7;
     public static readonly int a8 = 56;
     public static readonly int h8 = 63;
+    public static readonly int e1 = 4;
+    public static readonly int e8 = 60;
+    
 
     public static readonly int[][] KnightMoves =
         [[2, -1], [2, 1], [1, -2], [1, 2], [-1, -2], [-1, 2], [-2, -1], [-2, 1]];
@@ -28,26 +31,26 @@ public class BoardState
 
 public class Board
 {
-    public Bitboards Bitboards;
+    public readonly Bitboards Bitboards;
     public Colour TurnToMove;
 
     // bit field - from the lowest bit in this order White : K, Q, Black K,Q
     public int CastlingRights { get; private set; }
     public Square? EnPassantSquare;
-    public Stack<BoardState> BoardStateHistory;
+    private readonly Stack<BoardState> _boardStateHistory;
 
     public Board(Bitboards bitboards, Colour turnToMove = Colour.White)
     {
         Bitboards = bitboards;
         TurnToMove = turnToMove;
-        BoardStateHistory = new Stack<BoardState>();
+        _boardStateHistory = new Stack<BoardState>();
     }
 
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
-        BoardStateHistory = new Stack<BoardState>();
+        _boardStateHistory = new Stack<BoardState>();
     }
 
     public string GetFen()
@@ -113,7 +116,7 @@ public class Board
             EnPassantSquare = EnPassantSquare,
             CastlingRights = CastlingRights
         };
-        BoardStateHistory.Push(state);
+        _boardStateHistory.Push(state);
 
         // action the required change for the moving piece
         MovePiece(move.PieceMoved, move.From, move.To);
@@ -168,7 +171,7 @@ public class Board
         ApplyMoveFlags(move: ref move);
 
 
-        var previousState = BoardStateHistory.Pop();
+        var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
         if (previousState.CapturedPiece.HasValue)

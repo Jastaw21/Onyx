@@ -16,12 +16,12 @@ public class Bitboards
         }
     }
 
-    public Bitboards(string Fenstring)
+    public Bitboards(string fenString)
     {
-        LoadFen(Fenstring);
+        LoadFen(fenString);
     }
 
-    public void LoadFen(string Fenstring)
+    public void LoadFen(string fenString)
     {
         var pieceTypeCount = Enum.GetValues<PieceType>().Length;
         var colourCount = Enum.GetValues<Colour>().Length;
@@ -32,27 +32,27 @@ public class Bitboards
 
         var currentIndex = 0;
 
-        while (currentIndex < Fenstring.Length)
+        while (currentIndex < fenString.Length)
         {
             // next line indicator
-            if (Fenstring[currentIndex] == '/')
+            if (fenString[currentIndex] == '/')
             {
                 rankIndex--; // move to the next rank down
                 fileIndex = 0; // and back to the start
             }
 
             // empty cells indicator
-            else if (Char.IsAsciiDigit(Fenstring[currentIndex]))
-                fileIndex += Fenstring[currentIndex] - '0';
+            else if (Char.IsAsciiDigit(fenString[currentIndex]))
+                fileIndex += fenString[currentIndex] - '0';
 
             // break at space, as the rest if=s all castling/en passant stuff, not relevant to us
-            else if (Fenstring[currentIndex] == ' ')
+            else if (fenString[currentIndex] == ' ')
                 break;
 
             // this os a piece, so set it and move the file on
             else
             {
-                var piece = Fen.GetPieceFromChar(Fenstring[currentIndex]);
+                var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
                 SetOn(piece, new Square(rankIndex, fileIndex));
                 fileIndex++;
             }
@@ -64,13 +64,23 @@ public class Bitboards
     private ulong[] boards;
     public ulong[] Boards => boards;
 
-    public ulong GetByPiece(Piece piece)
+    public ulong OccupancyByPiece(Piece piece)
     {
         var col = (int)piece.Colour;
         var type = (int)piece.Type;
         var index = col * Enum.GetValues<PieceType>().Length + type;
 
         return boards[index];
+    }
+
+    public ulong OccupancyByColour(Colour colour)
+    {
+        return Piece.ByColour(colour).Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
+    }
+
+    public ulong Occupancy()
+    {
+        return Boards.Aggregate(0ul, (current, board) => current | board);
     }
 
     public void SetByPiece(Piece piece, ulong boardByPiece)
@@ -124,7 +134,7 @@ public class Bitboards
         foreach (var piece in Piece.All())
 
         {
-            var board = GetByPiece(piece);
+            var board = OccupancyByPiece(piece);
             var mask = 1ul << squareToTest.SquareIndex;
             if ((board & mask) != 0)
                 return piece;

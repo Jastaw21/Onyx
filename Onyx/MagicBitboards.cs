@@ -105,12 +105,11 @@ public static class MagicBitboards
             case PieceType.Knight:
                 return _knightAttacks[square.SquareIndex];
             case PieceType.King:
-                return _kingAttacks[square.SquareIndex];
+                var attacks = _kingAttacks[square.SquareIndex];
+                return attacks;
             default:
                 throw new ArgumentOutOfRangeException();
         }
-
-        return 0;
     }
 
     private static ulong GetDiagAttacks(Square square, ulong occupancy)
@@ -196,8 +195,8 @@ public static class MagicBitboards
 
         // if the pawns aren't on their starting ranks, return early
         if (!isBlackDoublePush && !isWhiteDoublePush) return result;
-        
-        
+
+
         switch (colour)
         {
             case Colour.White:
@@ -218,4 +217,6 @@ public static class MagicBitboards
 
         return result;
     }
+
+
 }
