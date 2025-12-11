@@ -326,5 +326,22 @@ class HelperTests
             Assert.That(RankAndFileHelpers.SquareIndex(2, 1), Is.EqualTo(17));
         });
     }
+
+    [Test]
+    public void SquareToBitBoard()
+    {
+        ulong targetBitboard = 1;
+        for (int square = 0; square < 64; square++)
+        {
+            var s = new Square(square);
+            Assert.That(s.Bitboard, Is.EqualTo(targetBitboard));
+            
+            
+            if (square == 63) 
+                Assert.That(s.Bitboard == 0x8000000000000000);
+            
+            targetBitboard <<= 1;
+        }
+    }
     
 }

@@ -8,6 +8,7 @@ public readonly struct Square
     public int SquareIndex => RankIndex * 8 + FileIndex;
 
     public string Notation => $"{(char)('a' + FileIndex)}{(char)('1' + RankIndex)}";
+    public ulong Bitboard => 1ul << SquareIndex;
 
     public Square(int rankIndex, int fileIndex)
     {

@@ -11,6 +11,12 @@ public static class BoardConstants
     public static readonly int h1 = 7;
     public static readonly int a8 = 56;
     public static readonly int h8 = 63;
+
+    public static readonly int[][] KnightMoves =
+        [[2, -1], [2, 1], [1, -2], [1, 2], [-1, -2], [-1, 2], [-2, -1], [-2, 1]];
+    
+    public static readonly int[][] KingMoves =
+        [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
 }
 
 public class BoardState
@@ -290,4 +296,6 @@ public class Board
             EnPassantSquare = new Square(enPassantString);
         }
     }
+
+    
 }
