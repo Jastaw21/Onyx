@@ -171,36 +171,49 @@ public class MagicBitboards
 
 
         var result = 0ul;
-        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 0;
+        var squareIndex = square.SquareIndex;
+        var squareOffset = (colour == Colour.White) ? 8 : -8;
+
+        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 1;
         var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
 
 
-        var squareOffset = (colour == Colour.White) ? 8 : -8;
-        result |= 1ul << square.SquareIndex + squareOffset; ;
+        result |= 1ul << squareIndex + squareOffset;
 
         // can go right
         if (square.FileIndex < 7)
         {
             var rightIndex = (colour == Colour.White) ? 9 : -7;
-            result |= 1ul << square.SquareIndex + rightIndex;
+            result |= 1ul << squareIndex + rightIndex;
         }
-            
+
         if (square.FileIndex > 0)
         {
             var leftIndex = (colour == Colour.White) ? 7 : -9;
-            result |= 1ul << square.SquareIndex + leftIndex;
+            result |= 1ul << squareIndex + leftIndex;
         }
 
 
-        if (isBlackDoublePush || isWhiteDoublePush)
+        // if the pawns aren't on their starting ranks, return early
+        if (!isBlackDoublePush && !isWhiteDoublePush) return result;
+        
+        
+        switch (colour)
         {
-            switch (colour)
-            {
-                case Colour.White:
+            case Colour.White:
+                // if there's anything on the immediate next rank, can't do a double push
+                if (((1ul << squareIndex + 8) & boardState) > 0)
                     break;
-                case Colour.Black:
+
+                result |= 1ul << squareIndex + 16;
+                break;
+            case Colour.Black:
+                // if there's anything on the immediate next rank, can't do a double push
+                if (((1ul << squareIndex - 8) & boardState) > 0)
                     break;
-            }
+
+                result |= 1ul << squareIndex - 16;
+                break;
         }
 
         return result;

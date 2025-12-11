@@ -117,13 +117,20 @@ public class MagicBitboardTests
     }
 
     [Test]
-    public void GetPawnMovesSinglePush()
+    public void GetPawnMoves()
     {
-        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Pawn,Colour.White),new Square(8),0),
-            Is.EqualTo(0x30000));
-        
-        Assert.That(_mbb.GetMovesByPiece(Piece.MakePiece(PieceType.Pawn,Colour.Black),new Square(48),0),
-            Is.EqualTo(0x30000000000));
+        Assert.Multiple(() =>
+        {
+            // starting rank moves
+            Assert.That(_mbb.GetMovesByPiece(Piece.WP, new Square(8), 0),
+                    Is.EqualTo(0x1030000));
+
+            Assert.That(_mbb.GetMovesByPiece(Piece.BP, new Square(48), 0),
+                Is.EqualTo(0x30100000000));
+            
+            Assert.That(_mbb.GetMovesByPiece(Piece.WP, new Square(19), 0),
+                Is.EqualTo(0x1c000000));
+        });
     }
 
     private readonly MagicBitboards _mbb = new MagicBitboards();
