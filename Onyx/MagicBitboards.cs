@@ -18,9 +18,9 @@ public struct Magic
     }
 }
 
-public class MagicBitboards
+public static class MagicBitboards
 {
-    public MagicBitboards()
+    static MagicBitboards()
     {
         InitDiagMagics();
         InitStraightMagics();
@@ -33,7 +33,7 @@ public class MagicBitboards
         }
     }
 
-    private void InitDiagMagics()
+    private static void InitDiagMagics()
     {
         for (var square = 0; square < 64; square++)
         {
@@ -59,7 +59,7 @@ public class MagicBitboards
         }
     }
 
-    private void InitStraightMagics()
+    private static void InitStraightMagics()
     {
         for (var square = 0; square < 64; square++)
         {
@@ -85,12 +85,12 @@ public class MagicBitboards
         }
     }
 
-    private readonly Magic[] _diagMagics = new Magic[64];
-    private readonly Magic[] _straightMagics = new Magic[64];
-    private readonly ulong[] _knightAttacks = new ulong[64];
-    private readonly ulong[] _kingAttacks = new ulong[64];
+    private static readonly Magic[] _diagMagics = new Magic[64];
+    private static readonly Magic[] _straightMagics = new Magic[64];
+    private static readonly ulong[] _knightAttacks = new ulong[64];
+    private static readonly ulong[] _kingAttacks = new ulong[64];
 
-    public ulong GetMovesByPiece(Piece piece, Square square, ulong boardState)
+    public static ulong GetMovesByPiece(Piece piece, Square square, ulong boardState)
     {
         switch (piece.Type)
         {
@@ -113,7 +113,7 @@ public class MagicBitboards
         return 0;
     }
 
-    private ulong GetDiagAttacks(Square square, ulong occupancy)
+    private static ulong GetDiagAttacks(Square square, ulong occupancy)
     {
         occupancy &= _diagMagics[square.SquareIndex].Mask;
         occupancy *= _diagMagics[square.SquareIndex].MagicNumber;
@@ -122,7 +122,7 @@ public class MagicBitboards
         return _diagMagics[square.SquareIndex].Attacks[occupancy];
     }
 
-    private ulong GetStraightAttacks(Square square, ulong occupancy)
+    private static ulong GetStraightAttacks(Square square, ulong occupancy)
     {
         occupancy &= _straightMagics[square.SquareIndex].Mask;
         occupancy *= _straightMagics[square.SquareIndex].MagicNumber;
@@ -131,7 +131,7 @@ public class MagicBitboards
         return _straightMagics[square.SquareIndex].Attacks[occupancy];
     }
 
-    private void BuildKnightMoves(Square square)
+    private static void BuildKnightMoves(Square square)
     {
         var movesFromHere = 0ul;
         foreach (var knightMove in BoardConstants.KnightMoves)
@@ -147,7 +147,7 @@ public class MagicBitboards
         _knightAttacks[square.SquareIndex] = movesFromHere;
     }
 
-    private void BuildKingMoves(Square square)
+    private static void BuildKingMoves(Square square)
     {
         var movesFromHere = 0ul;
         foreach (var kingMove in BoardConstants.KingMoves)
@@ -163,7 +163,7 @@ public class MagicBitboards
         _kingAttacks[square.SquareIndex] = movesFromHere;
     }
 
-    private ulong GetPawnMoves(Colour colour, Square square, ulong boardState)
+    private static ulong GetPawnMoves(Colour colour, Square square, ulong boardState)
     {
         // should never actually have a pawn on these ranks
         if (square.RankIndex is 7 or 0)
