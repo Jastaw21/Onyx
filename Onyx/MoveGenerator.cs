@@ -13,42 +13,40 @@ public static class MoveGenerator
 
     private static void GenerateCastlingMoves(Piece piece, Square square, ref Board board, List<Move> moveList)
     {
-        if (piece.Type != PieceType.King)
+        if (piece.Type != PieceType.King || board.CastlingRights == 0)
             return;
 
-        if (board.CastlingRights == 0)
+        var isWhite = piece.Colour == Colour.White;
+        var expectedSquare = isWhite ? BoardConstants.E1 : BoardConstants.E8;
+
+        if (square.SquareIndex != expectedSquare)
             return;
 
+        var occupancy = board.Bitboards.Occupancy();
         var result = 0ul;
-        bool kingSideEmpty;
-        bool queenSideEmpty;
-        switch (piece.Colour)
-        {
-            case Colour.White:
-                if (square.SquareIndex != BoardConstants.E1) return;
-                kingSideEmpty = (BoardConstants.WhiteKingSideCastlingSquares & board.Bitboards.Occupancy()) == 0;
-                queenSideEmpty = (BoardConstants.WhiteKingSideCastlingSquares & board.Bitboards.Occupancy()) == 0;
-                if (kingSideEmpty && ((board.CastlingRights & BoardConstants.WhiteKingsideCastlingFlag) > 0)) 
-                    result |= 1ul << BoardConstants.G1;
-                
-                if (queenSideEmpty && ((board.CastlingRights & BoardConstants.WhiteQueensideCastlingFlag) > 0)) 
-                    result |= 1ul << BoardConstants.C1;
-                
-                break;
 
-            case Colour.Black:
-                if (square.SquareIndex != BoardConstants.E8) return;
-                kingSideEmpty = (BoardConstants.BlackKingSideCastlingSquares & board.Bitboards.Occupancy()) == 0;
-                queenSideEmpty = (BoardConstants.BlackKingSideCastlingSquares & board.Bitboards.Occupancy()) == 0;
-                
-                if (kingSideEmpty && ((board.CastlingRights & BoardConstants.BlackKingsideCastlingFlag) > 0)) 
-                    result |= 1ul << BoardConstants.G8;
-                
-                if (queenSideEmpty && ((board.CastlingRights & BoardConstants.BlackQueensideCastlingFlag) > 0)) 
-                    result |= 1ul << BoardConstants.C8;
-                break;
-        }
-        
+        // Kingside
+        var kingsideCastleSquares =
+            isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares;
+        var kingsideFlag =
+            isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag;
+        var kingsideTarget = isWhite ? BoardConstants.G1 : BoardConstants.G8;
+
+        if ((kingsideCastleSquares & occupancy) == 0 && (board.CastlingRights & kingsideFlag) > 0)
+            result |= 1ul << kingsideTarget;
+
+        // Queenside
+        var queensideCastleSquares = isWhite
+            ? BoardConstants.WhiteQueenSideCastlingSquares
+            : BoardConstants.BlackQueenSideCastlingSquares;
+        var queensideFlag =
+            isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag;
+        var queensideTarget = isWhite ? BoardConstants.C1 : BoardConstants.C8;
+
+        if ((queensideCastleSquares & occupancy) == 0 && (board.CastlingRights & queensideFlag) > 0)
+            result |= 1ul << queensideTarget;
+
+        // Add moves from result bitboard
         while (result > 0)
         {
             var lowest = ulong.TrailingZeroCount(result);
@@ -56,6 +54,7 @@ public static class MoveGenerator
             result &= result - 1;
         }
     }
+
 
     private static void GenerateBasicMoves(Piece piece, Square square, ref Board board, List<Move> moveList)
     {
