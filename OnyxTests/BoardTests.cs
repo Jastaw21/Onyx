@@ -50,10 +50,10 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8")
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8")
         ];
 
         List<string> endingPositions =
@@ -94,8 +94,8 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1f2"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.Black), "e8e7")
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1f2"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8e7")
         ];
 
         List<string> PositionsAfter =
@@ -185,8 +185,8 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
-            new Move(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3")
+            new(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
+            new(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3")
         ];
 
         List<string> endingPositions =
@@ -261,10 +261,10 @@ public class UndoMove
 
         List<Move> moves =
         [
-            new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
-            new Move(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8")
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8")
         ];
 
         List<string> endingPositions =
@@ -313,8 +313,8 @@ public class UndoMove
 
         List<Move> moves =
         [
-            new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
-            new Move(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3")
+            new(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
+            new(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3")
         ];
 
         VerifyUndoingMoves(startingPositions, moves);
