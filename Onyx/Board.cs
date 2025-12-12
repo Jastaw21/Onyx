@@ -2,17 +2,29 @@
 
 public static class BoardConstants
 {
-    public static readonly int WhiteKingsideCastling = 1 << 0;
-    public static readonly int WhiteQueensideCastling = 1 << 1;
-    public static readonly int BlackKingsideCastling = 1 << 2;
-    public static readonly int BlackQueensideCastling = 1 << 3;
+    public const int WhiteKingsideCastlingFlag = 1 << 0;
+    public const int WhiteQueensideCastlingFlag = 1 << 1;
+    public const int BlackKingsideCastlingFlag = 1 << 2;
+    public const int BlackQueensideCastlingFlag = 1 << 3;
 
-    public static readonly int a1 = 0;
-    public static readonly int h1 = 7;
-    public static readonly int a8 = 56;
-    public static readonly int h8 = 63;
-    public static readonly int e1 = 4;
-    public static readonly int e8 = 60;
+    public static readonly ulong WhiteKingSideCastlingSquares = 0x60;
+    public static readonly ulong BlackKingSideCastlingSquares = 0x6000000000000000;
+
+    public static readonly ulong WhiteQueenSideCastlingSquares = 0xe;
+    public static readonly ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
+
+    public const int A1 = 0;
+    public const int H1 = 7;
+    public const int A8 = 56;
+    public const int H8 = 63;
+    public const int E1 = 4;
+    public const int E8 = 60;
+
+    public const int G1 = 6;
+    public const int G8 = 62;
+    
+    public const int C1 = 2;
+    public const int C8 = 58;
     
 
     public static readonly int[][] KnightMoves =
@@ -68,10 +80,10 @@ public class Board
 
 
         var castlingRightsString = "";
-        if ((CastlingRights & BoardConstants.WhiteKingsideCastling) > 0) castlingRightsString += 'K';
-        if ((CastlingRights & BoardConstants.WhiteQueensideCastling) > 0) castlingRightsString += 'Q';
-        if ((CastlingRights & BoardConstants.BlackKingsideCastling) > 0) castlingRightsString += 'k';
-        if ((CastlingRights & BoardConstants.BlackQueensideCastling) > 0) castlingRightsString += 'q';
+        if ((CastlingRights & BoardConstants.WhiteKingsideCastlingFlag) > 0) castlingRightsString += 'K';
+        if ((CastlingRights & BoardConstants.WhiteQueensideCastlingFlag) > 0) castlingRightsString += 'Q';
+        if ((CastlingRights & BoardConstants.BlackKingsideCastlingFlag) > 0) castlingRightsString += 'k';
+        if ((CastlingRights & BoardConstants.BlackQueensideCastlingFlag) > 0) castlingRightsString += 'q';
 
         if (castlingRightsString.Length == 0)
             castlingRightsString = "- ";
@@ -233,13 +245,13 @@ public class Board
         {
             if (move.PieceMoved.Colour == Colour.White)
             {
-                CastlingRights &= ~(BoardConstants.WhiteKingsideCastling);
-                CastlingRights &= ~(BoardConstants.WhiteQueensideCastling);
+                CastlingRights &= ~(BoardConstants.WhiteKingsideCastlingFlag);
+                CastlingRights &= ~(BoardConstants.WhiteQueensideCastlingFlag);
             }
             else
             {
-                CastlingRights &= ~(BoardConstants.BlackKingsideCastling);
-                CastlingRights &= ~(BoardConstants.BlackQueensideCastling);
+                CastlingRights &= ~(BoardConstants.BlackKingsideCastlingFlag);
+                CastlingRights &= ~(BoardConstants.BlackQueensideCastlingFlag);
             }
         }
 
@@ -247,17 +259,17 @@ public class Board
 
         if (move.PieceMoved.Colour == Colour.White)
         {
-            if (move.From.SquareIndex == BoardConstants.a1)
-                CastlingRights &= ~BoardConstants.WhiteQueensideCastling;
-            if (move.From.SquareIndex == BoardConstants.h1)
-                CastlingRights &= ~BoardConstants.WhiteKingsideCastling;
+            if (move.From.SquareIndex == BoardConstants.A1)
+                CastlingRights &= ~BoardConstants.WhiteQueensideCastlingFlag;
+            if (move.From.SquareIndex == BoardConstants.H1)
+                CastlingRights &= ~BoardConstants.WhiteKingsideCastlingFlag;
         }
         else
         {
-            if (move.From.SquareIndex == BoardConstants.a8)
-                CastlingRights &= ~BoardConstants.BlackQueensideCastling;
-            if (move.From.SquareIndex == BoardConstants.h8)
-                CastlingRights &= ~BoardConstants.BlackKingsideCastling;
+            if (move.From.SquareIndex == BoardConstants.A8)
+                CastlingRights &= ~BoardConstants.BlackQueensideCastlingFlag;
+            if (move.From.SquareIndex == BoardConstants.H8)
+                CastlingRights &= ~BoardConstants.BlackKingsideCastlingFlag;
         }
     }
 
@@ -288,10 +300,10 @@ public class Board
         TurnToMove = fen[colourToMoveTokenLocation] == 'w' ? Colour.White : Colour.Black;
 
         var castlingString = fen[castlingRightsTokenLocation..(enPassantSquareTokenLocation - 1)];
-        if (castlingString.Contains('K')) CastlingRights |= BoardConstants.WhiteKingsideCastling;
-        if (castlingString.Contains('Q')) CastlingRights |= BoardConstants.WhiteQueensideCastling;
-        if (castlingString.Contains('k')) CastlingRights |= BoardConstants.BlackKingsideCastling;
-        if (castlingString.Contains('q')) CastlingRights |= BoardConstants.BlackQueensideCastling;
+        if (castlingString.Contains('K')) CastlingRights |= BoardConstants.WhiteKingsideCastlingFlag;
+        if (castlingString.Contains('Q')) CastlingRights |= BoardConstants.WhiteQueensideCastlingFlag;
+        if (castlingString.Contains('k')) CastlingRights |= BoardConstants.BlackKingsideCastlingFlag;
+        if (castlingString.Contains('q')) CastlingRights |= BoardConstants.BlackQueensideCastlingFlag;
 
         var enPassantString = fen[enPassantSquareTokenLocation..(fullMoveTokenLocation - 1)];
         if (enPassantString.Length == 2)

@@ -129,8 +129,8 @@ public class ApplyMove
             Assert.That(board.GetFen(),
                 Is.EqualTo("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR b Kkq - 0 1"));
             Assert.That(board.CastlingRights,
-                Is.EqualTo(BoardConstants.WhiteKingsideCastling | BoardConstants.BlackKingsideCastling |
-                           BoardConstants.BlackQueensideCastling));
+                Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackKingsideCastlingFlag |
+                           BoardConstants.BlackQueensideCastlingFlag));
         });
 
         var blackRookMove = new Move(Piece.MakePiece(PieceType.Rook, Colour.Black), "h8g8");
@@ -140,7 +140,7 @@ public class ApplyMove
             Assert.That(board.GetFen(),
                 Is.EqualTo("rnbqkbr1/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR w Kq - 0 1"));
             Assert.That(board.CastlingRights,
-                Is.EqualTo(BoardConstants.WhiteKingsideCastling | BoardConstants.BlackQueensideCastling));
+                Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackQueensideCastlingFlag));
         });
     }
 
@@ -152,7 +152,7 @@ public class ApplyMove
 
         // check that black can't castle queen side
         Assert.That(board.CastlingRights,
-            Is.EqualTo(BoardConstants.WhiteKingsideCastling | BoardConstants.BlackQueensideCastling));
+            Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackQueensideCastlingFlag));
 
         // move the rook out to call the castlingrigths function
         var blackRookMove = new Move(Piece.MakePiece(PieceType.Rook, Colour.Black), "h8g8");
@@ -160,7 +160,7 @@ public class ApplyMove
 
         // check nothing has changed
         Assert.That(board.CastlingRights,
-            Is.EqualTo(BoardConstants.WhiteKingsideCastling | BoardConstants.BlackQueensideCastling));
+            Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackQueensideCastlingFlag));
     }
 
     [Test]
