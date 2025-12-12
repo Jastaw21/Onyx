@@ -51,4 +51,9 @@ public struct Move
     public bool IsPromotion => (this.MoveFlag & MoveFlags.Promotion) > 0;
     public bool IsCastling => (this.MoveFlag & MoveFlags.Castle) > 0;
     public bool IsEnPassant => (this.MoveFlag & MoveFlags.EnPassant) > 0;
+
+    public override string ToString()
+    {
+        return Notation;
+    }
 }
