@@ -287,9 +287,20 @@ public class CoreTests
     }
 
     [Test]
-    public void MoveString()
+    public void PieceToString()
     {
         Assert.That(Piece.MakePiece(PieceType.King, Colour.White).ToString(), Is.EqualTo("White King"));
+    }
+
+    [Test]
+    public void MoveToString()
+    {
+        var move = new Move(Piece.BB, "a1b2");
+        Assert.That(move.ToString(), Is.EqualTo("a1b2"));
+
+        var promotionMove = new Move(Piece.WP, "a7a8");
+        promotionMove.PromotedPiece = Piece.WQ;
+        Assert.That(promotionMove.ToString(), Is.EqualTo("a7a8Q"));
     }
 }
 
@@ -345,5 +356,7 @@ class HelperTests
             targetBitboard <<= 1;
         }
     }
+    
+    
     
 }

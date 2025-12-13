@@ -2,21 +2,18 @@
 
 public static class Referee
 {
-    public static bool MoveIsPseudoLegal(Move move, ref Board position)
+    public static bool MoveIsLegal(Move move, ref Board position)
     {
-        var movingSideOccupancy = position.Bitboards.OccupancyByColour(move.PieceMoved.Colour);
-        var allMoves = MagicBitboards.MagicBitboards.GetMovesByPiece(move.PieceMoved, move.From, position.Bitboards.Occupancy());
-        var moveTo = move.To.Bitboard;
+       position.ApplyMove(move);
+       return !IsInCheck(move.PieceMoved.Colour, ref position);
+    }
 
-        // can't go to any of the places
-        if (!((moveTo & allMoves) > 0))
-            return false;
-
-        // can't go to own square
-        if ((moveTo & movingSideOccupancy) > 0)
-            return false;
-
-        return true;
+    public static bool IsInCheck(Colour colour, ref Board position)
+    {
+        var kingBitBoard = position.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.King, colour));
+        var square = ulong.TrailingZeroCount(kingBitBoard);
+        var attackingColour = colour == Colour.White ? Colour.Black : Colour.White;
+        return IsSquareAttacked(new Square((int)square), position, attackingColour);
     }
 
     public static bool IsSquareAttacked(Square square, Board board, Colour byColour)
@@ -29,17 +26,20 @@ public static class Referee
             var targetSquare = pawnColour == Colour.Black
                 ? new Square(square.SquareIndex - 9)
                 : new Square(square.SquareIndex + 7);
-            
-            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) > 0)
+
+            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) >
+                0)
                 return true;
         }
+
         if (square.FileIndex < 7)
         {
             var targetSquare = pawnColour == Colour.Black
                 ? new Square(square.SquareIndex - 7)
                 : new Square(square.SquareIndex + 9);
-            
-            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) > 0)
+
+            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) >
+                0)
                 return true;
         }
 
@@ -63,8 +63,8 @@ public static class Referee
         var kingAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WK, square, occupancy);
         if ((kingAttacks & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.King, byColour))) > 0)
             return true;
-        
-        
+
+
         return false;
     }
 }

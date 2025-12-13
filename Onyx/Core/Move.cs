@@ -46,7 +46,8 @@ public struct Move
     public Piece? PromotedPiece = null;
     public int MoveFlag = MoveFlags.NoFlag;
 
-    public string Notation => From.Notation + To.Notation;
+    public string Notation => From.Notation + To.Notation +
+                              (PromotedPiece.HasValue ? Fen.GetCharFromPiece(PromotedPiece.Value) : "");
 
     public bool IsPromotion => (this.MoveFlag & MoveFlags.Promotion) > 0;
     public bool IsCastling => (this.MoveFlag & MoveFlags.Castle) > 0;

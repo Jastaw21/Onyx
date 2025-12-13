@@ -1,5 +1,4 @@
-﻿using Onyx;
-using Onyx.Core;
+﻿using Onyx.Core;
 
 namespace OnyxTests;
 
@@ -63,5 +62,34 @@ public class RefereeTests
                 Assert.That(Referee.IsSquareAttacked(new Square("b2"),pawnBoard,Colour.Black),Is.True);
             }
         );
+    }
+
+    [Test]
+    public void KingInCheck()
+    {
+        var defaultBoard = new Board(Fen.DefaultFen);
+        Assert.Multiple(() =>
+        {
+            Assert.That(Referee.IsInCheck(Colour.White, ref defaultBoard), Is.False);
+            Assert.That(Referee.IsInCheck(Colour.Black, ref defaultBoard), Is.False);
+        });
+
+        var checkBoard = new Board("8/8/8/8/8/8/2n5/K7 w - - 0 1");
+        Assert.That(Referee.IsInCheck(Colour.White,ref checkBoard),Is.True);
+    }
+
+    [Test]
+    public void CantMoveIntoCheck()
+    {
+        var board = new Board("qrn1bnrb/pppp1ppp/N7/3k4/4p3/5B2/PPPPPPPP/QR1K1NRB b - - 0 1");
+        var exposeKingMove = new Move(Piece.BP, "e4e3");
+        var normalKingMove = new Move(Piece.BK, "d5d6");
+        var moveIntoCheck = new Move(Piece.BK, "d5c5");
+        Assert.Multiple(() =>
+        {
+            Assert.That(Referee.MoveIsLegal(exposeKingMove, ref board), Is.False);
+            Assert.That(Referee.MoveIsLegal(normalKingMove, ref board), Is.True);
+            Assert.That(Referee.MoveIsLegal(moveIntoCheck, ref board), Is.False);
+        });
     }
 }
