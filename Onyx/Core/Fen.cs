@@ -1,4 +1,4 @@
-﻿namespace Onyx;
+﻿namespace Onyx.Core;
 
 using FenString = string;
 

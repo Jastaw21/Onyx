@@ -1,4 +1,4 @@
-﻿namespace Onyx;
+﻿namespace Onyx.Core;
 
 public enum PieceType
 {
@@ -34,6 +34,15 @@ public readonly struct Piece(PieceType type, Colour colour)
             select new Piece(type, colour));
 
         return pieces;
+    }
+
+    public static List<Piece> PromotionTypes(Colour colour)
+    {
+        return
+        [
+            new Piece(PieceType.Bishop, colour), new Piece(PieceType.Queen, colour), new Piece(PieceType.Rook, colour),
+            new Piece(PieceType.Knight, colour)
+        ];
     }
 
     public static Piece MakePiece(PieceType piece, Colour colour)

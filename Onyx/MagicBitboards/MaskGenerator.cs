@@ -1,6 +1,6 @@
-﻿using Onyx;
+﻿using Onyx.Core;
 
-namespace MagicBitboardGenerator;
+namespace Onyx.MagicBitboards;
 
 file struct MoveDir(int deltaRank, int deltaFile)
 {

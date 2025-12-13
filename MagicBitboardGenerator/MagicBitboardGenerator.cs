@@ -1,4 +1,6 @@
-﻿namespace MagicBitboardGenerator;
+﻿using Onyx.MagicBitboards;
+
+namespace MagicBitboardGenerator;
 
 public class MagicBitboardGenerator
 {

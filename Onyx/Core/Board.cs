@@ -1,4 +1,4 @@
-﻿namespace Onyx;
+﻿namespace Onyx.Core;
 
 public static class BoardConstants
 {
@@ -221,7 +221,7 @@ public class Board
         SwapTurns();
     }
 
-    private void ApplyMoveFlags(ref Move move)
+    private static void ApplyMoveFlags(ref Move move)
     {
         if (move.PieceMoved.Type == PieceType.Pawn &&
             ((move.PieceMoved.Colour == Colour.White && move.To.RankIndex == 7) ||

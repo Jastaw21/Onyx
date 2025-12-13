@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Design;
 using System.Security.Cryptography;
 using Onyx;
+using Onyx.Core;
 
 namespace OnyxTests;
 
@@ -100,5 +101,41 @@ public class MoveGenTests
             Assert.That(MoveGenerator.GetMoves(move.PieceMoved,move.From,ref pos), Does.Contain(move));
         }
         
+    }
+
+    [Test]
+    public void MoveGenExcludesCastlingWhenAttacked()
+    {
+        List<string> startingPositions =
+        [
+            "rnbqk2r/1pp2ppp/p2p1n2/4p3/2P5/2N1bNP1/PP1PP1BP/1RBQK2R b Kq - 0 1",
+            "rn1qkb1r/pppb1pp1/3pp2p/6B1/Q2P4/2Pn4/PP1NPPPP/R3KBNR w KQkq - 0 1",
+            "rn1qk2r/pppbbpp1/3ppnNp/6B1/1Q1P4/2P5/PP2PPPP/2KR1BNR b kq - 0 1",
+            "r3k2r/ppQbbpp1/n1pppn1p/3P4/7B/2P5/PP1NPPPP/2KR1BNR b kq - 0 1"
+        ];
+        
+        List<Move> moves =
+        [
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
+            new(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
+            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8")
+        ];
+        
+
+        for (var scen = 0; scen < startingPositions.Count; scen++)
+        {
+            var pos = new Board(startingPositions[scen]);
+            var move = moves[scen];
+            Assert.That(MoveGenerator.GetMoves(move.PieceMoved,move.From,ref pos), Does.Not.Contain(move));
+        }
+    }
+
+    [Test]
+    public void MoveGenIncludesPromotionMoves()
+    {
+        var board = new Board("8/P7/8/8/8/8/8/8 w - - 0 1");
+        var moves = MoveGenerator.GetMoves(Piece.WP, new Square("a7"), board: ref board);
+        Assert.That(moves.Count, Is.EqualTo(4));
     }
 }

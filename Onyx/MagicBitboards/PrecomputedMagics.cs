@@ -1,4 +1,4 @@
-﻿namespace Onyx;
+﻿namespace Onyx.MagicBitboards;
 
 public class PrecomputedMagics
 {

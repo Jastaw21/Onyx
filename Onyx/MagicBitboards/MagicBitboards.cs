@@ -1,6 +1,6 @@
-﻿using MagicBitboardGenerator;
+﻿using Onyx.Core;
 
-namespace Onyx;
+namespace Onyx.MagicBitboards;
 
 public struct Magic
 {
@@ -164,20 +164,10 @@ public static class MagicBitboards
 
     private static ulong GetPawnMoves(Colour colour, Square square, ulong boardState)
     {
-        // should never actually have a pawn on these ranks
-        if (square.RankIndex is 7 or 0)
-            return 0ul;
-
-
         var result = 0ul;
+
+        result |= GetPawnPushes(colour, square, boardState);
         var squareIndex = square.SquareIndex;
-        var squareOffset = (colour == Colour.White) ? 8 : -8;
-
-        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 1;
-        var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
-
-
-        result |= 1ul << squareIndex + squareOffset;
 
         // can go right
         if (square.FileIndex < 7)
@@ -192,6 +182,22 @@ public static class MagicBitboards
             result |= 1ul << squareIndex + leftIndex;
         }
 
+        return result;
+    }
+
+    public static ulong GetPawnPushes(Colour colour, Square square, ulong boardState)
+    {
+        if (square.RankIndex is 7 or 0)
+            return 0ul;
+
+        var squareIndex = square.SquareIndex;
+        var squareOffset = (colour == Colour.White) ? 8 : -8;
+
+        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 1;
+        var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
+
+
+        var result = 1ul << squareIndex + squareOffset;
 
         // if the pawns aren't on their starting ranks, return early
         if (!isBlackDoublePush && !isWhiteDoublePush) return result;
@@ -217,6 +223,4 @@ public static class MagicBitboards
 
         return result;
     }
-
-
 }

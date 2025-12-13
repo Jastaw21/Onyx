@@ -1,5 +1,7 @@
 ﻿using MagicBitboardGenerator;
 using Onyx;
+using Onyx.Core;
+using Onyx.MagicBitboards;
 
 namespace OnyxTests;
 
