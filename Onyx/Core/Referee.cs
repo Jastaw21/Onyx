@@ -4,8 +4,8 @@ public static class Referee
 {
     public static bool MoveIsLegal(Move move, ref Board position)
     {
-       position.ApplyMove(move);
-       return !IsInCheck(move.PieceMoved.Colour, ref position);
+        position.ApplyMove(move);
+        return !IsInCheck(move.PieceMoved.Colour, ref position);
     }
 
     public static bool IsInCheck(Colour colour, ref Board position)
@@ -14,6 +14,28 @@ public static class Referee
         var square = ulong.TrailingZeroCount(kingBitBoard);
         var attackingColour = colour == Colour.White ? Colour.Black : Colour.White;
         return IsSquareAttacked(new Square((int)square), position, attackingColour);
+    }
+
+    public static bool IsCheckmate(Colour colourInCheckmate, ref Board position)
+    {
+        if (!IsInCheck(colourInCheckmate, ref position))
+            return false;
+
+        // check each of the pieces they have moves with
+        var piecesTheyCanMove = Piece.ByColour(colourInCheckmate);
+        foreach (var piece in piecesTheyCanMove)
+        {
+            var moves = MoveGenerator.GetMoves(piece, ref position);
+            // then see if these moves take the board out of check
+            foreach (var move in moves)
+            {
+                position.ApplyMove(move);
+                if (IsInCheck(colourInCheckmate, ref position))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     public static bool IsSquareAttacked(Square square, Board board, Colour byColour)

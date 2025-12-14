@@ -92,4 +92,17 @@ public class RefereeTests
             Assert.That(Referee.MoveIsLegal(moveIntoCheck, ref board), Is.False);
         });
     }
+
+    [Test]
+    public void CheckmateTestWorks()
+    {
+        var whiteInCheckMate = new Board("rnb1kbnr/ppp2ppp/3pp3/6P1/7q/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1");
+        Assert.That(Referee.IsCheckmate(Colour.White,ref whiteInCheckMate), Is.True);
+
+        var blackInCheckMate = new Board("rnbqkbnr/ppppp2p/5p2/6pQ/8/8/PPPPPPPP/RNB1KBNR w KQkq g6 0 1");
+        Assert.That(Referee.IsCheckmate(Colour.Black,ref blackInCheckMate), Is.True);
+        
+        var blackNotInCheckMate = new Board("rnbqkbnr/ppppp1pp/5p2/7Q/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1");
+        Assert.That(Referee.IsCheckmate(Colour.Black,ref blackNotInCheckMate), Is.True);
+    }
 }

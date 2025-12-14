@@ -9,7 +9,6 @@ public static class MoveGenerator
         {
             GenerateBasicMoves(piece, square, ref board, moveList);
             GenerateCastlingMoves(piece, square, ref board, moveList);
-            
         }
         else
         {
@@ -20,6 +19,33 @@ public static class MoveGenerator
         return moveList;
     }
 
+    public static List<Move> GetMoves(Piece piece, ref Board board)
+    {
+        var thisPieceStartSquares = board.Bitboards.OccupancyByPiece(piece);
+        List<Move> moves = [];
+        while (thisPieceStartSquares > 0)
+        {
+            var lowestSetBit = ulong.TrailingZeroCount(thisPieceStartSquares);
+            var thisSquare = new Square((int)lowestSetBit);
+            moves.AddRange(GetMoves(piece, thisSquare, ref board));
+
+            thisPieceStartSquares &= thisPieceStartSquares - 1;
+        }
+
+        return moves;
+    }
+
+    public static List<Move> GetMoves(Colour colour, ref Board board)
+    {
+        List<Move> moves = [];
+        foreach (var piece in Piece.ByColour(colour))
+        {
+            moves.AddRange(GetMoves(piece, ref board));
+        }
+
+        return moves;
+    }
+
     private static void GeneratePawnMoves(Piece piece, Square square, ref Board board, List<Move> moveList)
     {
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
@@ -28,7 +54,7 @@ public static class MoveGenerator
             return;
 
         var rawMoveOutput = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
-        
+
         var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
         var opponentOccupancy = board.Bitboards.OccupancyByColour(opponentColour);
 
@@ -48,7 +74,6 @@ public static class MoveGenerator
             moveList.Add(new Move(piece, square, new Square((int)lowest)));
             result &= result - 1;
         }
-        
     }
 
     private static void GenerateCastlingMoves(Piece piece, Square square, ref Board board, List<Move> moveList)
