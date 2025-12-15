@@ -69,6 +69,7 @@ public static class PerftSearcher
             }
            
             board.UndoMove(move);
+            
         }
 
         return results;

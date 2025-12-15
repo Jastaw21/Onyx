@@ -8,9 +8,9 @@ public static class Program
 {
     public static void Main()
     {
-        var board = new Board();
-        board.ApplyMove(new Move(Piece.WP,"a2a4"));
-        board.ApplyMove(new Move(Piece.BP,"a7a5"));
+        var board = new Board(Fen.KiwiPeteFen);
+        board.ApplyMove(new Move(Piece.WN,"e5d7"));
+        //board.ApplyMove(new Move(Piece.BP,"b7b6"));
         PerftSearcher.PerftDivide(board,1);
     }
 }

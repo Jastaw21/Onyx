@@ -332,6 +332,20 @@ public class UndoMove
 
         Assert.That(previousEP, Is.EqualTo(board.EnPassantSquare));
     }
+
+    [Test]
+    public void UndoQueenCapture()
+    {
+        var board = new Board("rnbqkbnr/p1pppppp/8/1p6/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 0 1");
+        var captureMove = new Move(Piece.BP, "b5a4");
+        var fenBefore = board.GetFen();
+        board.ApplyMove(captureMove);
+        var fenDuring = board.GetFen();
+        
+        board.UndoMove(captureMove);
+        var fenAfter = board.GetFen();
+        Assert.That(fenBefore,Is.EqualTo(fenAfter));
+    }
 }
 
 public class BoardTests

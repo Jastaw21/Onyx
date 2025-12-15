@@ -185,6 +185,14 @@ public class MoveGenTests
     public void MoveGenPawnsCantAttackStraight()
     {
         var testBoard = new Board("rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR w KQkq a6 0 1");
+        var moves = MoveGenerator.GetMoves(Piece.WP, testBoard);
         Assert.That(MoveGenerator.GetMoves(Piece.WP,testBoard), Does.Not.Contain(new Move(Piece.WP,"a4a5")));
+    }
+
+    [Test]
+    public void CanCastleIgB8Attacked()
+    {
+        var board = new Board("r3k2r/p1pNqpb1/bn2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
+        Assert.That(MoveGenerator.GetMoves(Piece.BK,board),Does.Contain(new Move(Piece.BK,"e8c8")));
     }
 }

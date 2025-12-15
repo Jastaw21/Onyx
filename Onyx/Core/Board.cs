@@ -1,4 +1,6 @@
-﻿namespace Onyx.Core;
+﻿using System.Runtime.CompilerServices;
+
+namespace Onyx.Core;
 
 public static class BoardConstants
 {
@@ -7,11 +9,13 @@ public static class BoardConstants
     public const int BlackKingsideCastlingFlag = 1 << 2;
     public const int BlackQueensideCastlingFlag = 1 << 3;
 
-    public static readonly ulong WhiteKingSideCastlingSquares = 0x60;
-    public static readonly ulong BlackKingSideCastlingSquares = 0x6000000000000000;
+    public const ulong WhiteKingSideCastlingSquares = 0x60;
+    public const ulong BlackKingSideCastlingSquares = 0x6000000000000000;
 
-    public static readonly ulong WhiteQueenSideCastlingSquares = 0xe;
-    public static readonly ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
+    public const ulong WhiteQueenSideCastlingSquares = 0xe;
+    public const ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
+    
+
 
     public const int A1 = 0;
     public const int H1 = 7;
@@ -22,14 +26,17 @@ public static class BoardConstants
 
     public const int G1 = 6;
     public const int G8 = 62;
-    
+
     public const int C1 = 2;
     public const int C8 = 58;
-    
+
+    public const int B8 = 57;
+    public const int B1 = 1;
+
 
     public static readonly int[][] KnightMoves =
         [[2, -1], [2, 1], [1, -2], [1, 2], [-1, -2], [-1, 2], [-2, -1], [-2, 1]];
-    
+
     public static readonly int[][] KingMoves =
         [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
 }
@@ -39,6 +46,7 @@ public class BoardState
     public Piece? CapturedPiece;
     public Square? EnPassantSquare;
     public int CastlingRights;
+    public int LastMoveFlags = 0;
 }
 
 public class Board
@@ -126,7 +134,8 @@ public class Board
         {
             CapturedPiece = capturedPiece,
             EnPassantSquare = EnPassantSquare,
-            CastlingRights = CastlingRights
+            CastlingRights = CastlingRights,
+            LastMoveFlags = move.MoveFlag
         };
         _boardStateHistory.Push(state);
 
@@ -180,12 +189,13 @@ public class Board
 
     public void UndoMove(Move move)
     {
-        ApplyMoveFlags(move: ref move);
-
+        //ApplyMoveFlags(move: ref move);
+        
 
         var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
+        move.MoveFlag = previousState.LastMoveFlags;
         if (previousState.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
@@ -221,7 +231,7 @@ public class Board
         SwapTurns();
     }
 
-    private static void ApplyMoveFlags(ref Move move)
+    private void ApplyMoveFlags(ref Move move)
     {
         if (move.PieceMoved.Type == PieceType.Pawn &&
             ((move.PieceMoved.Colour == Colour.White && move.To.RankIndex == 7) ||
@@ -235,7 +245,7 @@ public class Board
             move.MoveFlag |= MoveFlags.Castle;
         }
 
-        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0)
+        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 && !Bitboards.PieceAtSquare(move.To).HasValue)
             move.MoveFlag |= MoveFlags.EnPassant;
     }
 
@@ -311,6 +321,4 @@ public class Board
             EnPassantSquare = new Square(enPassantString);
         }
     }
-
-    
 }

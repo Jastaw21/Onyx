@@ -1,5 +1,7 @@
 ﻿namespace Onyx.Core;
+
 using MagicBitboards;
+
 public static class MoveGenerator
 {
     public static List<Move> GetMoves(Piece piece, Square square, Board board)
@@ -55,13 +57,14 @@ public static class MoveGenerator
 
         var rawMoveOutput = MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
         var pushes = MagicBitboards.GetPawnPushes(piece.Colour, square, board.Bitboards.Occupancy());
-        var attacks = rawMoveOutput & ~pushes;
+        var attacks = rawMoveOutput ^ pushes;
 
         var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
         var opponentOccupancy = board.Bitboards.OccupancyByColour(opponentColour);
 
+
         var normalAttacks = opponentOccupancy & attacks;
-        
+
         // the board has a viable en passant square, and we're on an appropriate rank
         if (board.EnPassantSquare.HasValue && Math.Abs(board.EnPassantSquare.Value.FileIndex - square.FileIndex) == 1)
         {
@@ -69,8 +72,6 @@ public static class MoveGenerator
             if (square.RankIndex == pawnHomeRank)
                 normalAttacks |= board.EnPassantSquare.Value.Bitboard;
         }
-
-        
 
         var result = pushes | normalAttacks;
         var movingSideOccupancy = board.Bitboards.OccupancyByColour(piece.Colour);
@@ -90,78 +91,78 @@ public static class MoveGenerator
             return;
 
         var isWhite = piece.Colour == Colour.White;
-        var opponentColour = isWhite ? Colour.Black : Colour.White;
         var expectedSquare = isWhite ? BoardConstants.E1 : BoardConstants.E8;
 
         if (square.SquareIndex != expectedSquare)
             return;
 
+        var opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
-        var result = 0ul;
 
-        // Kingside
-        var kingsideCastleSquares =
-            isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares;
-        var kingsideFlag =
-            isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag;
-        var kingsideTarget = isWhite ? BoardConstants.G1 : BoardConstants.G8;
+        // Try kingside
+        TryCastling(
+            board,
+            piece,
+            square,
+            isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag,
+            isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares,
+            isWhite ? BoardConstants.G1 : BoardConstants.G8,
+            occupancy,
+            opponentColour,
+            moveList
+        );
 
+        // Try queenside
+        TryCastling(
+            board,
+            piece,
+            square,
+            isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag,
+            isWhite ? BoardConstants.WhiteQueenSideCastlingSquares : BoardConstants.BlackQueenSideCastlingSquares,
+            isWhite ? BoardConstants.C1 : BoardConstants.C8,
+            occupancy,
+            opponentColour,
+            moveList
+        );
+    }
 
-        if ((kingsideCastleSquares & occupancy) == 0 && (board.CastlingRights & kingsideFlag) > 0)
+    private static void TryCastling(
+        Board board,
+        Piece piece,
+        Square fromSquare,
+        int castlingFlag,
+        ulong requiredEmptySquares,
+        int targetSquare,
+        ulong occupancy,
+        Colour opponentColour,
+        List<Move> moveList)
+    {
+        // Check if we have the right
+        if ((board.CastlingRights & castlingFlag) == 0)
+            return;
+
+        // Check if path is clear
+        if ((requiredEmptySquares & occupancy) != 0)
+            return;
+
+        // Check if any square the king passes through is attacked
+        var squaresToCheck = requiredEmptySquares;
+        while (squaresToCheck != 0)
         {
-            var squaresToCheck = kingsideCastleSquares;
-            var isAttacked = false;
-            while (squaresToCheck != 0ul)
-            {
-                var lowestBit = ulong.TrailingZeroCount(squaresToCheck);
-                if (Referee.IsSquareAttacked(new Square((int)lowestBit), board, opponentColour))
-                {
-                    isAttacked = true;
-                    break;
-                }
+            var squareIndex = (int)ulong.TrailingZeroCount(squaresToCheck);
 
-                squaresToCheck &= squaresToCheck - 1;
+            // Don't check b1/b8 for attack (queenside rook square)
+            if (squareIndex != BoardConstants.B1 && squareIndex != BoardConstants.B8)
+            {
+                if (Referee.IsSquareAttacked(new Square(squareIndex), board, opponentColour))
+                    return;
             }
 
-            if (!isAttacked)
-                result |= 1ul << kingsideTarget;
+            squaresToCheck &= squaresToCheck - 1;
         }
 
-        // Queenside
-        var queensideCastleSquares = isWhite
-            ? BoardConstants.WhiteQueenSideCastlingSquares
-            : BoardConstants.BlackQueenSideCastlingSquares;
-        var queensideFlag =
-            isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag;
-        var queensideTarget = isWhite ? BoardConstants.C1 : BoardConstants.C8;
-
-        if ((queensideCastleSquares & occupancy) == 0 && (board.CastlingRights & queensideFlag) > 0)
-        {
-            var squaresToCheck = queensideCastleSquares;
-            var isAttacked = false;
-            while (squaresToCheck != 0ul)
-            {
-                var lowestBit = ulong.TrailingZeroCount(squaresToCheck);
-                if (Referee.IsSquareAttacked(new Square((int)lowestBit), board, opponentColour))
-                {
-                    isAttacked = true;
-                    break;
-                }
-
-                squaresToCheck &= squaresToCheck - 1;
-            }
-
-            if (!isAttacked)
-                result |= 1ul << queensideTarget;
-        }
-
-        // Add moves from result bitboard
-        while (result > 0)
-        {
-            var lowest = ulong.TrailingZeroCount(result);
-            moveList.Add(new Move(piece, square, new Square((int)lowest)));
-            result &= result - 1;
-        }
+        // All checks passed, add the move
+        moveList.Add(new Move(piece, fromSquare, new Square(targetSquare)));
     }
 
     private static void GenerateBasicMoves(Piece piece, Square square, Board board, List<Move> moveList)

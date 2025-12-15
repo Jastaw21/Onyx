@@ -197,7 +197,12 @@ public static class MagicBitboards
         var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
 
 
+        // add the single push
         var result = 1ul << squareIndex + squareOffset;
+        
+        // cant go anywhere occupied
+        if ((result & boardState) > 0)
+            return 0ul;
 
         // if the pawns aren't on their starting ranks, return early
         if (!isBlackDoublePush && !isWhiteDoublePush) return result;
@@ -209,12 +214,19 @@ public static class MagicBitboards
                 // if there's anything on the immediate next rank, can't do a double push
                 if (((1ul << squareIndex + 8) & boardState) > 0)
                     break;
+                // or on the square we're going to
+                if (((1ul << squareIndex + 16) & boardState) > 0)
+                    break;
 
                 result |= 1ul << squareIndex + 16;
                 break;
             case Colour.Black:
                 // if there's anything on the immediate next rank, can't do a double push
                 if (((1ul << squareIndex - 8) & boardState) > 0)
+                    break;
+                
+                // or on the square we're going to
+                if (((1ul << squareIndex - 16) & boardState) > 0)
                     break;
 
                 result |= 1ul << squareIndex - 16;
