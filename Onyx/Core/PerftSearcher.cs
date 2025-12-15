@@ -20,27 +20,54 @@ public struct PerftResults
 
 public static class PerftSearcher
 {
-    public static PerftResults GetPerftResults(Board board, int depth)
+    public static ulong GetPerftResults(Board board, int depth)
     {
         return ExecutePerft(board, depth);
     }
 
-    private static PerftResults ExecutePerft(Board board, int depth)
+    public static void PerftDivide(Board board, int depth)
     {
-        if (depth == 0)
+        ulong total = 0;
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+
+        foreach (var move in moves)
         {
-            return new PerftResults(nodes: 1);
+            var side = board.TurnToMove;
+            board.ApplyMove(move);
+
+            if (!Referee.IsInCheck(side, board))
+            {
+                ulong nodes = ExecutePerft(board, depth - 1);
+                total += nodes;
+                Console.WriteLine($"{move}: {nodes}");
+            }
+
+            board.UndoMove(move);
         }
 
-        var results = new PerftResults();
-        var movesInPosition = MoveGenerator.GetMoves(board.TurnToMove, ref board);
+        Console.WriteLine($"Total: {total}");
+    }
 
-        foreach (var move in movesInPosition)
+
+    private static ulong ExecutePerft(Board board, int depth)
+    {
+        var results = 0ul;
+        if (depth == 0)
         {
+            return 1ul;
+        }
+
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        foreach (var move in moves)
+        {
+            var sideToMve = board.TurnToMove;
             board.ApplyMove(move);
-            var childResults = ExecutePerft(board, depth - 1);
-            if (depth == 1)
+            if (!Referee.IsInCheck(sideToMve,board))
+            {
+                var childResults = ExecutePerft(board, depth - 1);
                 results += childResults;
+            }
+           
             board.UndoMove(move);
         }
 

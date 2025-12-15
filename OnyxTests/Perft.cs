@@ -5,15 +5,15 @@ namespace OnyxTests;
 public class Perft
 {
     [Test]
-    public void StartingPosDepth1()
+    public void StartingPosDepth()
     {
-        var board = new Board();
-        Assert.That(PerftSearcher.GetPerftResults(board,1).Nodes,Is.EqualTo(20));
+        int[] targetNumbers = [20, 400, 8902];
+        for (var depth = 0; depth < targetNumbers.Length; depth++)
+        {
+            var board = new Board();
+            Assert.That(PerftSearcher.GetPerftResults(board,depth+1),Is.EqualTo(targetNumbers[depth]));
+        }
+
     }
-    [Test]
-    public void StartingPosDepth2()
-    {
-        var board = new Board();
-        Assert.That(PerftSearcher.GetPerftResults(board,2).Nodes,Is.EqualTo(40));
-    }
+  
 }

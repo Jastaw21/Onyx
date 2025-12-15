@@ -70,12 +70,15 @@ public class RefereeTests
         var defaultBoard = new Board(Fen.DefaultFen);
         Assert.Multiple(() =>
         {
-            Assert.That(Referee.IsInCheck(Colour.White, ref defaultBoard), Is.False);
-            Assert.That(Referee.IsInCheck(Colour.Black, ref defaultBoard), Is.False);
+            Assert.That(Referee.IsInCheck(Colour.White, defaultBoard), Is.False);
+            Assert.That(Referee.IsInCheck(Colour.Black, defaultBoard), Is.False);
         });
 
         var checkBoard = new Board("8/8/8/8/8/8/2n5/K7 w - - 0 1");
-        Assert.That(Referee.IsInCheck(Colour.White,ref checkBoard),Is.True);
+        Assert.That(Referee.IsInCheck(Colour.White,checkBoard),Is.True);
+
+        var scholarBoard = new Board("rnbqkbnr/ppppp1pp/8/5p1Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2");
+        Assert.That(Referee.IsInCheck(Colour.Black,scholarBoard));
     }
 
     [Test]
@@ -97,12 +100,12 @@ public class RefereeTests
     public void CheckmateTestWorks()
     {
         var whiteInCheckMate = new Board("rnb1kbnr/ppp2ppp/3pp3/6P1/7q/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1");
-        Assert.That(Referee.IsCheckmate(Colour.White,ref whiteInCheckMate), Is.True);
+        Assert.That(Referee.IsCheckmate(Colour.White,whiteInCheckMate), Is.True);
 
         var blackInCheckMate = new Board("rnbqkbnr/ppppp2p/5p2/6pQ/8/8/PPPPPPPP/RNB1KBNR w KQkq g6 0 1");
-        Assert.That(Referee.IsCheckmate(Colour.Black,ref blackInCheckMate), Is.True);
+        Assert.That(Referee.IsCheckmate(Colour.Black,blackInCheckMate), Is.True);
         
         var blackNotInCheckMate = new Board("rnbqkbnr/ppppp1pp/5p2/7Q/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1");
-        Assert.That(Referee.IsCheckmate(Colour.Black,ref blackNotInCheckMate), Is.True);
+        Assert.That(Referee.IsCheckmate(Colour.Black,blackNotInCheckMate), Is.True);
     }
 }
