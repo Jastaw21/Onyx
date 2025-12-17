@@ -1,31 +1,44 @@
-﻿namespace Onyx.Core;
+﻿using System.Runtime.CompilerServices;
+
+namespace Onyx.Core;
+
+
+
 
 public class Bitboards
 {
     public Bitboards()
     {
-        var pieceTypeCount = Enum.GetValues<PieceType>().Length;
-        var colourCount = Enum.GetValues<Colour>().Length;
+        _pieceTypeCount = Enum.GetValues<PieceType>().Length;
+        _colourCount = Enum.GetValues<Colour>().Length;
 
-        boards = new ulong[colourCount * pieceTypeCount];
+        boards = new ulong[_colourCount * _pieceTypeCount];
 
-        for (var colourIndex = 0; colourIndex < colourCount; colourIndex++)
-        for (var pieceTypeIndex = 0; pieceTypeIndex < pieceTypeCount; pieceTypeIndex++)
+        for (var colourIndex = 0; colourIndex < _colourCount; colourIndex++)
+        for (var pieceTypeIndex = 0; pieceTypeIndex < _pieceTypeCount; pieceTypeIndex++)
         {
-            boards[colourIndex * pieceTypeCount + pieceTypeIndex] = 0ul;
+            boards[colourIndex * _pieceTypeCount + pieceTypeIndex] = 0ul;
         }
     }
 
     public Bitboards(string fenString)
     {
+        _pieceTypeCount = Enum.GetValues<PieceType>().Length;
+        _colourCount = Enum.GetValues<Colour>().Length;
+
+        boards = new ulong[_colourCount * _pieceTypeCount];
+
+        for (var colourIndex = 0; colourIndex < _colourCount; colourIndex++)
+        for (var pieceTypeIndex = 0; pieceTypeIndex < _pieceTypeCount; pieceTypeIndex++)
+        {
+            boards[colourIndex * _pieceTypeCount + pieceTypeIndex] = 0ul;
+        }
         LoadFen(fenString);
     }
 
     public void LoadFen(string fenString)
     {
-        var pieceTypeCount = Enum.GetValues<PieceType>().Length;
-        var colourCount = Enum.GetValues<Colour>().Length;
-        boards = new ulong[colourCount * pieceTypeCount];
+        boards = new ulong[_colourCount * _pieceTypeCount];
 
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
@@ -62,15 +75,14 @@ public class Bitboards
     }
 
     private ulong[] boards;
+    private int _pieceTypeCount;
+    private int _colourCount;
     public ulong[] Boards => boards;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(Piece piece)
     {
-        var col = (int)piece.Colour;
-        var type = (int)piece.Type;
-        var index = col * Enum.GetValues<PieceType>().Length + type;
-
-        return boards[index];
+        return boards[(int)piece.Colour * _pieceTypeCount + (int)piece.Type];
     }
 
     public ulong OccupancyByColour(Colour colour)
@@ -87,7 +99,7 @@ public class Bitboards
     {
         var col = (int)piece.Colour;
         var type = (int)piece.Type;
-        var index = col * Enum.GetValues<PieceType>().Length + type;
+        var index = col * _pieceTypeCount + type;
 
         boards[index] = boardByPiece;
     }
@@ -116,11 +128,11 @@ public class Bitboards
         boards[index] |= value;
     }
 
-    private static int Index(Piece piece)
+    private int Index(Piece piece)
     {
         var col = (int)piece.Colour;
         var type = (int)piece.Type;
-        var index = col * Enum.GetValues<PieceType>().Length + type;
+        var index = col * _pieceTypeCount + type;
         return index;
     }
 

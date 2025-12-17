@@ -41,16 +41,16 @@ public static class Referee
     public static bool IsSquareAttacked(Square square, Board board, Colour byColour)
     {
         var occupancy = board.Bitboards.Occupancy();
-
+        var attackingPiece = byColour == Colour.White ? Piece.WP : Piece.BP;
         var pawnColour = byColour == Colour.White ? Colour.Black : Colour.White;
         if (square.FileIndex > 0)
         {
+            
             var targetSquare = pawnColour == Colour.Black
                 ? new Square(square.SquareIndex - 9)
                 : new Square(square.SquareIndex + 7);
 
-            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) >
-                0)
+            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(attackingPiece)) > 0)
                 return true;
         }
 
@@ -60,13 +60,14 @@ public static class Referee
                 ? new Square(square.SquareIndex - 7)
                 : new Square(square.SquareIndex + 9);
 
-            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Pawn, byColour))) >
+            if ((targetSquare.Bitboard & board.Bitboards.OccupancyByPiece(attackingPiece)) >
                 0)
                 return true;
         }
 
+        var knightPiece = byColour == Colour.White ? Piece.WN : Piece.BN;
         var knightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WN, square, occupancy);
-        if ((knightAttacks & board.Bitboards.OccupancyByPiece(Piece.MakePiece(PieceType.Knight, byColour))) > 0)
+        if ((knightAttacks & board.Bitboards.OccupancyByPiece(knightPiece)) > 0)
             return true;
 
         var diagAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, square, occupancy);

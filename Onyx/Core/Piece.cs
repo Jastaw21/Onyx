@@ -26,14 +26,12 @@ public readonly struct Piece(PieceType type, Colour colour)
         return $"{Colour} {Type}";
     }
 
-    public static List<Piece> All()
+    public static Piece[] All()
     {
-        List<Piece> pieces = [];
-        pieces.AddRange(from type in Enum.GetValues<PieceType>()
-            from colour in Enum.GetValues<Colour>()
-            select new Piece(type, colour));
-
-        return pieces;
+       return [
+            Piece.WP, Piece.WB, Piece.WK, Piece.WQ, Piece.WN, Piece.WR,
+            Piece.BP, Piece.BB, Piece.BK, Piece.BQ, Piece.BN, Piece.BR
+        ];
     }
 
     public static List<Piece> PromotionTypes(Colour colour)
@@ -65,14 +63,8 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] ByColour(Colour colour)
     {
-        var pieces = Enum.GetValues<PieceType>();
-        var builtPieces = new Piece[pieces.Length];
-
-        for (var i = 0; i < pieces.Length; i++)
-        {
-            builtPieces[i] = new Piece(pieces[i], colour);
-        }
-
-        return builtPieces;
+        if (colour == Colour.White)
+            return [Piece.WP, Piece.WB, Piece.WK, Piece.WQ, Piece.WN, Piece.WR];
+        return [Piece.BP, Piece.BB, Piece.BK, Piece.BQ, Piece.BN, Piece.BR];
     }
 }
