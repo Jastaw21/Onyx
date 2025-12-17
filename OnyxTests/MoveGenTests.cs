@@ -195,4 +195,26 @@ public class MoveGenTests
         var board = new Board("r3k2r/p1pNqpb1/bn2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
         Assert.That(MoveGenerator.GetMoves(Piece.BK,board),Does.Contain(new Move(Piece.BK,"e8c8")));
     }
+
+    [Test]
+    public void CantCastleIfKingAttcked()
+    {
+        var board = new Board("r3k2r/p1p1qpb1/bn1ppnp1/1B1PN3/1p2P3/P1N2Q1p/1PPB1PPP/R3K2R b KQkq - 0 1");
+        Assert.That(MoveGenerator.GetMoves(Piece.BK,board),Does.Not.Contain(new Move(Piece.BK,"e8c8")));
+    }
+
+    [Test]
+    public void CanCaptureAndPromoteTogether()
+    {
+        var board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 1");
+        var moves = MoveGenerator.GetMoves(Piece.BP, new Square("g2"), board);
+        Assert.That(moves,Does.Contain(new Move(Piece.BP,"g2h1q")));
+    }
+
+    [Test]
+    public void MissingPawnPushFixed()
+    {
+        var board = new Board("r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/P1N2Q2/1PPBBPpP/R3K2R b KQkq - 0 1");
+        Assert.That(MoveGenerator.GetMoves(Piece.BP,new Square(44),board),Does.Contain(new Move(Piece.BP,"e6e5")));
+    }
 }

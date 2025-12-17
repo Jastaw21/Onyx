@@ -32,6 +32,7 @@ public static class PerftSearcher
 
         foreach (var move in moves)
         {
+            
             var side = board.TurnToMove;
             board.ApplyMove(move);
 
@@ -43,6 +44,7 @@ public static class PerftSearcher
             }
 
             board.UndoMove(move);
+            
         }
 
         Console.WriteLine($"Total: {total}");
@@ -70,6 +72,7 @@ public static class PerftSearcher
            
             board.UndoMove(move);
             
+           
         }
 
         return results;

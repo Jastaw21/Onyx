@@ -18,6 +18,7 @@ public static class MoveGenerator
             GeneratePawnPromotionMoves(piece, square, board, moveList);
         }
 
+       
         return moveList;
     }
 
@@ -40,10 +41,12 @@ public static class MoveGenerator
     public static List<Move> GetMoves(Colour colour, Board board)
     {
         List<Move> moves = [];
+       
         foreach (var piece in Piece.ByColour(colour))
         {
             moves.AddRange(GetMoves(piece, board));
         }
+       
 
         return moves;
     }
@@ -99,7 +102,14 @@ public static class MoveGenerator
         var opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
 
+        
+        var kingSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.H1 : BoardConstants.H8);
+        var queenSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.A1 : BoardConstants.A8);
+
         // Try kingside
+        if (board.Bitboards.PieceAtSquare(kingSideRookSquare).HasValue 
+            && board.Bitboards.PieceAtSquare(kingSideRookSquare) is { Type: PieceType.Rook }
+            && board.Bitboards.PieceAtSquare(kingSideRookSquare)!.Value.Colour == piece.Colour)
         TryCastling(
             board,
             piece,
@@ -113,6 +123,9 @@ public static class MoveGenerator
         );
 
         // Try queenside
+        if (board.Bitboards.PieceAtSquare(queenSideRookSquare).HasValue 
+            && board.Bitboards.PieceAtSquare(queenSideRookSquare) is { Type: PieceType.Rook }
+            && board.Bitboards.PieceAtSquare(queenSideRookSquare)!.Value.Colour == piece.Colour)
         TryCastling(
             board,
             piece,
@@ -137,16 +150,16 @@ public static class MoveGenerator
         Colour opponentColour,
         List<Move> moveList)
     {
-        // Check if we have the right
+        // check board castling state
         if ((board.CastlingRights & castlingFlag) == 0)
             return;
 
-        // Check if path is clear
+        // is the path clear
         if ((requiredEmptySquares & occupancy) != 0)
             return;
 
-        // Check if any square the king passes through is attacked
-        var squaresToCheck = requiredEmptySquares;
+        // Check if any square the king passes through is attacked (including where it starts)
+        var squaresToCheck = requiredEmptySquares | fromSquare.Bitboard;
         while (squaresToCheck != 0)
         {
             var squareIndex = (int)ulong.TrailingZeroCount(squaresToCheck);
@@ -160,8 +173,6 @@ public static class MoveGenerator
 
             squaresToCheck &= squaresToCheck - 1;
         }
-
-        // All checks passed, add the move
         moveList.Add(new Move(piece, fromSquare, new Square(targetSquare)));
     }
 
@@ -187,12 +198,52 @@ public static class MoveGenerator
         var offset = piece.Colour == Colour.White ? 8 : -8;
         foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
         {
+            PushPromotion(promotionType);
+        }
+
+        CapturePromotions();
+
+        return;
+
+        void PushPromotion(Piece promotionType)
+        {
             var targetSquare = new Square(square.SquareIndex + offset);
+            if (board.Bitboards.PieceAtSquare(targetSquare).HasValue)
+                return;
             var move = new Move(piece, square, targetSquare)
             {
                 PromotedPiece = promotionType
             };
             moveList.Add(move);
+        }
+
+        void CapturePromotions()
+        {
+            List<Square> captureTargetSquares = [];
+
+            // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
+            if (square.FileIndex < 7)
+            {
+                var targetSquare = new Square(square.SquareIndex + offset + 1);
+                if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
+                    && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
+                    && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
+                    captureTargetSquares.Add(targetSquare);
+            }
+
+            // can go left (board wise, not piece wise, it's right as far as a black pawn is concerned)
+            if (square.FileIndex > 0)
+            {
+                var targetSquare = new Square(square.SquareIndex + offset - 1);
+                if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
+                    && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
+                    && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
+                    captureTargetSquares.Add(targetSquare);
+            }
+
+            moveList.AddRange(from targetSquare in captureTargetSquares
+                from promotionType in Piece.PromotionTypes(piece.Colour)
+                select new Move(piece, square, targetSquare) { PromotedPiece = promotionType });
         }
     }
 
