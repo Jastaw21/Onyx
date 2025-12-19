@@ -49,9 +49,9 @@ public struct Move
     public string Notation => From.Notation + To.Notation +
                               (PromotedPiece.HasValue ? Fen.GetCharFromPiece(PromotedPiece.Value) : "");
 
-    public bool IsPromotion => (this.MoveFlag & MoveFlags.Promotion) > 0;
-    public bool IsCastling => (this.MoveFlag & MoveFlags.Castle) > 0;
-    public bool IsEnPassant => (this.MoveFlag & MoveFlags.EnPassant) > 0;
+    public bool IsPromotion => (MoveFlag & MoveFlags.Promotion) > 0;
+    public bool IsCastling => (MoveFlag & MoveFlags.Castle) > 0;
+    public bool IsEnPassant => (MoveFlag & MoveFlags.EnPassant) > 0;
 
     public override string ToString()
     {

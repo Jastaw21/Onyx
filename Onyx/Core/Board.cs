@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Onyx.Core;
+﻿namespace Onyx.Core;
 
 public static class BoardConstants
 {
@@ -46,7 +44,7 @@ public class BoardState
     public Piece? CapturedPiece;
     public Square? EnPassantSquare;
     public int CastlingRights;
-    public int LastMoveFlags = 0;
+    public int LastMoveFlags;
 }
 
 public class Board

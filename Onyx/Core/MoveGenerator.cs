@@ -1,7 +1,5 @@
 ﻿namespace Onyx.Core;
 
-using MagicBitboards;
-
 public static class MoveGenerator
 {
     public static List<Move> GetMoves(Piece piece, Square square, Board board)
@@ -58,8 +56,8 @@ public static class MoveGenerator
             (piece.Colour == Colour.Black && square.RankIndex == 1))
             return;
 
-        var rawMoveOutput = MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
-        var pushes = MagicBitboards.GetPawnPushes(piece.Colour, square, board.Bitboards.Occupancy());
+        var rawMoveOutput = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
+        var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(piece.Colour, square, board.Bitboards.Occupancy());
         var attacks = rawMoveOutput ^ pushes;
 
         var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
@@ -249,7 +247,7 @@ public static class MoveGenerator
 
     private static ulong GetMovesUlong(Piece piece, Square square, Board board)
     {
-        var result = MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
+        var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
         var movingSideOccupancy = board.Bitboards.OccupancyByColour(piece.Colour);
         result &= ~movingSideOccupancy;
         return result;

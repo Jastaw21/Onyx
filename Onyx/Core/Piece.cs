@@ -29,8 +29,8 @@ public readonly struct Piece(PieceType type, Colour colour)
     public static Piece[] All()
     {
        return [
-            Piece.WP, Piece.WB, Piece.WK, Piece.WQ, Piece.WN, Piece.WR,
-            Piece.BP, Piece.BB, Piece.BK, Piece.BQ, Piece.BN, Piece.BR
+            WP, WB, WK, WQ, WN, WR,
+            BP, BB, BK, BQ, BN, BR
         ];
     }
 
@@ -64,7 +64,7 @@ public readonly struct Piece(PieceType type, Colour colour)
     public static Piece[] ByColour(Colour colour)
     {
         if (colour == Colour.White)
-            return [Piece.WP, Piece.WB, Piece.WK, Piece.WQ, Piece.WN, Piece.WR];
-        return [Piece.BP, Piece.BB, Piece.BK, Piece.BQ, Piece.BN, Piece.BR];
+            return [WP, WB, WK, WQ, WN, WR];
+        return [BP, BB, BK, BQ, BN, BR];
     }
 }
