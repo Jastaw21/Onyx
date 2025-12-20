@@ -32,7 +32,6 @@ public static class PerftSearcher
 
         foreach (var move in moves)
         {
-            
             var side = board.TurnToMove;
             board.ApplyMove(move);
 
@@ -44,7 +43,6 @@ public static class PerftSearcher
             }
 
             board.UndoMove(move);
-            
         }
 
         Console.WriteLine($"Total: {total}");
@@ -54,25 +52,20 @@ public static class PerftSearcher
     private static ulong ExecutePerft(Board board, int depth)
     {
         var results = 0ul;
-        if (depth == 0)
-        {
-            return 1ul;
-        }
+        if (depth == 0) return 1ul;
 
         var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
         foreach (var move in moves)
         {
             var sideToMve = board.TurnToMove;
             board.ApplyMove(move);
-            if (!Referee.IsInCheck(sideToMve,board))
+            if (!Referee.IsInCheck(sideToMve, board))
             {
                 var childResults = ExecutePerft(board, depth - 1);
                 results += childResults;
             }
-           
+
             board.UndoMove(move);
-            
-           
         }
 
         return results;

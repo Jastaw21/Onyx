@@ -8,7 +8,13 @@ public static class Program
 {
     public static void Main()
     {
-        var board = new Board(Fen.KiwiPeteFen);
-        PerftSearcher.PerftDivide(board,4);
+        var engine = new Engine();
+
+        var command = string.Empty;
+        while (command != "quit")
+        {
+            command = Console.ReadLine();
+            engine.HandleCommand(command);
+        }
     }
 }
