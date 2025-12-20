@@ -12,8 +12,13 @@ public enum TokenType
     Fen,
     Startpos,
     StringLiteral,
+    FenString,
     Moves,
-    MoveString
+    MoveString,
+    Colour,
+    CastlingString,
+    EnPassantString,
+    Dash
 }
 
 public struct Token

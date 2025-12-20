@@ -344,7 +344,7 @@ class HelperTests
     public void SquareToBitBoard()
     {
         ulong targetBitboard = 1;
-        for (int square = 0; square < 64; square++)
+        for (var square = 0; square < 64; square++)
         {
             var s = new Square(square);
             Assert.That(s.Bitboard, Is.EqualTo(targetBitboard));

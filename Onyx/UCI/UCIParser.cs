@@ -3,7 +3,6 @@
 namespace Onyx.UCI;
 
 public abstract record Command;
-
 public record UCICommand : Command;
 
 public record GoCommand : Command
@@ -18,15 +17,15 @@ public record PositionCommand : Command
 {
     public bool IsStartpos { get; }
 
-    public string? FenString => IsStartpos ? Fen.DefaultFen : _fenstring;
+    public string? FenString => IsStartpos ? Fen.DefaultFen : Fenstring;
 
-    private readonly string? _fenstring;
+    public string? Fenstring { get; set; }
     public List<string>? Moves;
 
     public PositionCommand(bool isStartpos, string? fen = null, List<string>? moves = null)
     {
         IsStartpos = isStartpos;
-        _fenstring = fen;
+        Fenstring = fen;
         Moves = moves;
     }
 }
@@ -38,20 +37,20 @@ public class UCIParser(string uciString)
 
     private Token Peek()
     {
-        return currentToken < _tokeniser.tokens.Count
-            ? _tokeniser.tokens[currentToken]
+        return currentToken < _tokeniser.Tokens.Count
+            ? _tokeniser.Tokens[currentToken]
             : new Token { Type = TokenType.EOF, Value = "" };
     }
 
     private Token Consume()
     {
-        return _tokeniser.tokens[currentToken++];
+        return _tokeniser.Tokens[currentToken++];
     }
 
 
     public Command? Parse()
     {
-        while (currentToken < _tokeniser.tokens.Count)
+        while (currentToken < _tokeniser.Tokens.Count)
         {
             var currentToken = Consume();
 
@@ -115,19 +114,42 @@ public class UCIParser(string uciString)
 
         if (positionType.Type == TokenType.Fen)
             isStartpos = false;
-        // not a valid position string
-        if (positionType.Type != TokenType.Startpos)
+
+        // if we haven't recieved position fen, the next word must be startpos
+        if (positionType.Type != TokenType.Startpos && positionType.Type != TokenType.Fen)
             return null;
 
-        else if (positionType.Type == TokenType.Startpos)
+        if (positionType.Type == TokenType.Startpos)
         {
             isStartpos = true;
         }
 
-        var fenString = "";
+        var positionCommand = new PositionCommand(isStartpos);
+
         if (positionType.Type == TokenType.Fen)
         {
-            fenString = Consume().Value;
+            var fenPositionString = Consume().Value;
+            if (Peek().Type == TokenType.Colour)
+                fenPositionString += " " + Consume().Value;
+            else return null;
+
+            if (Peek().Type is TokenType.CastlingString or TokenType.Dash)
+                fenPositionString += " " + Consume().Value;
+            else return null;
+
+            if (Peek().Type is TokenType.EnPassantString or TokenType.Dash)
+                fenPositionString += " " + Consume().Value;
+            else return null;
+
+            // two ints for the turn/move clocks
+            if (Peek().Type is TokenType.IntLiteral)
+                fenPositionString += " " + Consume().Value;
+            else return null;
+            if (Peek().Type is TokenType.IntLiteral)
+                fenPositionString += " " + Consume().Value;
+            else return null;
+
+            positionCommand.Fenstring = fenPositionString;
         }
 
         List<string>? moves = null;
@@ -143,7 +165,6 @@ public class UCIParser(string uciString)
             }
         }
 
-        var positionCommand = new PositionCommand(isStartpos);
         positionCommand.Moves = moves;
 
         return positionCommand;
