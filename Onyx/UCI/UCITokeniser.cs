@@ -6,7 +6,6 @@ public class Tokeniser
     private int currentIndex;
     public List<Token> tokens;
 
-    
 
     public Tokeniser(string stringIn)
     {
@@ -27,10 +26,9 @@ public class Tokeniser
 
             currentIndex++;
         }
-        
+
         if (!(builtToken.Length == 0))
             HandleToken(builtToken);
-            
     }
 
     private void HandleToken(string builtToken)
@@ -44,19 +42,46 @@ public class Tokeniser
             type = (TokenType.Depth);
         else if (builtToken == "perft")
             type = TokenType.Perft;
-        else if (int.TryParse(builtToken,out var result))
+        else if (int.TryParse(builtToken, out var result))
             type = (TokenType.IntLiteral);
+        else if (builtToken == "fen")
+            type = TokenType.Fen;
+        else if (builtToken == "startpos")
+            type = TokenType.Startpos;
+        else if (builtToken == "moves")
+            type = TokenType.Moves;
+        else if (builtToken == "position")
+            type = TokenType.Position;
 
         else
         {
-            throw new ArgumentException();
+            var optionalType = ParseUnknownToken(builtToken);
+            if (!optionalType.HasValue)
+                throw new ArgumentException($"Unknown token type {builtToken}");
+            type = optionalType.Value;
         }
+
         var token = new Token
         {
             Type = type,
-            value = builtToken
+            Value = builtToken
         };
         tokens.Add(token);
-        
     }
+
+    private TokenType? ParseUnknownToken(string builtToken)
+    {
+        // fen string
+        if (builtToken.Length >= 14 && builtToken.Contains('/') && builtToken.Contains('k'))
+            return TokenType.StringLiteral;
+
+        if ((builtToken.Length == 4 || builtToken.Length == 5)
+            && char.IsLetter(builtToken[0])
+            && char.IsNumber(builtToken[1])
+            && char.IsLetter(builtToken[2])
+            && char.IsNumber(builtToken[3])
+           )
+            return TokenType.MoveString;
+        return null;
     }
+}
