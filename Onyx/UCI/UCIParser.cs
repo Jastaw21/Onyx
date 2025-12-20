@@ -30,36 +30,44 @@ public record PositionCommand : Command
     }
 }
 
-public class UCIParser(string uciString)
+public class UciParser
 {
-    private Tokeniser _tokeniser = new(uciString);
-    private int currentToken;
+    private Tokeniser? _tokeniser;
+    private int _currentToken;
 
     private Token Peek()
     {
-        return currentToken < _tokeniser.Tokens.Count
-            ? _tokeniser.Tokens[currentToken]
+        return _currentToken < _tokeniser.Tokens.Count
+            ? _tokeniser.Tokens[_currentToken]
             : new Token { Type = TokenType.EOF, Value = "" };
     }
 
     private Token Consume()
     {
-        return _tokeniser.Tokens[currentToken++];
+        return _tokeniser.Tokens[_currentToken++];
     }
 
 
-    public Command? Parse()
+    public Command? Parse(string uciString)
     {
-        while (currentToken < _tokeniser.Tokens.Count)
+        _currentToken = 0;
+        _tokeniser = new Tokeniser(uciString);
+        while (_currentToken < _tokeniser.Tokens.Count)
         {
             var currentToken = Consume();
 
-            if (currentToken.Type == TokenType.UCI)
-                return new UCICommand();
-            if (currentToken.Type == TokenType.Position)
-                return ParsePositionCommand();
-            if (currentToken.Type == TokenType.GO)
-                return ParseGoCommand();
+            switch (currentToken.Type)
+            {
+                case TokenType.UCI:
+                    return new UCICommand();
+                case TokenType.Position:
+                    return ParsePositionCommand();
+                case TokenType.GO:
+                    return ParseGoCommand();
+                default:
+                    throw new ArgumentException(
+                        $"Invalid starting token of type {currentToken.Type} with value {currentToken.Value}");
+            }
         }
 
         return null;

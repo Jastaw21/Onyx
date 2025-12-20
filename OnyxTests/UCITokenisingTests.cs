@@ -20,8 +20,8 @@ public class UciParsingTests
     public void ParseGoCommands()
     {
         const string testGoCommand = "go depth 2";
-        var parser = new UCIParser(testGoCommand);
-        var command = parser.Parse();
+        var parser = new UciParser();
+        var command = parser.Parse(testGoCommand);
         Assert.That(command, Is.Not.Null);
         Assert.That(command is GoCommand);
         var goCommand = command as GoCommand;
@@ -32,8 +32,7 @@ public class UciParsingTests
         });
 
         const string testPerftCommand = "go perft 2";
-        var perftParser = new UCIParser(testPerftCommand);
-        var perftCommand = perftParser.Parse();
+        var perftCommand = parser.Parse(testPerftCommand);
         Assert.That(perftCommand, Is.Not.Null);
         Assert.That(perftCommand is GoCommand);
         var pComm = perftCommand as GoCommand;
@@ -47,18 +46,17 @@ public class UciParsingTests
     [Test]
     public void NonsenseCommandCausesException()
     {
-        var nonsenseString = "ak21";
-
-        var parser = new UCIParser(nonsenseString);
-        var result = parser.Parse();
-        Assert.That(result is null);
+        const string nonsenseString = "ak21";
+        var parser = new UciParser();
+        Assert.Throws<ArgumentException>(() => { parser.Parse(nonsenseString); });
     }
 
     [Test]
     public void ParsePositionNoMoves()
     {
         const string basicStartpos = "position startpos";
-        var command = new UCIParser(basicStartpos).Parse();
+        var parser = new UciParser();
+        var command = parser.Parse(basicStartpos);
         Assert.That(command, Is.Not.EqualTo(null));
         Assert.That(command is PositionCommand);
         var posCommand = command as PositionCommand;
@@ -68,9 +66,10 @@ public class UciParsingTests
             Assert.That(posCommand.FenString, Is.EqualTo(Fen.DefaultFen));
         });
 
-        const string specifiedFenCommand = "position fen r1bqkbnr/pp1ppppp/2n5/2p5/5Q2/3PP3/PPP2PPP/RNB1KBNR w KQkq - 0 1";
-        var specifiedParser = new UCIParser(specifiedFenCommand);
-        var comm = specifiedParser.Parse();
+        const string specifiedFenCommand =
+            "position fen r1bqkbnr/pp1ppppp/2n5/2p5/5Q2/3PP3/PPP2PPP/RNB1KBNR w KQkq - 0 1";
+
+        var comm = parser.Parse(specifiedFenCommand);
 
         Assert.That(comm, Is.Not.EqualTo(null));
         Assert.That(comm is PositionCommand);
