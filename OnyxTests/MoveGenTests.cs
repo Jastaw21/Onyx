@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using Onyx;
 using Onyx.Core;
+using Onyx.Statics;
 
 namespace OnyxTests;
 

@@ -1,4 +1,5 @@
 ﻿using Onyx.Core;
+using Onyx.Statics;
 
 namespace OnyxTests;
 

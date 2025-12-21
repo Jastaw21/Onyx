@@ -1,12 +1,12 @@
-﻿using System.Diagnostics;
-using System.Reflection.PortableExecutable;
+﻿
+using Onyx.Statics;
 
 namespace Onyx.Core;
 
 public class Engine
 {
     public Board board;
-
+    
     public string Position => board.GetFen();
     public Engine()
     {

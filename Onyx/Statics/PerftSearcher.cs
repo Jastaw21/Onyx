@@ -1,4 +1,6 @@
-﻿namespace Onyx.Core;
+﻿using Onyx.Core;
+
+namespace Onyx.Statics;
 
 public struct PerftResults
 {
