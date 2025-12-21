@@ -32,9 +32,12 @@ public static class Referee
             foreach (var move in moves)
             {
                 position.ApplyMove(move);
-                if (IsInCheck(colourInCheckmate, position))
+                var isInCheck = IsInCheck(colourInCheckmate, position);
+                position.UndoMove(move);
+                if (isInCheck)
                     return true;
             }
+
         }
 
         return false;

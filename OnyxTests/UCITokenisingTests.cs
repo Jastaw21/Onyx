@@ -27,7 +27,7 @@ public class UciParsingTests
         var goCommand = command as GoCommand;
         Assert.Multiple(() =>
         {
-            Assert.That(goCommand.depth, Is.EqualTo(2));
+            Assert.That(goCommand!.depth, Is.EqualTo(2));
             Assert.That(goCommand.isPerft, Is.False);
         });
 
@@ -38,8 +38,11 @@ public class UciParsingTests
         var pComm = perftCommand as GoCommand;
         Assert.Multiple(() =>
         {
-            Assert.That(pComm.depth, Is.EqualTo(2));
-            Assert.That(pComm.isPerft, Is.True);
+            if (pComm != null)
+            {
+                Assert.That(pComm.depth, Is.EqualTo(2));
+                Assert.That(pComm.isPerft, Is.True);
+            }
         });
     }
 
@@ -62,7 +65,7 @@ public class UciParsingTests
         var posCommand = command as PositionCommand;
         Assert.Multiple(() =>
         {
-            Assert.That(posCommand.IsStartpos, Is.True);
+            Assert.That(posCommand!.IsStartpos, Is.True);
             Assert.That(posCommand.FenString, Is.EqualTo(Fen.DefaultFen));
         });
 
@@ -77,7 +80,7 @@ public class UciParsingTests
         Assert.Multiple(() =>
         {
             Assert.That(posCom != null && posCom.IsStartpos, Is.False);
-            Assert.That(posCom.FenString,
+            Assert.That(posCom!.FenString,
                 Is.EqualTo("r1bqkbnr/pp1ppppp/2n5/2p5/5Q2/3PP3/PPP2PPP/RNB1KBNR w KQkq - 0 1"));
         });
     }
