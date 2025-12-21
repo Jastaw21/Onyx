@@ -8,7 +8,7 @@ public static class Program
 {
     public static void Main()
     {
-        var engine = new Engine();
+        var engine = new UCIInterface();
 
         var command = string.Empty;
         while (command != "quit")

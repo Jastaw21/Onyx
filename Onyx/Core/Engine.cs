@@ -1,64 +1,78 @@
-﻿using Onyx.UCI;
-
-namespace Onyx.Core;
+﻿namespace Onyx.Core;
 
 public class Engine
 {
+    public Board board;
 
-    private ChessPlayer _player = new ChessPlayer();
-
-    public void HandleCommand(string commandString)
+    public Engine()
     {
-        var command = _parser.Parse(commandString);
-        if (command is null)
-        {
-            Console.WriteLine($"Unknown command {commandString}");
-            return;
-        }
-        else
-        {
-            DispatchCommand(command);
-        }
+        board = new Board();
     }
 
-    private void DispatchCommand(Command command)
+    public ulong Perft(int depth)
     {
-        switch (command)
-        {
-            case UCICommand:
-                Console.WriteLine("uciready");
-                break;
-            case GoCommand goCommand:
-                HandleGo(goCommand);
-                break;
-            case PositionCommand positionCommand:
-                HandlePosition(positionCommand);
-                break;
-        }
+        return PerftSearcher.GetPerftResults(board: board, depth);
     }
 
-    private void HandlePosition(PositionCommand positionCommand)
+    public (Move bestMove, int score) Search(int depth)
     {
-        _player.board = new Board(positionCommand.FenString);
-    }
+        var moves = MoveGenerator.GetLegalMoves(board);
+        if (moves.Count == 0)
+            throw new InvalidOperationException("No Moves");
 
-    private void HandleGo(GoCommand command)
-    {
-        if (command.isPerft)
+        Move bestMove = moves[0];
+        int bestScore = int.MinValue + 1;
+        int alpha = int.MinValue + 1;
+        int beta = int.MaxValue;
+
+        foreach (var move in moves)
         {
-            var depth = command.depth;
-            for (int i = 1; i <= depth; i++)
+            board.ApplyMove(move);
+            int score = -AlphaBeta(depth - 1, -beta, -alpha);
+            board.UndoMove(move);
+
+            if (score > bestScore)
             {
-                var perftResult = _player.Perft(i);
-                Console.WriteLine($"Depth {i} :  {perftResult}");
+                bestScore = score;
+                bestMove = move;
             }
+
+            alpha = Math.Max(alpha, score);
         }
-        else
-        {
-            var move = _player.Search(command.depth);
-            Console.WriteLine($"bestmove {move.bestMove}");
-        }
+
+        return (bestMove, bestScore);
     }
 
-    private UciParser _parser = new UciParser();
+    private int AlphaBeta(int depth, int alpha, int beta)
+    {
+        if (depth == 0)
+            return Evaluator.Evaluate(board);
+
+        var moves = MoveGenerator.GetLegalMoves(board);
+
+        if (moves.Count == 0)
+        {
+            if (Referee.IsCheckmate(board))
+                return -MATE_SCORE;
+        }
+
+        var maxEval = int.MinValue + 1;
+
+        foreach (var move in moves)
+        {
+            board.ApplyMove(move);
+            int eval = -AlphaBeta(depth - 1, -beta, -alpha);
+            board.UndoMove(move);
+
+            maxEval = Math.Max(maxEval, eval);
+            alpha = Math.Max(alpha, eval);
+
+            if (alpha >= beta)
+                break;
+        }
+
+        return maxEval;
+    }
+
+    private const int MATE_SCORE = 30000;
 }
