@@ -114,7 +114,7 @@ public class MagicBitboardTests
     [Test]
     public void GetKingMoves()
     {
-        Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.King,Colour.White),new Square((0)),0ul),
+        Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.King,Colour.White),new Square(0),0ul),
             Is.EqualTo(0x302));
     }
 

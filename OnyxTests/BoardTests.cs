@@ -6,6 +6,22 @@ namespace OnyxTests;
 public class ApplyMove
 {
     [Test]
+    public void HalfMoveIncrements()
+    {
+        var board = new Board();
+        board.ApplyMove(new Move(Piece.WP,"a2a4"));
+        Assert.That(board.FullMoves, Is.EqualTo(1));
+        Assert.That(board.HalfMoves, Is.EqualTo(0));
+        
+        board.ApplyMove(new Move(Piece.BN,"b8c6"));
+        Assert.That(board.FullMoves,Is.EqualTo(2));
+        Assert.That(board.HalfMoves,Is.EqualTo(1));
+        
+        board.ApplyMove(new Move(Piece.WP,"h2h4"));
+        Assert.That(board.FullMoves,Is.EqualTo(2));
+        Assert.That(board.HalfMoves,Is.EqualTo(0));
+    }
+    [Test]
     public void ApplyPawnPush()
     {
         var board = new Board(Fen.DefaultFen);
@@ -59,10 +75,10 @@ public class ApplyMove
 
         List<string> endingPositions =
         [
-            "rnbqkb1r/1pp2ppp/p2p1n2/4p3/2P5/2N2NP1/PP1PPPBP/1RBQ1RK1 b q - 0 1",
-            "rn1qkb1r/pppb1pp1/3ppn1p/6B1/Q2P4/2P5/PP1NPPPP/2KR1BNR b kq - 0 1",
-            "rn1q1rk1/pppbbpp1/3ppn1p/6B1/1Q1P4/2P5/PP1NPPPP/2KR1BNR w - - 0 1",
-            "2kr3r/ppqbbpp1/n1pppn1p/3P4/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 0 1"
+            "rnbqkb1r/1pp2ppp/p2p1n2/4p3/2P5/2N2NP1/PP1PPPBP/1RBQ1RK1 b q - 1 7",
+            "rn1qkb1r/pppb1pp1/3ppn1p/6B1/Q2P4/2P5/PP1NPPPP/2KR1BNR b kq - 3 6",
+            "rn1q1rk1/pppbbpp1/3ppn1p/6B1/1Q1P4/2P5/PP1NPPPP/2KR1BNR w - - 6 8",
+            "2kr3r/ppqbbpp1/n1pppn1p/3P4/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 3 11"
         ];
 
         for (var test = 0; test < startingPositions.Count; test++)
@@ -81,7 +97,7 @@ public class ApplyMove
         var promotionMove = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "b7b8q");
 
         board.ApplyMove(promotionMove);
-        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 0 1"));
+        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 1 13"));
     }
 
     [Test]
@@ -101,8 +117,8 @@ public class ApplyMove
 
         List<string> PositionsAfter =
         [
-            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR b kq - 0 1",
-            "rnbq1bnr/ppppkppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR w - - 0 1"
+            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR b kq - 1 2",
+            "rnbq1bnr/ppppkppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR w - - 2 3"
         ];
 
         VerifyMoves(startingPositions, moves, PositionsAfter);
@@ -128,7 +144,7 @@ public class ApplyMove
         Assert.Multiple(() =>
         {
             Assert.That(board.GetFen(),
-                Is.EqualTo("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR b Kkq - 0 1"));
+                Is.EqualTo("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR b Kkq - 3 3"));
             Assert.That(board.CastlingRights,
                 Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackKingsideCastlingFlag |
                            BoardConstants.BlackQueensideCastlingFlag));
@@ -139,7 +155,7 @@ public class ApplyMove
         Assert.Multiple(() =>
         {
             Assert.That(board.GetFen(),
-                Is.EqualTo("rnbqkbr1/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR w Kq - 0 1"));
+                Is.EqualTo("rnbqkbr1/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR w Kq - 4 4"));
             Assert.That(board.CastlingRights,
                 Is.EqualTo(BoardConstants.WhiteKingsideCastlingFlag | BoardConstants.BlackQueensideCastlingFlag));
         });
@@ -172,7 +188,7 @@ public class ApplyMove
         Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"));
 
         board.ApplyMove(new Move(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d7d5"));
-        Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 1"));
+        Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2"));
     }
 
     [Test]
@@ -193,7 +209,7 @@ public class ApplyMove
         List<string> endingPositions =
         [
             "rnbqkbnr/pp1p1ppp/2p1P3/8/8/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
-            "rnbqkbnr/ppp1pppp/8/8/8/1PP1p3/P2P1PPP/RNBQKBNR w KQkq - 0 1"
+            "rnbqkbnr/ppp1pppp/8/8/8/1PP1p3/P2P1PPP/RNBQKBNR w KQkq - 0 2"
         ];
 
         VerifyMoves(startingPositions, moves, endingPositions);
@@ -366,6 +382,6 @@ public class BoardTests
     {
         var board = new Board("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4");
 
-        Assert.That(board.GetFen(), Is.EqualTo("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 0 1"));
+        Assert.That(board.GetFen(), Is.EqualTo("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4"));
     }
 }

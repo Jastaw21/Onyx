@@ -12,7 +12,6 @@ public static class BoardConstants
 
     public const ulong WhiteQueenSideCastlingSquares = 0xe;
     public const ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
-    
 
 
     public const int A1 = 0;
@@ -39,12 +38,14 @@ public static class BoardConstants
         [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
 }
 
-public class BoardState
+internal class BoardState
 {
     public Piece? CapturedPiece;
     public Square? EnPassantSquare;
     public int CastlingRights;
     public int LastMoveFlags;
+    public int HalfMove;
+    public int FullMove;
 }
 
 public class Board
@@ -54,7 +55,9 @@ public class Board
 
     // bit field - from the lowest bit in this order White : K, Q, Black K,Q
     public int CastlingRights { get; private set; }
-    public Square? EnPassantSquare;
+    public Square? EnPassantSquare { get; private set; }
+    public int HalfMoves { get; private set; }
+    public int FullMoves { get; private set; }
     private readonly Stack<BoardState> _boardStateHistory;
 
     public Board(Bitboards bitboards, Colour turnToMove = Colour.White)
@@ -102,7 +105,8 @@ public class Board
 
         var enPassantString = EnPassantSquare.HasValue ? EnPassantSquare.Value.Notation : "-";
         builtFen += enPassantString;
-        builtFen += " 0 1";
+        builtFen += $" {HalfMoves}";
+        builtFen += $" {FullMoves}";
 
         return builtFen;
     }
@@ -133,7 +137,9 @@ public class Board
             CapturedPiece = capturedPiece,
             EnPassantSquare = EnPassantSquare,
             CastlingRights = CastlingRights,
-            LastMoveFlags = move.MoveFlag
+            LastMoveFlags = move.MoveFlag,
+            FullMove = FullMoves,
+            HalfMove = HalfMoves
         };
         _boardStateHistory.Push(state);
 
@@ -183,16 +189,27 @@ public class Board
         }
 
         SwapTurns();
+
+        if (move.PieceMoved.Colour == Colour.Black)
+            FullMoves++;
+        if (move.PieceMoved.Type != PieceType.Pawn && !capturedPiece.HasValue)
+            HalfMoves++;
+        else
+        {
+            HalfMoves = 0;
+        }
     }
 
     public void UndoMove(Move move)
     {
         //ApplyMoveFlags(move: ref move);
-        
+
 
         var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
+        HalfMoves = previousState.HalfMove;
+        FullMoves = previousState.FullMove;
         move.MoveFlag = previousState.LastMoveFlags;
         if (previousState.CapturedPiece.HasValue)
         {
@@ -243,7 +260,8 @@ public class Board
             move.MoveFlag |= MoveFlags.Castle;
         }
 
-        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 && !Bitboards.PieceAtSquare(move.To).HasValue)
+        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 &&
+            !Bitboards.PieceAtSquare(move.To).HasValue)
             move.MoveFlag |= MoveFlags.EnPassant;
     }
 
@@ -302,8 +320,8 @@ public class Board
         var colourToMoveTokenLocation = fen.IndexOf(' ') + 1;
         var castlingRightsTokenLocation = fen.IndexOf(' ', colourToMoveTokenLocation) + 1;
         var enPassantSquareTokenLocation = fen.IndexOf(' ', castlingRightsTokenLocation) + 1;
-        var fullMoveTokenLocation = fen.IndexOf(' ', enPassantSquareTokenLocation) + 1;
-        var halfMoveTokenLocation = fen.IndexOf(' ', fullMoveTokenLocation);
+        var halfMoveTokenLocation = fen.IndexOf(' ', enPassantSquareTokenLocation) + 1;
+        var fullMoveTokenLocation = fen.IndexOf(' ', halfMoveTokenLocation) + 1;
 
         TurnToMove = fen[colourToMoveTokenLocation] == 'w' ? Colour.White : Colour.Black;
 
@@ -318,5 +336,11 @@ public class Board
         {
             EnPassantSquare = new Square(enPassantString);
         }
+
+        var halfMoveTokenValue = int.Parse(fen[halfMoveTokenLocation..(fullMoveTokenLocation - 1)]);
+        var fullMoveTokenValue = int.Parse(fen[fullMoveTokenLocation..]);
+
+        HalfMoves = halfMoveTokenValue;
+        FullMoves = fullMoveTokenValue;
     }
 }

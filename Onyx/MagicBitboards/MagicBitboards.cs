@@ -2,7 +2,7 @@
 
 namespace Onyx.MagicBitboards;
 
-public struct Magic
+internal struct Magic
 {
     public readonly ulong Mask = 0ul;
     public readonly ulong MagicNumber = 0ul;
