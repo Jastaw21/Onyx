@@ -23,10 +23,11 @@ public static class Evaluator
             blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }
 
-        return whiteScore - blackScore;
+        var score = whiteScore - blackScore;
+        return board.TurnToMove == Colour.White ? score : -score;
     }
-    
-    private static readonly Dictionary<PieceType,int> PieceValues = new()
+
+    private static readonly Dictionary<PieceType, int> PieceValues = new()
     {
         { PieceType.Pawn, 100 },
         { PieceType.Knight, 300 },

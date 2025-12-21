@@ -27,9 +27,7 @@ public class Engine
     {
         var moves = MoveGenerator.GetLegalMoves(board);
         if (moves.Count == 0)
-        {
             throw new InvalidOperationException("No Moves");
-        }
 
         var bestMove = moves[0];
         var bestScore = int.MinValue + 1;
@@ -47,10 +45,7 @@ public class Engine
                 bestScore = score;
                 bestMove = move;
             }
-
             alpha = Math.Max(alpha, score);
-            
-            
         }
 
         return (bestMove, bestScore);
@@ -73,11 +68,9 @@ public class Engine
             return Evaluator.Evaluate(board);
 
         var maxEval = int.MinValue + 1;
-
-        var root = board.GetFen();
+   
         foreach (var move in moves)
         {
-          
             board.ApplyMove(move);
             var eval = -AlphaBeta(depth - 1, -beta, -alpha);
             board.UndoMove(move);
