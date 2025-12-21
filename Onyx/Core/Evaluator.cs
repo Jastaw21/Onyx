@@ -4,7 +4,7 @@ public static class Evaluator
 {
     public static int Evaluate(Board board)
     {
-        int materialScore = MaterialScore(board);
+        var materialScore = MaterialScore(board);
 
         return materialScore;
     }

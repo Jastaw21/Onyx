@@ -31,15 +31,15 @@ public class Engine
             throw new InvalidOperationException("No Moves");
         }
 
-        Move bestMove = moves[0];
-        int bestScore = int.MinValue + 1;
-        int alpha = int.MinValue + 1;
-        int beta = int.MaxValue;
+        var bestMove = moves[0];
+        var bestScore = int.MinValue + 1;
+        var alpha = int.MinValue + 1;
+        var beta = int.MaxValue;
 
         foreach (var move in moves)
         {
             board.ApplyMove(move);
-            int score = -AlphaBeta(depth - 1, -beta, -alpha);
+            var score = -AlphaBeta(depth - 1, -beta, -alpha);
             board.UndoMove(move);
 
             if (score > bestScore)
@@ -79,7 +79,7 @@ public class Engine
         {
           
             board.ApplyMove(move);
-            int eval = -AlphaBeta(depth - 1, -beta, -alpha);
+            var eval = -AlphaBeta(depth - 1, -beta, -alpha);
             board.UndoMove(move);
 
             maxEval = Math.Max(maxEval, eval);

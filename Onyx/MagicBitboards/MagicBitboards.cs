@@ -25,7 +25,7 @@ public static class MagicBitboards
         InitDiagMagics();
         InitStraightMagics();
 
-        for (int square = 0; square < 64; square++)
+        for (var square = 0; square < 64; square++)
         {
             var sq = new Square(square);
             BuildKnightMoves(sq);

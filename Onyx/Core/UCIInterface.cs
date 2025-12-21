@@ -47,7 +47,7 @@ public class UCIInterface
         if (command.isPerft)
         {
             var depth = command.depth;
-            for (int i = 1; i <= depth; i++)
+            for (var i = 1; i <= depth; i++)
             {
                 var perftResult = _player.Perft(i);
                 Console.WriteLine($"Depth {i} :  {perftResult}");

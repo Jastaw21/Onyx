@@ -37,7 +37,7 @@ public static class PerftSearcher
 
             if (!Referee.IsInCheck(side, board))
             {
-                ulong nodes = ExecutePerft(board, depth - 1);
+                var nodes = ExecutePerft(board, depth - 1);
                 total += nodes;
                 Console.WriteLine($"{move}: {nodes}");
             }
