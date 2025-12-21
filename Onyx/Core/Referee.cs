@@ -5,7 +5,9 @@ public static class Referee
     public static bool MoveIsLegal(Move move, ref Board position)
     {
         position.ApplyMove(move);
-        return !IsInCheck(move.PieceMoved.Colour, position);
+        var result = IsInCheck(move.PieceMoved.Colour, position);
+        position.UndoMove(move);
+        return !result;
     }
 
     public static bool IsInCheck(Colour colour, Board position)
@@ -38,6 +40,11 @@ public static class Referee
         return false;
     }
 
+    public static bool IsCheckmate(Board position)
+    {
+        return IsCheckmate(Colour.White, position) || IsCheckmate(Colour.Black, position);
+    }
+
     public static bool IsSquareAttacked(Square square, Board board, Colour byColour)
     {
         var occupancy = board.Bitboards.Occupancy();
@@ -45,7 +52,6 @@ public static class Referee
         var pawnColour = byColour == Colour.White ? Colour.Black : Colour.White;
         if (square.FileIndex > 0)
         {
-            
             var targetSquare = pawnColour == Colour.Black
                 ? new Square(square.SquareIndex - 9)
                 : new Square(square.SquareIndex + 7);

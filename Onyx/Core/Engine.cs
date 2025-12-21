@@ -4,12 +4,8 @@ namespace Onyx.Core;
 
 public class Engine
 {
-    public Engine()
-    {
-        board = new Board();
-    }
 
-    private Board board;
+    private ChessPlayer _player = new ChessPlayer();
 
     public void HandleCommand(string commandString)
     {
@@ -43,7 +39,7 @@ public class Engine
 
     private void HandlePosition(PositionCommand positionCommand)
     {
-        board = new Board(positionCommand.FenString);
+        _player.board = new Board(positionCommand.FenString);
     }
 
     private void HandleGo(GoCommand command)
@@ -53,9 +49,14 @@ public class Engine
             var depth = command.depth;
             for (int i = 1; i <= depth; i++)
             {
-                var perftResult = PerftSearcher.GetPerftResults(board, i);
-                Console.WriteLine($"Depth : {i} {perftResult}");
+                var perftResult = _player.Perft(i);
+                Console.WriteLine($"Depth {i} :  {perftResult}");
             }
+        }
+        else
+        {
+            var move = _player.Search(command.depth);
+            Console.WriteLine($"bestmove {move.bestMove}");
         }
     }
 

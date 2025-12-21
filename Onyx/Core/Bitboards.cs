@@ -143,6 +143,7 @@ public class Bitboards
 
     public Piece? PieceAtSquare(Square squareToTest)
     {
+        
         foreach (var piece in Piece.All())
 
         {

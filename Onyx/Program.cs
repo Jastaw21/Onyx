@@ -14,7 +14,10 @@ public static class Program
         while (command != "quit")
         {
             command = Console.ReadLine();
-            engine.HandleCommand(command);
+            if (command != "quit")
+                engine.HandleCommand(command);
+            else
+                break;
         }
     }
 }

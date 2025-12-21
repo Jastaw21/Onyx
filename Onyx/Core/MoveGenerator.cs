@@ -2,6 +2,19 @@
 
 public static class MoveGenerator
 {
+    public static List<Move> GetLegalMoves(Board board)
+    {
+        var rawMoves = GetMoves(board.TurnToMove, board);
+        var legalMoves = new List<Move>();
+        foreach (var move in rawMoves)
+        {
+            if (Referee.MoveIsLegal(move,ref board))
+                legalMoves.Add(move);
+        }
+
+        return legalMoves;
+    }
+
     public static List<Move> GetMoves(Piece piece, Square square, Board board)
     {
         var moveList = new List<Move>();
@@ -16,7 +29,7 @@ public static class MoveGenerator
             GeneratePawnPromotionMoves(piece, square, board, moveList);
         }
 
-       
+
         return moveList;
     }
 
@@ -39,12 +52,12 @@ public static class MoveGenerator
     public static List<Move> GetMoves(Colour colour, Board board)
     {
         List<Move> moves = [];
-       
+
         foreach (var piece in Piece.ByColour(colour))
         {
             moves.AddRange(GetMoves(piece, board));
         }
-       
+
 
         return moves;
     }
@@ -100,41 +113,41 @@ public static class MoveGenerator
         var opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
 
-        
+
         var kingSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.H1 : BoardConstants.H8);
         var queenSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.A1 : BoardConstants.A8);
 
         // Try kingside
-        if (board.Bitboards.PieceAtSquare(kingSideRookSquare).HasValue 
+        if (board.Bitboards.PieceAtSquare(kingSideRookSquare).HasValue
             && board.Bitboards.PieceAtSquare(kingSideRookSquare) is { Type: PieceType.Rook }
             && board.Bitboards.PieceAtSquare(kingSideRookSquare)!.Value.Colour == piece.Colour)
-        TryCastling(
-            board,
-            piece,
-            square,
-            isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag,
-            isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares,
-            isWhite ? BoardConstants.G1 : BoardConstants.G8,
-            occupancy,
-            opponentColour,
-            moveList
-        );
+            TryCastling(
+                board,
+                piece,
+                square,
+                isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag,
+                isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares,
+                isWhite ? BoardConstants.G1 : BoardConstants.G8,
+                occupancy,
+                opponentColour,
+                moveList
+            );
 
         // Try queenside
-        if (board.Bitboards.PieceAtSquare(queenSideRookSquare).HasValue 
+        if (board.Bitboards.PieceAtSquare(queenSideRookSquare).HasValue
             && board.Bitboards.PieceAtSquare(queenSideRookSquare) is { Type: PieceType.Rook }
             && board.Bitboards.PieceAtSquare(queenSideRookSquare)!.Value.Colour == piece.Colour)
-        TryCastling(
-            board,
-            piece,
-            square,
-            isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag,
-            isWhite ? BoardConstants.WhiteQueenSideCastlingSquares : BoardConstants.BlackQueenSideCastlingSquares,
-            isWhite ? BoardConstants.C1 : BoardConstants.C8,
-            occupancy,
-            opponentColour,
-            moveList
-        );
+            TryCastling(
+                board,
+                piece,
+                square,
+                isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag,
+                isWhite ? BoardConstants.WhiteQueenSideCastlingSquares : BoardConstants.BlackQueenSideCastlingSquares,
+                isWhite ? BoardConstants.C1 : BoardConstants.C8,
+                occupancy,
+                opponentColour,
+                moveList
+            );
     }
 
     private static void TryCastling(
@@ -171,6 +184,7 @@ public static class MoveGenerator
 
             squaresToCheck &= squaresToCheck - 1;
         }
+
         moveList.Add(new Move(piece, fromSquare, new Square(targetSquare)));
     }
 

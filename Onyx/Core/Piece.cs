@@ -28,11 +28,22 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] All()
     {
-       return [
-            WP, WB, WK, WQ, WN, WR,
-            BP, BB, BK, BQ, BN, BR
-        ];
+        return allPieces;
     }
+
+    private static Piece[] allPieces =
+    [
+        WP, WB, WK, WQ, WN, WR,
+        BP, BB, BK, BQ, BN, BR
+    ];
+    private static Piece[] whitePieces =
+    [
+        WP, WB, WK, WQ, WN, WR
+    ];
+    private static Piece[] blackPieces =
+    [
+        BP, BB, BK, BQ, BN, BR
+    ];
 
     public static List<Piece> PromotionTypes(Colour colour)
     {
@@ -63,8 +74,6 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] ByColour(Colour colour)
     {
-        if (colour == Colour.White)
-            return [WP, WB, WK, WQ, WN, WR];
-        return [BP, BB, BK, BQ, BN, BR];
+        return colour == Colour.White ? whitePieces : blackPieces;
     }
 }
