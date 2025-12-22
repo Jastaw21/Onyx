@@ -18,8 +18,8 @@ public enum Colour
 
 public readonly struct Piece(PieceType type, Colour colour)
 {
-    public Colour Colour { get; } = colour;
-    public PieceType Type { get; } = type;
+    public readonly Colour Colour = colour;
+    public readonly PieceType Type = type;
 
     public override string ToString()
     {
@@ -44,14 +44,12 @@ public readonly struct Piece(PieceType type, Colour colour)
     [
         BP, BB, BK, BQ, BN, BR
     ];
+    private static Piece[] whitePromotionTypes = [WB, WQ, WR, WN];
+    private static Piece[] blackPromotionTypes = [BB, BQ, BR, BN];
 
-    public static List<Piece> PromotionTypes(Colour colour)
+    public static Piece[] PromotionTypes(Colour colour)
     {
-        return
-        [
-            new Piece(PieceType.Bishop, colour), new Piece(PieceType.Queen, colour), new Piece(PieceType.Rook, colour),
-            new Piece(PieceType.Knight, colour)
-        ];
+        return colour == Colour.White ? whitePromotionTypes : blackPromotionTypes;
     }
 
     public static Piece MakePiece(PieceType piece, Colour colour)

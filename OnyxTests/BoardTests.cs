@@ -97,7 +97,7 @@ public class ApplyMove
         var promotionMove = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "b7b8q");
 
         board.ApplyMove(promotionMove);
-        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 1 13"));
+        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 0 13"));
     }
 
     [Test]
