@@ -58,11 +58,11 @@ public class Bitboards
             else if (Char.IsAsciiDigit(fenString[currentIndex]))
                 fileIndex += fenString[currentIndex] - '0';
 
-            // break at space, as the rest if=s all castling/en passant stuff, not relevant to us
+            // break at space, as the rest is all castling/en passant stuff, not relevant to us
             else if (fenString[currentIndex] == ' ')
                 break;
 
-            // this os a piece, so set it and move the file on
+            // this is a piece, so set it and move the file on
             else
             {
                 var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
