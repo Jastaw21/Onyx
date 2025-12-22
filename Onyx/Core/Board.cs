@@ -321,30 +321,20 @@ public class Board
 
     private void ApplyBoardStateFromFen(string fen)
     {
-        var colourToMoveTokenLocation = fen.IndexOf(' ') + 1;
-        var castlingRightsTokenLocation = fen.IndexOf(' ', colourToMoveTokenLocation) + 1;
-        var enPassantSquareTokenLocation = fen.IndexOf(' ', castlingRightsTokenLocation) + 1;
-        var halfMoveTokenLocation = fen.IndexOf(' ', enPassantSquareTokenLocation) + 1;
-        var fullMoveTokenLocation = fen.IndexOf(' ', halfMoveTokenLocation) + 1;
+        var fenDetails = Fen.FromString(fen);
 
-        TurnToMove = fen[colourToMoveTokenLocation] == 'w' ? Colour.White : Colour.Black;
+        TurnToMove = fenDetails.ColourToMove;
 
-        var castlingString = fen[castlingRightsTokenLocation..(enPassantSquareTokenLocation - 1)];
+        var castlingString = fenDetails.CastlingString;
         if (castlingString.Contains('K')) CastlingRights |= BoardConstants.WhiteKingsideCastlingFlag;
         if (castlingString.Contains('Q')) CastlingRights |= BoardConstants.WhiteQueensideCastlingFlag;
         if (castlingString.Contains('k')) CastlingRights |= BoardConstants.BlackKingsideCastlingFlag;
         if (castlingString.Contains('q')) CastlingRights |= BoardConstants.BlackQueensideCastlingFlag;
 
-        var enPassantString = fen[enPassantSquareTokenLocation..(fullMoveTokenLocation - 1)];
-        if (enPassantString.Length == 2)
-        {
-            EnPassantSquare = new Square(enPassantString);
-        }
+        EnPassantSquare = fenDetails.EnPassantSquare;
 
-        var halfMoveTokenValue = int.Parse(fen[halfMoveTokenLocation..(fullMoveTokenLocation - 1)]);
-        var fullMoveTokenValue = int.Parse(fen[fullMoveTokenLocation..]);
 
-        HalfMoves = halfMoveTokenValue;
-        FullMoves = fullMoveTokenValue;
+        HalfMoves = fenDetails.HalfMove;
+        FullMoves = fenDetails.FullMove;
     }
 }
