@@ -10,16 +10,25 @@ public class ApplyMove
     {
         var board = new Board();
         board.ApplyMove(new Move(Piece.WP,"a2a4"));
-        Assert.That(board.FullMoves, Is.EqualTo(1));
-        Assert.That(board.HalfMoves, Is.EqualTo(0));
-        
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.FullMoves, Is.EqualTo(1));
+            Assert.That(board.HalfMoves, Is.EqualTo(0));
+        });
+
         board.ApplyMove(new Move(Piece.BN,"b8c6"));
-        Assert.That(board.FullMoves,Is.EqualTo(2));
-        Assert.That(board.HalfMoves,Is.EqualTo(1));
-        
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.FullMoves, Is.EqualTo(2));
+            Assert.That(board.HalfMoves, Is.EqualTo(1));
+        });
+
         board.ApplyMove(new Move(Piece.WP,"h2h4"));
-        Assert.That(board.FullMoves,Is.EqualTo(2));
-        Assert.That(board.HalfMoves,Is.EqualTo(0));
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.FullMoves, Is.EqualTo(2));
+            Assert.That(board.HalfMoves, Is.EqualTo(0));
+        });
     }
     [Test]
     public void ApplyPawnPush()
@@ -97,7 +106,7 @@ public class ApplyMove
         var promotionMove = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "b7b8q");
 
         board.ApplyMove(promotionMove);
-        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 1 13"));
+        Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 0 13"));
     }
 
     [Test]
@@ -371,9 +380,12 @@ public class BoardTests
     {
         var board = new Board(Fen.DefaultFen);
 
-        Assert.That(board.TurnToMove, Is.EqualTo(Colour.White));
-        Assert.That(board.Bitboards.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
-        Assert.That(board.EnPassantSquare.HasValue, Is.False);
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.TurnToMove, Is.EqualTo(Colour.White));
+            Assert.That(board.Bitboards.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
+            Assert.That(board.EnPassantSquare.HasValue, Is.False);
+        });
     }
 
 

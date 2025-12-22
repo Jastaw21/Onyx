@@ -37,7 +37,7 @@ public class Engine
         foreach (var move in moves)
         {
             board.ApplyMove(move);
-            var score = -AlphaBeta(depth - 1, -beta, -alpha);
+            var score = -AlphaBeta(depth - 1, -beta, -alpha, board);
             board.UndoMove(move);
 
             if (score > bestScore)
@@ -51,7 +51,7 @@ public class Engine
         return (bestMove, bestScore);
     }
 
-    private int AlphaBeta(int depth, int alpha, int beta)
+    private int AlphaBeta(int depth, int alpha, int beta, Board board_)
     {
         var fenPreGen = board.GetFen();
         var moves = MoveGenerator.GetLegalMoves(board);
@@ -71,9 +71,9 @@ public class Engine
    
         foreach (var move in moves)
         {
-            board.ApplyMove(move);
-            var eval = -AlphaBeta(depth - 1, -beta, -alpha);
-            board.UndoMove(move);
+            board_.ApplyMove(move);
+            var eval = -AlphaBeta(depth - 1, -beta, -alpha, board_);
+            board_.UndoMove(move);
 
             maxEval = Math.Max(maxEval, eval);
             alpha = Math.Max(alpha, eval);

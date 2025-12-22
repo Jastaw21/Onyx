@@ -12,8 +12,11 @@ public class EngineTests
         var engine = new Engine();
         engine.SetPosition(fen);
         var bestMove = engine.Search(1);
-        Assert.That(bestMove.score, Is.EqualTo(30000));
-        Assert.That(bestMove.bestMove.Notation, Is.EqualTo("d8h4"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(bestMove.score, Is.EqualTo(30000));
+            Assert.That(bestMove.bestMove.Notation, Is.EqualTo("d8h4"));
+        });
     }
 
     [Test]

@@ -24,7 +24,31 @@ public static class PerftSearcher
 {
     public static ulong GetPerftResults(Board board, int depth)
     {
-        return ExecutePerft(board, depth);
+        return ParallelPerft(board, depth);
+    }
+
+    public static ulong ParallelPerft(Board board, int depth)
+    {
+        if (depth == 0)
+            return 1;
+
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        ulong total = 0;
+        object lockObj = new();
+
+        Parallel.ForEach(moves, move =>
+        {
+            var localBoard = board.Clone();
+            localBoard.ApplyMove(move);
+            if (!Referee.IsInCheck(board.TurnToMove, localBoard))
+            {
+                var count = ExecutePerft(localBoard, depth - 1);
+                lock (lockObj)
+                    total += count;
+            }
+        });
+
+        return total;
     }
 
     public static void PerftDivide(Board board, int depth)

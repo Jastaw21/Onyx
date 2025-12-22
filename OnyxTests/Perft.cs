@@ -15,6 +15,19 @@ public class Perft
             Assert.That(PerftSearcher.GetPerftResults(board, depth + 1), Is.EqualTo(targetNumbers[depth]));
         }
     }
+    
+    [Test]
+    public void ParallelPerftSame()
+    {
+        int[] targetNumbers = [20, 400, 8902, 197_281];
+        for (var depth = 0; depth < targetNumbers.Length; depth++)
+        {
+            var board = new Board();
+            var singleThread = PerftSearcher.GetPerftResults(board, depth + 1);
+            var multiThread = PerftSearcher.ParallelPerft(board, depth + 1);
+            Assert.That(singleThread, Is.EqualTo(multiThread));
+        }
+    }
 
     [Test]
     public void KiwiPos()
@@ -23,7 +36,7 @@ public class Perft
         for (var depth = 0; depth < targetNumbers.Length; depth++)
         {
             var board = new Board(Fen.KiwiPeteFen);
-            Assert.That(PerftSearcher.GetPerftResults(board, depth + 1), Is.EqualTo(targetNumbers[depth]));
+            Assert.That(PerftSearcher.ParallelPerft(board, depth + 1), Is.EqualTo(targetNumbers[depth]));
         }
     }
 

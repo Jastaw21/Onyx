@@ -50,6 +50,10 @@ internal class BoardState
 
 public class Board
 {
+    public Board Clone()
+    {
+        return new Board(this.GetFen());
+    }
     public readonly Bitboards Bitboards;
     public Colour TurnToMove;
 
