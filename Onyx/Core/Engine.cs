@@ -5,27 +5,32 @@ namespace Onyx.Core;
 
 public class Engine
 {
-    public Board board;
+    public Board Board;
+    public TranspositionTable TranspositionTable { get; private set; }
+    public string Position => Board.GetFen();
+
+    private int CurrentSearchID = 0;
     
-    public string Position => board.GetFen();
     public Engine()
     {
-        board = new Board();
+        Board = new Board();
+        TranspositionTable = new TranspositionTable();
     }
 
     public void SetPosition(string fen)
     {
-        board = new Board(fen);
+        Board = new Board(fen);
     }
 
     public ulong Perft(int depth)
     {
-        return PerftSearcher.GetPerftResults(board: board, depth);
+        return PerftSearcher.GetPerftResults(board: Board, depth);
     }
 
     public (Move bestMove, int score) Search(int depth)
     {
-        var moves = MoveGenerator.GetLegalMoves(board);
+        CurrentSearchID++;
+        var moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
 
@@ -36,9 +41,9 @@ public class Engine
 
         foreach (var move in moves)
         {
-            board.ApplyMove(move);
-            var score = -AlphaBeta(depth - 1, -beta, -alpha, board);
-            board.UndoMove(move);
+            Board.ApplyMove(move);
+            var score = -AlphaBeta(depth - 1, -beta, -alpha, Board);
+            Board.UndoMove(move);
 
             if (score > bestScore)
             {
@@ -51,28 +56,28 @@ public class Engine
         return (bestMove, bestScore);
     }
 
-    private int AlphaBeta(int depth, int alpha, int beta, Board board_)
+    private int AlphaBeta(int depth, int alpha, int beta, Board board)
     {
-        var moves = MoveGenerator.GetLegalMoves(board);
+        var moves = MoveGenerator.GetLegalMoves(Board);
 
         if (moves.Count == 0)
         {
-            if (Referee.IsCheckmate(board))
+            if (Referee.IsCheckmate(Board))
                 return -MATE_SCORE;
 
             return 0;
         }
         
         if (depth == 0)
-            return Evaluator.Evaluate(board);
+            return Evaluator.Evaluate(Board);
 
         var maxEval = int.MinValue + 1;
    
         foreach (var move in moves)
         {
-            board_.ApplyMove(move);
-            var eval = -AlphaBeta(depth - 1, -beta, -alpha, board_);
-            board_.UndoMove(move);
+            board.ApplyMove(move);
+            var eval = -AlphaBeta(depth - 1, -beta, -alpha, board);
+            board.UndoMove(move);
 
             maxEval = Math.Max(maxEval, eval);
             alpha = Math.Max(alpha, eval);

@@ -39,7 +39,7 @@ public class UCIInterface
 
     private void HandlePosition(PositionCommand positionCommand)
     {
-        _player.board = new Board(positionCommand.FenString);
+        _player.Board = new Board(positionCommand.FenString);
     }
 
     private void HandleGo(GoCommand command)
