@@ -54,8 +54,10 @@ public class Board
     {
         return new Board(this.GetFen());
     }
+
     public readonly Bitboards Bitboards;
     public Colour TurnToMove;
+    public Zobrist Zobrist { get; private set; }
 
     // bit field - from the lowest bit in this order White : K, Q, Black K,Q
     public int CastlingRights { get; private set; }
@@ -64,17 +66,11 @@ public class Board
     public int FullMoves { get; private set; }
     private readonly Stack<BoardState> _boardStateHistory;
 
-    public Board(Bitboards bitboards, Colour turnToMove = Colour.White)
-    {
-        Bitboards = bitboards;
-        TurnToMove = turnToMove;
-        _boardStateHistory = new Stack<BoardState>();
-    }
-
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
+        Zobrist = new Zobrist(fen);
         _boardStateHistory = new Stack<BoardState>();
     }
 
@@ -135,6 +131,8 @@ public class Board
             capturedPiece = Bitboards.PieceAtSquare(move.To);
             capturedSquare = move.To;
         }
+        
+        Zobrist.ApplyMove(move,capturedPiece,capturedSquare);
 
         var state = new BoardState
         {
@@ -156,8 +154,10 @@ public class Board
 
 
         // action the promotion
-        if (move.IsPromotion && move.PromotedPiece.HasValue)
+        if (move is { IsPromotion: true, PromotedPiece: not null })
         {
+            // We need to undo the move to of the piece, thats covered in MovePiece,
+            // as obviously for promotion this is overridden by the promoted piece. Explicitly set it off here
             Bitboards.SetOff(move.PieceMoved, move.To);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
         }
@@ -167,8 +167,8 @@ public class Board
         if (move.IsCastling)
         {
             var affectedRook = move.PieceMoved.Colour == Colour.White
-                ? new Piece(PieceType.Rook, Colour.White)
-                : new Piece(PieceType.Rook, Colour.Black);
+                ? Piece.WR
+                : Piece.BR;
 
             var rookNewFile = move.To.FileIndex == 2 ? 3 : 5;
             var rookOldFile = move.To.FileIndex == 2 ? 0 : 7;
@@ -250,7 +250,7 @@ public class Board
         SwapTurns();
     }
 
-    private void ApplyMoveFlags(ref Move move)
+    public void ApplyMoveFlags(ref Move move)
     {
         if (move.PieceMoved.Type == PieceType.Pawn &&
             ((move.PieceMoved.Colour == Colour.White && move.To.RankIndex == 7) ||

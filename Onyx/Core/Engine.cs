@@ -53,7 +53,6 @@ public class Engine
 
     private int AlphaBeta(int depth, int alpha, int beta, Board board_)
     {
-        var fenPreGen = board.GetFen();
         var moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)

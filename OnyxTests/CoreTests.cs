@@ -365,8 +365,8 @@ class HelperTests
             Assert.That(s.Bitboard, Is.EqualTo(targetBitboard));
             
             
-            if (square == 63) 
-                Assert.That(s.Bitboard == 0x8000000000000000);
+            if (square == 63)
+                Assert.That(s.Bitboard, Is.EqualTo(0x8000000000000000));
             
             targetBitboard <<= 1;
         }
