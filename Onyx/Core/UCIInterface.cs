@@ -2,7 +2,7 @@
 
 namespace Onyx.Core;
 
-public class UCIInterface
+public class UciInterface
 {
 
     private Engine _player = new Engine();

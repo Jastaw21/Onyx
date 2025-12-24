@@ -13,7 +13,7 @@ public struct TranspositionTableEntry
     public int Eval;
     public int Depth;
     public int Age;
-    public BoundFlag boundFlag;
+    public BoundFlag BoundFlag;
 }
 
 public class TranspositionTable
@@ -21,10 +21,10 @@ public class TranspositionTable
     private TranspositionTableEntry[] _entries;
 
 
-    public TranspositionTable(int sizeInMB = 512)
+    public TranspositionTable(int sizeInMb = 512)
     {
         var entrySize = System.Runtime.InteropServices.Marshal.SizeOf<TranspositionTableEntry>();
-        var numberOfEntries = (sizeInMB * 1024 * 1024) / entrySize;
+        var numberOfEntries = (sizeInMb * 1024 * 1024) / entrySize;
         _entries = new TranspositionTableEntry[numberOfEntries];
     }
 
@@ -43,7 +43,7 @@ public class TranspositionTable
                 Eval = eval,
                 Depth = depth,
                 Age = age,
-                boundFlag = boundFlag
+                BoundFlag = boundFlag
             };
         }
     }

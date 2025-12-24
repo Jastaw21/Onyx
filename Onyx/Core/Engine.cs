@@ -4,16 +4,16 @@ namespace Onyx.Core;
 
 internal struct SearchStatistics
 {
-    public int currentSearchID;
-    public int nodes;
-    public int ttHits;
-    public int ttStores;
-    public int betaCutoffs;
-    public TimeSpan runTime;
+    public int CurrentSearchId;
+    public int Nodes;
+    public int TtHits;
+    public int TtStores;
+    public int BetaCutoffs;
+    public TimeSpan RunTime;
 
     public override string ToString()
     {
-        return $"Search: {currentSearchID}, Nodes Searched: {nodes}, Time (ms): {runTime.TotalMilliseconds} , TTTable hits {ttHits}, TTStores {ttStores}, BetaCutoffs {betaCutoffs}";
+        return $"Search: {CurrentSearchId}, Nodes Searched: {Nodes}, Time (ms): {RunTime.TotalMilliseconds} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
     }
 }
 
@@ -23,7 +23,7 @@ public class Engine
     public TranspositionTable TranspositionTable { get; private set; }
     public string Position => Board.GetFen();
 
-    private SearchStatistics statistics;
+    private SearchStatistics _statistics;
 
     public Engine()
     {
@@ -44,8 +44,8 @@ public class Engine
     public (Move bestMove, int score) Search(int depth)
     {
         var startTime = System.Diagnostics.Stopwatch.StartNew();
-        statistics = new SearchStatistics();
-        statistics.currentSearchID++;
+        _statistics = new SearchStatistics();
+        _statistics.CurrentSearchId++;
         var moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
@@ -71,21 +71,21 @@ public class Engine
         }
         
         startTime.Stop();
-        statistics.runTime = startTime.Elapsed;
+        _statistics.RunTime = startTime.Elapsed;
 
-        Console.WriteLine(statistics);
+        Console.WriteLine(_statistics);
         return (bestMove, bestScore);
     }
 
     private int AlphaBeta(int depth, int alpha, int beta, Board board)
     {
-        statistics.nodes++;
+        _statistics.Nodes++;
         var moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)
         {
             if (Referee.IsCheckmate(board))
-                return -MATE_SCORE;
+                return -MateScore;
 
             return 0;
         }
@@ -100,17 +100,17 @@ public class Engine
         var entry = TranspositionTable.Retrieve(currentHash);
         if (entry.HasValue && entry.Value.Depth >= depth)
         {
-            statistics.ttHits++;
-            switch (entry.Value.boundFlag)
+            _statistics.TtHits++;
+            switch (entry.Value.BoundFlag)
             {
                 case BoundFlag.Exact:
-                    statistics.ttHits++;
+                    _statistics.TtHits++;
                     return entry.Value.Eval;
 
                 case BoundFlag.Upper:
                     if (entry.Value.Eval <= alpha)
                     {
-                        statistics.ttHits++;
+                        _statistics.TtHits++;
                         return entry.Value.Eval;
                     }
                     break;
@@ -118,7 +118,7 @@ public class Engine
                 case BoundFlag.Lower:
                     if (entry.Value.Eval >= beta)
                     {
-                        statistics.ttHits++;
+                        _statistics.TtHits++;
                         return entry.Value.Eval;
                     }
                     break;
@@ -136,7 +136,7 @@ public class Engine
 
             if (alpha >= beta)
             {
-                statistics.betaCutoffs++;
+                _statistics.BetaCutoffs++;
                 break;
             }
         }
@@ -148,11 +148,11 @@ public class Engine
             flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
         }
 
-        TranspositionTable.Store(currentHash, maxEval, depth, statistics.currentSearchID, flag);
-        statistics.ttStores++;
+        TranspositionTable.Store(currentHash, maxEval, depth, _statistics.CurrentSearchId, flag);
+        _statistics.TtStores++;
 
         return maxEval;
     }
 
-    private const int MATE_SCORE = 30000;
+    private const int MateScore = 30000;
 }

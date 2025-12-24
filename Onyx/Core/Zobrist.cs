@@ -2,24 +2,24 @@
 
 public class Zobrist
 {
-    private readonly int seed = 123111;
+    private readonly int _seed = 123111;
     private Random _random;
 
-    private readonly ulong[] whitePawn = new ulong[64];
-    private readonly ulong[] whiteRook = new ulong[64];
-    private readonly ulong[] whiteBishop = new ulong[64];
-    private readonly ulong[] whiteKnight = new ulong[64];
-    private readonly ulong[] whiteQueen = new ulong[64];
-    private readonly ulong[] whiteKing = new ulong[64];
+    private readonly ulong[] _whitePawn = new ulong[64];
+    private readonly ulong[] _whiteRook = new ulong[64];
+    private readonly ulong[] _whiteBishop = new ulong[64];
+    private readonly ulong[] _whiteKnight = new ulong[64];
+    private readonly ulong[] _whiteQueen = new ulong[64];
+    private readonly ulong[] _whiteKing = new ulong[64];
 
-    private readonly ulong[] blackPawn = new ulong[64];
-    private readonly ulong[] blackRook = new ulong[64];
-    private readonly ulong[] blackBishop = new ulong[64];
-    private readonly ulong[] blackKnight = new ulong[64];
-    private readonly ulong[] blackQueen = new ulong[64];
-    private readonly ulong[] blackKing = new ulong[64];
+    private readonly ulong[] _blackPawn = new ulong[64];
+    private readonly ulong[] _blackRook = new ulong[64];
+    private readonly ulong[] _blackBishop = new ulong[64];
+    private readonly ulong[] _blackKnight = new ulong[64];
+    private readonly ulong[] _blackQueen = new ulong[64];
+    private readonly ulong[] _blackKing = new ulong[64];
 
-    private ulong whiteToMove;
+    private ulong _whiteToMove;
     public ulong HashValue { get; private set; }
 
     public Zobrist(string fen)
@@ -33,7 +33,7 @@ public class Zobrist
         var fenDetails = Fen.FromString(fen);
         HashValue = 0;
         if (fenDetails.ColourToMove == Colour.White)
-            HashValue ^= whiteToMove;
+            HashValue ^= _whiteToMove;
 
         int rank = 7;
         int file = 0;
@@ -120,30 +120,30 @@ public class Zobrist
             HashValue ^= rookToRand;
         }
 
-        HashValue ^= whiteToMove;
+        HashValue ^= _whiteToMove;
     }
 
     private void InitZobrist()
     {
-        _random = new Random(seed);
+        _random = new Random(_seed);
 
-        FillRandomArray(whitePawn);
-        FillRandomArray(whiteRook);
-        FillRandomArray(whiteBishop);
-        FillRandomArray(whiteQueen);
-        FillRandomArray(whiteKing);
-        FillRandomArray(whitePawn);
-        FillRandomArray(whiteKnight);
+        FillRandomArray(_whitePawn);
+        FillRandomArray(_whiteRook);
+        FillRandomArray(_whiteBishop);
+        FillRandomArray(_whiteQueen);
+        FillRandomArray(_whiteKing);
+        FillRandomArray(_whitePawn);
+        FillRandomArray(_whiteKnight);
 
-        FillRandomArray(blackPawn);
-        FillRandomArray(blackRook);
-        FillRandomArray(blackBishop);
-        FillRandomArray(blackQueen);
-        FillRandomArray(blackKing);
-        FillRandomArray(blackPawn);
-        FillRandomArray(blackKnight);
+        FillRandomArray(_blackPawn);
+        FillRandomArray(_blackRook);
+        FillRandomArray(_blackBishop);
+        FillRandomArray(_blackQueen);
+        FillRandomArray(_blackKing);
+        FillRandomArray(_blackPawn);
+        FillRandomArray(_blackKnight);
 
-        whiteToMove = NextUlong();
+        _whiteToMove = NextUlong();
     }
 
     private void FillRandomArray(ulong[] array)
@@ -165,19 +165,19 @@ public class Zobrist
     {
         return c switch
         {
-            'P' => whitePawn,
-            'N' => whiteKnight,
-            'B' => whiteBishop,
-            'R' => whiteRook,
-            'Q' => whiteQueen,
-            'K' => whiteKing,
-            'p' => blackPawn,
-            'n' => blackKnight,
-            'b' => blackBishop,
-            'r' => blackRook,
-            'q' => blackQueen,
-            'k' => blackKing,
-            _ => whitePawn
+            'P' => _whitePawn,
+            'N' => _whiteKnight,
+            'B' => _whiteBishop,
+            'R' => _whiteRook,
+            'Q' => _whiteQueen,
+            'K' => _whiteKing,
+            'p' => _blackPawn,
+            'n' => _blackKnight,
+            'b' => _blackBishop,
+            'r' => _blackRook,
+            'q' => _blackQueen,
+            'k' => _blackKing,
+            _ => _whitePawn
         };
     }
 }
