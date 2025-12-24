@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System;
+using Onyx.Core;
 
 namespace Onyx.UCI;
 
@@ -33,7 +34,6 @@ public class UciInterface
                 break;
             case GoCommand goCommand:
                 HandleGo(goCommand);
-
                 break;
             case PositionCommand positionCommand:
                 HandlePosition(positionCommand);
@@ -52,13 +52,14 @@ public class UciInterface
     private void HandlePosition(PositionCommand positionCommand)
     {
         _player.Board = new Board(positionCommand.FenString);
+        _player.Board.ApplyMoves(positionCommand.Moves);
     }
 
     private void HandleGo(GoCommand command)
     {
+        var depth = command.Depth ?? 5; // Default to 5 if not specified
         if (command.IsPerft)
         {
-            var depth = command.Depth;
             for (var i = 1; i <= depth; i++)
             {
                 var perftResult = _player.Perft(i);
@@ -67,7 +68,7 @@ public class UciInterface
         }
         else
         {
-            var move = _player.RequestSearch(command.Depth, command.TimeControl);
+            var move = _player.RequestSearch(depth, command.TimeControl);
             Console.WriteLine($"bestmove {move.bestMove}");
         }
     }

@@ -1,4 +1,7 @@
-﻿namespace Onyx.Core;
+﻿using System;
+using System.Collections.Generic;
+
+namespace Onyx.Core;
 
 public static class BoardConstants
 {
@@ -346,5 +349,10 @@ public class Board
 
         HalfMoves = fenDetails.HalfMove;
         FullMoves = fenDetails.FullMove;
+    }
+
+    public void ApplyMoves(List<string>? positionCommandMoves)
+    {
+        throw new System.NotImplementedException();
     }
 }

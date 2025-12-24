@@ -17,7 +17,7 @@ public struct TimeControl
 public record GoCommand : Command
 {
     public bool IsPerft;
-    public int Depth;
+    public int? Depth;
     public TimeControl TimeControl;
 }
 
