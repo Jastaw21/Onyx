@@ -1,6 +1,11 @@
-﻿using Onyx.Core;
+﻿namespace Onyx.Core;
 
-namespace Onyx;
+public enum BoundFlag
+{
+    Exact = 1 << 0,
+    Lower = 1 << 1,
+    Upper = 1 << 2
+}
 
 public struct TranspositionTableEntry
 {
@@ -8,7 +13,7 @@ public struct TranspositionTableEntry
     public int Eval;
     public int Depth;
     public int Age;
-    public Move BestMove;
+    public BoundFlag boundFlag;
 }
 
 public class TranspositionTable
@@ -24,12 +29,13 @@ public class TranspositionTable
     }
 
 
-    public void Store(ulong hash, int eval, int depth, int age, Move bestMove)
+    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag)
     {
         var index = hash % (ulong)_entries.Length;
 
         var existingEntry = _entries[index];
-        if (existingEntry.Hash == 0 || existingEntry.Hash == hash || existingEntry.Age  != age || depth > existingEntry.Depth)
+        if (existingEntry.Hash == 0 || existingEntry.Hash == hash || existingEntry.Age != age ||
+            depth > existingEntry.Depth)
         {
             _entries[index] = new TranspositionTableEntry
             {
@@ -37,7 +43,7 @@ public class TranspositionTable
                 Eval = eval,
                 Depth = depth,
                 Age = age,
-                BestMove = bestMove
+                boundFlag = boundFlag
             };
         }
     }

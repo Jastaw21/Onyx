@@ -2,8 +2,6 @@
 
 namespace OnyxTests;
 
-using Onyx;
-
 public class CoreTests
 {
     [Test]

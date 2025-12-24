@@ -1,5 +1,4 @@
-﻿
-using Onyx.Statics;
+﻿using Onyx.Statics;
 
 namespace Onyx.Core;
 
@@ -9,8 +8,9 @@ public class Engine
     public TranspositionTable TranspositionTable { get; private set; }
     public string Position => Board.GetFen();
 
-    private int CurrentSearchID = 0;
-    
+    private int _currentSearchId = 0;
+    private int _ttHits;
+
     public Engine()
     {
         Board = new Board();
@@ -29,7 +29,7 @@ public class Engine
 
     public (Move bestMove, int score) Search(int depth)
     {
-        CurrentSearchID++;
+        _currentSearchId++;
         var moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
@@ -50,29 +50,40 @@ public class Engine
                 bestScore = score;
                 bestMove = move;
             }
+
             alpha = Math.Max(alpha, score);
         }
 
+        Console.WriteLine(_ttHits);
         return (bestMove, bestScore);
     }
 
     private int AlphaBeta(int depth, int alpha, int beta, Board board)
     {
-        var moves = MoveGenerator.GetLegalMoves(Board);
+        var moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)
         {
-            if (Referee.IsCheckmate(Board))
+            if (Referee.IsCheckmate(board))
                 return -MATE_SCORE;
 
             return 0;
         }
-        
+
         if (depth == 0)
-            return Evaluator.Evaluate(Board);
+            return Evaluator.Evaluate(board);
 
         var maxEval = int.MinValue + 1;
-   
+        var startingAlpha = alpha;
+
+        var currentHash = board.Zobrist.HashValue;
+        var entry = TranspositionTable.Retrieve(currentHash);
+        if (entry.HasValue && entry.Value.Depth >= depth)
+        {
+            _ttHits++;
+            return entry.Value.Eval;
+        }
+
         foreach (var move in moves)
         {
             board.ApplyMove(move);
@@ -85,6 +96,15 @@ public class Engine
             if (alpha >= beta)
                 break;
         }
+
+        BoundFlag flag;
+        if (maxEval < startingAlpha) flag = BoundFlag.Upper;
+        else
+        {
+            flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
+        }
+
+        TranspositionTable.Store(currentHash, maxEval, depth, _currentSearchId, flag);
 
         return maxEval;
     }
