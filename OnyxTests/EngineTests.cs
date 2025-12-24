@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Diagnostics;
+using Onyx.Core;
 using Onyx.Statics;
 
 namespace OnyxTests;
@@ -53,5 +54,17 @@ public class EngineTests
         var result = Referee.IsCheckmate(board);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo(fenPre));
+    }
+
+    [Test]
+    public void TimedSearchExitsRight()
+    {
+        var engine = new Engine();
+
+        var sw = Stopwatch.StartNew();
+        var result = engine.Search(10, 1000);
+        sw.Stop();
+
+        Assert.That(sw.ElapsedMilliseconds, Is.GreaterThanOrEqualTo(800).And.LessThanOrEqualTo(1100));
     }
 }

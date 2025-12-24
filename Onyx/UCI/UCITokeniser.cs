@@ -33,9 +33,9 @@ public class Tokeniser
     {
         TokenType type;
         if (builtToken == "uci")
-            type = (TokenType.UCI);
+            type = (TokenType.Uci);
         else if (builtToken == "go")
-            type = (TokenType.GO);
+            type = (TokenType.Go);
         else if (builtToken == "depth")
             type = (TokenType.Depth);
         else if (builtToken == "perft")
@@ -50,6 +50,14 @@ public class Tokeniser
             type = TokenType.Position;
         else if (builtToken == "-")
             type = TokenType.Dash;
+        else if (builtToken == "btime")
+            type = TokenType.Btime;
+        else if (builtToken == "wtime")
+            type = TokenType.Wtime;
+        else if (builtToken == "winc")
+            type = TokenType.Winc;
+        else if (builtToken == "binc")
+            type = TokenType.Binc;
         else if (int.TryParse(builtToken, out var result))
             type = (TokenType.IntLiteral);
 

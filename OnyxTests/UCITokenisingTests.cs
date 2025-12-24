@@ -27,8 +27,8 @@ public class UciParsingTests
         var goCommand = command as GoCommand;
         Assert.Multiple(() =>
         {
-            Assert.That(goCommand!.depth, Is.EqualTo(2));
-            Assert.That(goCommand.isPerft, Is.False);
+            Assert.That(goCommand!.Depth, Is.EqualTo(2));
+            Assert.That(goCommand.IsPerft, Is.False);
         });
 
         const string testPerftCommand = "go perft 2";
@@ -40,8 +40,8 @@ public class UciParsingTests
         {
             if (pComm != null)
             {
-                Assert.That(pComm.depth, Is.EqualTo(2));
-                Assert.That(pComm.isPerft, Is.True);
+                Assert.That(pComm.Depth, Is.EqualTo(2));
+                Assert.That(pComm.IsPerft, Is.True);
             }
         });
     }

@@ -2,13 +2,13 @@
 
 public enum TokenType
 {
-    UCI,
-    GO,
+    Uci,
+    Go,
     Depth,
     Perft,
     IntLiteral,
     Position,
-    EOF,
+    Eof,
     Fen,
     Startpos,
     StringLiteral,
@@ -18,7 +18,10 @@ public enum TokenType
     Colour,
     CastlingString,
     EnPassantString,
-    Dash
+    Dash,
+    Btime,Wtime,
+    Binc,
+    Winc
 }
 
 public struct Token

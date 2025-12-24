@@ -1,6 +1,6 @@
-﻿using Onyx.UCI;
+﻿using Onyx.Core;
 
-namespace Onyx.Core;
+namespace Onyx.UCI;
 
 public class UciInterface
 {
@@ -25,7 +25,7 @@ public class UciInterface
     {
         switch (command)
         {
-            case UCICommand:
+            case UciCommand:
                 Console.WriteLine("uciready");
                 break;
             case GoCommand goCommand:
@@ -44,9 +44,9 @@ public class UciInterface
 
     private void HandleGo(GoCommand command)
     {
-        if (command.isPerft)
+        if (command.IsPerft)
         {
-            var depth = command.depth;
+            var depth = command.Depth;
             for (var i = 1; i <= depth; i++)
             {
                 var perftResult = _player.Perft(i);
@@ -55,7 +55,7 @@ public class UciInterface
         }
         else
         {
-            var move = _player.Search(command.depth);
+            var move = _player.Search(command.Depth);
             Console.WriteLine($"bestmove {move.bestMove}");
         }
     }

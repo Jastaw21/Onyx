@@ -35,9 +35,9 @@ public class Zobrist
         if (fenDetails.ColourToMove == Colour.White)
             HashValue ^= _whiteToMove;
 
-        int rank = 7;
-        int file = 0;
-        int i = 0;
+        var rank = 7;
+        var file = 0;
+        var i = 0;
         while (i < fenDetails.PositionFen.Length)
         {
             // next line indicator

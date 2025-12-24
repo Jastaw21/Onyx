@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Onyx.Core;
+using Onyx.UCI;
 
 namespace Onyx;
 
