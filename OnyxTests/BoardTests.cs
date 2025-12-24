@@ -1,5 +1,4 @@
-﻿using Onyx;
-using Onyx.Core;
+﻿using Onyx.Core;
 
 namespace OnyxTests;
 

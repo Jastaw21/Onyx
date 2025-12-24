@@ -1,7 +1,21 @@
-﻿
-using Onyx.Statics;
+﻿using Onyx.Statics;
 
 namespace Onyx.Core;
+
+internal struct SearchStatistics
+{
+    public int CurrentSearchId;
+    public int Nodes;
+    public int TtHits;
+    public int TtStores;
+    public int BetaCutoffs;
+    public TimeSpan RunTime;
+
+    public override string ToString()
+    {
+        return $"Search: {CurrentSearchId}, Nodes Searched: {Nodes}, Time (ms): {RunTime.TotalMilliseconds} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
+    }
+}
 
 public class Engine
 {
@@ -9,8 +23,8 @@ public class Engine
     public TranspositionTable TranspositionTable { get; private set; }
     public string Position => Board.GetFen();
 
-    private int CurrentSearchID = 0;
-    
+    private SearchStatistics _statistics;
+
     public Engine()
     {
         Board = new Board();
@@ -29,7 +43,9 @@ public class Engine
 
     public (Move bestMove, int score) Search(int depth)
     {
-        CurrentSearchID++;
+        var startTime = System.Diagnostics.Stopwatch.StartNew();
+        _statistics = new SearchStatistics();
+        _statistics.CurrentSearchId++;
         var moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
@@ -50,29 +66,65 @@ public class Engine
                 bestScore = score;
                 bestMove = move;
             }
+
             alpha = Math.Max(alpha, score);
         }
+        
+        startTime.Stop();
+        _statistics.RunTime = startTime.Elapsed;
 
+        Console.WriteLine(_statistics);
         return (bestMove, bestScore);
     }
 
     private int AlphaBeta(int depth, int alpha, int beta, Board board)
     {
-        var moves = MoveGenerator.GetLegalMoves(Board);
+        _statistics.Nodes++;
+        var moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)
         {
-            if (Referee.IsCheckmate(Board))
-                return -MATE_SCORE;
+            if (Referee.IsCheckmate(board))
+                return -MateScore;
 
             return 0;
         }
-        
+
         if (depth == 0)
-            return Evaluator.Evaluate(Board);
+            return Evaluator.Evaluate(board);
 
         var maxEval = int.MinValue + 1;
-   
+        var startingAlpha = alpha;
+
+        var currentHash = board.Zobrist.HashValue;
+        var entry = TranspositionTable.Retrieve(currentHash);
+        if (entry.HasValue && entry.Value.Depth >= depth)
+        {
+            _statistics.TtHits++;
+            switch (entry.Value.BoundFlag)
+            {
+                case BoundFlag.Exact:
+                    _statistics.TtHits++;
+                    return entry.Value.Eval;
+
+                case BoundFlag.Upper:
+                    if (entry.Value.Eval <= alpha)
+                    {
+                        _statistics.TtHits++;
+                        return entry.Value.Eval;
+                    }
+                    break;
+
+                case BoundFlag.Lower:
+                    if (entry.Value.Eval >= beta)
+                    {
+                        _statistics.TtHits++;
+                        return entry.Value.Eval;
+                    }
+                    break;
+            }
+        }
+
         foreach (var move in moves)
         {
             board.ApplyMove(move);
@@ -83,11 +135,24 @@ public class Engine
             alpha = Math.Max(alpha, eval);
 
             if (alpha >= beta)
+            {
+                _statistics.BetaCutoffs++;
                 break;
+            }
         }
+
+        BoundFlag flag;
+        if (maxEval < startingAlpha) flag = BoundFlag.Upper;
+        else
+        {
+            flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
+        }
+
+        TranspositionTable.Store(currentHash, maxEval, depth, _statistics.CurrentSearchId, flag);
+        _statistics.TtStores++;
 
         return maxEval;
     }
 
-    private const int MATE_SCORE = 30000;
+    private const int MateScore = 30000;
 }

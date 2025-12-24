@@ -28,28 +28,28 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] All()
     {
-        return allPieces;
+        return _allPieces;
     }
 
-    private static Piece[] allPieces =
+    private static Piece[] _allPieces =
     [
         WP, WB, WK, WQ, WN, WR,
         BP, BB, BK, BQ, BN, BR
     ];
-    private static Piece[] whitePieces =
+    private static Piece[] _whitePieces =
     [
         WP, WB, WK, WQ, WN, WR
     ];
-    private static Piece[] blackPieces =
+    private static Piece[] _blackPieces =
     [
         BP, BB, BK, BQ, BN, BR
     ];
-    private static Piece[] whitePromotionTypes = [WB, WQ, WR, WN];
-    private static Piece[] blackPromotionTypes = [BB, BQ, BR, BN];
+    private static Piece[] _whitePromotionTypes = [WB, WQ, WR, WN];
+    private static Piece[] _blackPromotionTypes = [BB, BQ, BR, BN];
 
     public static Piece[] PromotionTypes(Colour colour)
     {
-        return colour == Colour.White ? whitePromotionTypes : blackPromotionTypes;
+        return colour == Colour.White ? _whitePromotionTypes : _blackPromotionTypes;
     }
 
     public static Piece MakePiece(PieceType piece, Colour colour)
@@ -72,6 +72,6 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] ByColour(Colour colour)
     {
-        return colour == Colour.White ? whitePieces : blackPieces;
+        return colour == Colour.White ? _whitePieces : _blackPieces;
     }
 }

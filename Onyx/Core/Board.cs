@@ -207,7 +207,8 @@ public class Board
     public void UndoMove(Move move)
     {
         //ApplyMoveFlags(move: ref move);
-
+       
+        Square? capturedOn = null;
 
         var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
@@ -218,8 +219,12 @@ public class Board
         if (previousState.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
+            {
                 Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
+                capturedOn = move.To;
+            }
         }
+        
 
 
         MovePiece(move.PieceMoved, move.To, move.From);
@@ -238,13 +243,18 @@ public class Board
             Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookNewFile));
         }
 
+        
+
         if (move.IsEnPassant)
         {
             var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
             var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+            capturedOn = new Square(pawnHomeRank, move.To.FileIndex);
             Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
-                new Square(pawnHomeRank, move.To.FileIndex));
+                capturedOn.Value);
         }
+        
+        Zobrist.ApplyMove(move,previousState.CapturedPiece,capturedOn);
 
 
         SwapTurns();
