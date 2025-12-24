@@ -5,7 +5,9 @@ namespace Onyx.UCI;
 
 public class UciInterface
 {
-    private Engine _player = new Engine();
+    private readonly Engine _player = new Engine();
+
+    public Engine Player => _player;
 
     public void HandleCommand(string commandString)
     {
@@ -13,7 +15,7 @@ public class UciInterface
         var logEntry = $"[{timestamp}] {commandString}";
         File.AppendAllText("uci_commands.log", logEntry + Environment.NewLine);
 
-        var command = _parser.Parse(commandString);
+        Command? command = _parser.Parse(commandString);
         if (command is null)
         {
             Console.WriteLine($"Unknown command {commandString}");
@@ -68,7 +70,7 @@ public class UciInterface
         }
         else
         {
-            var move = _player.RequestSearch(depth, command.TimeControl);
+            (Move bestMove, int score) move = _player.RequestSearch(depth, command.TimeControl);
             Console.WriteLine($"bestmove {move.bestMove}");
         }
     }

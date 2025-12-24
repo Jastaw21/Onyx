@@ -6,9 +6,9 @@ public static class MoveGenerator
 {
     public static List<Move> GetLegalMoves(Board board)
     {
-        var rawMoves = GetMoves(board.TurnToMove, board);
+        List<Move> rawMoves = GetMoves(board.TurnToMove, board);
         var legalMoves = new List<Move>();
-        foreach (var move in rawMoves)
+        foreach (Move move in rawMoves)
         {
             if (Referee.MoveIsLegal(move,ref board))
                 legalMoves.Add(move);
@@ -55,7 +55,7 @@ public static class MoveGenerator
     {
         List<Move> moves = [];
 
-        foreach (var piece in Piece.ByColour(colour))
+        foreach (Piece piece in Piece.ByColour(colour))
         {
             moves.AddRange(GetMoves(piece, board));
         }
@@ -75,7 +75,7 @@ public static class MoveGenerator
         var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(piece.Colour, square, board.Bitboards.Occupancy());
         var attacks = rawMoveOutput ^ pushes;
 
-        var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
+        Colour opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
         var opponentOccupancy = board.Bitboards.OccupancyByColour(opponentColour);
 
 
@@ -112,7 +112,7 @@ public static class MoveGenerator
         if (square.SquareIndex != expectedSquare)
             return;
 
-        var opponentColour = isWhite ? Colour.Black : Colour.White;
+        Colour opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
 
 
@@ -210,7 +210,7 @@ public static class MoveGenerator
             return;
 
         var offset = piece.Colour == Colour.White ? 8 : -8;
-        foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
+        foreach (Piece promotionType in Piece.PromotionTypes(piece.Colour))
         {
             PushPromotion(promotionType);
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Onyx.Core;
 
 public static class BoardConstants
@@ -15,7 +16,6 @@ public static class BoardConstants
 
     public const ulong WhiteQueenSideCastlingSquares = 0xe;
     public const ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
-
 
     public const int A1 = 0;
     public const int H1 = 7;
@@ -32,7 +32,6 @@ public static class BoardConstants
 
     public const int B8 = 57;
     public const int B1 = 1;
-
 
     public static readonly int[][] KnightMoves =
         [[2, -1], [2, 1], [1, -2], [1, 2], [-1, -2], [-1, 2], [-2, -1], [-2, 1]];
@@ -114,12 +113,11 @@ public class Board
         return builtFen;
     }
 
-
     public void ApplyMove(Move move)
     {
         ApplyMoveFlags(ref move);
 
-        var opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+        Colour opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
         Piece? capturedPiece;
         Square? capturedSquare;
 
@@ -134,8 +132,8 @@ public class Board
             capturedPiece = Bitboards.PieceAtSquare(move.To);
             capturedSquare = move.To;
         }
-        
-        Zobrist.ApplyMove(move,capturedPiece,capturedSquare);
+
+        Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
 
         var state = new BoardState
         {
@@ -169,7 +167,7 @@ public class Board
         // handle castling
         if (move.IsCastling)
         {
-            var affectedRook = move.PieceMoved.Colour == Colour.White
+            Piece affectedRook = move.PieceMoved.Colour == Colour.White
                 ? Piece.WR
                 : Piece.BR;
 
@@ -210,10 +208,10 @@ public class Board
     public void UndoMove(Move move)
     {
         //ApplyMoveFlags(move: ref move);
-       
+
         Square? capturedOn = null;
 
-        var previousState = _boardStateHistory.Pop();
+        BoardState previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
         HalfMoves = previousState.HalfMove;
@@ -227,7 +225,6 @@ public class Board
                 capturedOn = move.To;
             }
         }
-        
 
 
         MovePiece(move.PieceMoved, move.To, move.From);
@@ -246,18 +243,17 @@ public class Board
             Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookNewFile));
         }
 
-        
 
         if (move.IsEnPassant)
         {
             var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
-            var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+            Colour capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
             capturedOn = new Square(pawnHomeRank, move.To.FileIndex);
             Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
                 capturedOn.Value);
         }
-        
-        Zobrist.ApplyMove(move,previousState.CapturedPiece,capturedOn);
+
+        Zobrist.ApplyMove(move, previousState.CapturedPiece, capturedOn);
 
 
         SwapTurns();
@@ -334,7 +330,7 @@ public class Board
 
     private void ApplyBoardStateFromFen(string fen)
     {
-        var fenDetails = Fen.FromString(fen);
+        FenDetails fenDetails = Fen.FromString(fen);
 
         TurnToMove = fenDetails.ColourToMove;
 
@@ -353,6 +349,18 @@ public class Board
 
     public void ApplyMoves(List<string>? positionCommandMoves)
     {
-        throw new System.NotImplementedException();
+        if (positionCommandMoves == null) return;
+        foreach (var move in positionCommandMoves)
+        {
+            var from = move[..2];
+            var squareFrom = new Square(from);
+
+            Piece? pieceMoved = Bitboards.PieceAtSquare(squareFrom);
+            if (!pieceMoved.HasValue)
+                throw new InvalidOperationException("No piece at moved from square");
+
+            var moveToApply = new Move(pieceMoved.Value, move);
+            ApplyMove(moveToApply);
+        }
     }
 }

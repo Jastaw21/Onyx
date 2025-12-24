@@ -1,9 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
+
 namespace Onyx.Core;
-
-
-
 
 public class Bitboards
 {
@@ -33,6 +31,7 @@ public class Bitboards
         {
             _boards[colourIndex * _pieceTypeCount + pieceTypeIndex] = 0ul;
         }
+
         LoadFen(fenString);
     }
 
@@ -65,7 +64,7 @@ public class Bitboards
             // this is a piece, so set it and move the file on
             else
             {
-                var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
+                Piece piece = Fen.GetPieceFromChar(fenString[currentIndex]);
                 SetOn(piece, new Square(rankIndex, fileIndex));
                 fileIndex++;
             }
@@ -143,8 +142,7 @@ public class Bitboards
 
     public Piece? PieceAtSquare(Square squareToTest)
     {
-        
-        foreach (var piece in Piece.All())
+        foreach (Piece piece in Piece.All())
 
         {
             var board = OccupancyByPiece(piece);
@@ -166,7 +164,7 @@ public class Bitboards
 
             for (var fileIndex = 0; fileIndex <= 7; fileIndex++)
             {
-                var pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
+                Piece? pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
 
                 if (pieceHere.HasValue)
                 {

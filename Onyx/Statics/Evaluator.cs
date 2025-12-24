@@ -15,12 +15,12 @@ public static class Evaluator
     {
         var whiteScore = 0;
         var blackScore = 0;
-        foreach (var piece in Piece.ByColour(Colour.White))
+        foreach (Piece piece in Piece.ByColour(Colour.White))
         {
             whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }
 
-        foreach (var piece in Piece.ByColour(Colour.Black))
+        foreach (Piece piece in Piece.ByColour(Colour.Black))
         {
             blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }

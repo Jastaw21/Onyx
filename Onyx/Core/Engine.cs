@@ -98,7 +98,7 @@ public class Engine
             // time out
             if (_timerManager.ShouldStop)
                 return (bestMove, bestScore);
-            var searchResult = ExecuteSearch(depth, true);
+            (Move bestMove, int score) searchResult = ExecuteSearch(depth, true);
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
         }
@@ -126,7 +126,7 @@ public class Engine
         _statistics = new SearchStatistics();
         _currentSearchID++;
 
-        var searchResult = ExecuteSearch(depth, false);
+        (Move bestMove, int score) searchResult = ExecuteSearch(depth, false);
 
         _statistics.RunTime = _timerManager.Elapsed;
         Console.WriteLine(_statistics);
@@ -135,16 +135,16 @@ public class Engine
 
     private (Move bestMove, int score) ExecuteSearch(int depth, bool timed)
     {
-        var moves = MoveGenerator.GetLegalMoves(Board);
+        List<Move> moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
 
-        var bestMove = moves[0];
+        Move bestMove = moves[0];
         var bestScore = int.MinValue + 1;
         var alpha = int.MinValue + 1;
         var beta = int.MaxValue;
 
-        foreach (var move in moves)
+        foreach (Move move in moves)
         {
             Board.ApplyMove(move);
             var score = -AlphaBeta(depth - 1, -beta, -alpha, Board, timed);
@@ -167,7 +167,7 @@ public class Engine
         if (timed && _timerManager.ShouldStop)
             return 0;
         _statistics.Nodes++;
-        var moves = MoveGenerator.GetLegalMoves(board);
+        List<Move> moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)
         {
@@ -183,10 +183,10 @@ public class Engine
         var startingAlpha = alpha;
 
         var currentHash = board.Zobrist.HashValue;
-        var entry = TranspositionTable.Retrieve(currentHash);
+        TranspositionTableEntry? entry = TranspositionTable.Retrieve(currentHash);
         if (RetrieveTTEntry(out var alphaBeta)) return alphaBeta;
 
-        foreach (var move in moves)
+        foreach (Move move in moves)
         {
             board.ApplyMove(move);
             var eval = -AlphaBeta(depth - 1, -beta, -alpha, board, timed);

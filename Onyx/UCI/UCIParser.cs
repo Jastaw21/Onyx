@@ -23,7 +23,7 @@ public class UciParser
         _tokeniser = new Tokeniser(uciString);
         while (_currentToken < _tokeniser.Tokens.Count)
         {
-            var currentToken = Consume();
+            Token currentToken = Consume();
 
             switch (currentToken.Type)
             {
@@ -55,7 +55,7 @@ public class UciParser
 
         while (Peek().Type != TokenType.Eof)
         {
-            var token = Peek();
+            Token token = Peek();
 
             switch (token.Type)
             {
@@ -113,7 +113,7 @@ public class UciParser
     {
         var isStartpos = false;
 
-        var positionType = Consume();
+        Token positionType = Consume();
 
         if (positionType.Type == TokenType.Fen)
             isStartpos = false;
@@ -162,7 +162,7 @@ public class UciParser
             moves = [];
             while (Peek().Type != TokenType.Eof)
             {
-                var token = Consume();
+                Token token = Consume();
                 if (token.Type == TokenType.MoveString)
                     moves.Add(token.Value);
             }
