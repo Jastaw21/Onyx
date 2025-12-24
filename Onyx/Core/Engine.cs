@@ -2,14 +2,28 @@
 
 namespace Onyx.Core;
 
+internal struct SearchStatistics
+{
+    public int currentSearchID;
+    public int nodes;
+    public int ttHits;
+    public int ttStores;
+    public int betaCutoffs;
+    public TimeSpan runTime;
+
+    public override string ToString()
+    {
+        return $"Search: {currentSearchID}, Nodes Searched: {nodes}, Time (ms): {runTime.TotalMilliseconds} , TTTable hits {ttHits}, TTStores {ttStores}, BetaCutoffs {betaCutoffs}";
+    }
+}
+
 public class Engine
 {
     public Board Board;
     public TranspositionTable TranspositionTable { get; private set; }
     public string Position => Board.GetFen();
 
-    private int _currentSearchId = 0;
-    private int _ttHits;
+    private SearchStatistics statistics;
 
     public Engine()
     {
@@ -29,7 +43,9 @@ public class Engine
 
     public (Move bestMove, int score) Search(int depth)
     {
-        _currentSearchId++;
+        var startTime = System.Diagnostics.Stopwatch.StartNew();
+        statistics = new SearchStatistics();
+        statistics.currentSearchID++;
         var moves = MoveGenerator.GetLegalMoves(Board);
         if (moves.Count == 0)
             throw new InvalidOperationException("No Moves");
@@ -53,13 +69,17 @@ public class Engine
 
             alpha = Math.Max(alpha, score);
         }
+        
+        startTime.Stop();
+        statistics.runTime = startTime.Elapsed;
 
-        Console.WriteLine(_ttHits);
+        Console.WriteLine(statistics);
         return (bestMove, bestScore);
     }
 
     private int AlphaBeta(int depth, int alpha, int beta, Board board)
     {
+        statistics.nodes++;
         var moves = MoveGenerator.GetLegalMoves(board);
 
         if (moves.Count == 0)
@@ -80,8 +100,29 @@ public class Engine
         var entry = TranspositionTable.Retrieve(currentHash);
         if (entry.HasValue && entry.Value.Depth >= depth)
         {
-            _ttHits++;
-            return entry.Value.Eval;
+            statistics.ttHits++;
+            switch (entry.Value.boundFlag)
+            {
+                case BoundFlag.Exact:
+                    statistics.ttHits++;
+                    return entry.Value.Eval;
+
+                case BoundFlag.Upper:
+                    if (entry.Value.Eval <= alpha)
+                    {
+                        statistics.ttHits++;
+                        return entry.Value.Eval;
+                    }
+                    break;
+
+                case BoundFlag.Lower:
+                    if (entry.Value.Eval >= beta)
+                    {
+                        statistics.ttHits++;
+                        return entry.Value.Eval;
+                    }
+                    break;
+            }
         }
 
         foreach (var move in moves)
@@ -94,7 +135,10 @@ public class Engine
             alpha = Math.Max(alpha, eval);
 
             if (alpha >= beta)
+            {
+                statistics.betaCutoffs++;
                 break;
+            }
         }
 
         BoundFlag flag;
@@ -104,7 +148,8 @@ public class Engine
             flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
         }
 
-        TranspositionTable.Store(currentHash, maxEval, depth, _currentSearchId, flag);
+        TranspositionTable.Store(currentHash, maxEval, depth, statistics.currentSearchID, flag);
+        statistics.ttStores++;
 
         return maxEval;
     }

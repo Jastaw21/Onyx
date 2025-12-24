@@ -74,7 +74,7 @@ public class Zobrist
         var movedPieceToRand = movedPieceArray[move.To.SquareIndex];
         var movedPieceFromRand = movedPieceArray[move.From.SquareIndex];
 
-        // move the moving piece, turning tits from square off, and to square on
+        // move the moving piece, turning its from square off, and to square on
         HashValue ^= movedPieceFromRand;
         HashValue ^= movedPieceToRand;
 
