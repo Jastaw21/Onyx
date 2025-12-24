@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Onyx.Statics;
+using Onyx.UCI;
 
 namespace Onyx.Core;
 
@@ -108,6 +109,17 @@ public class Engine
         return (bestMove, bestScore);
     }
 
+    public (Move bestMove, int score) RequestSearch(int depth, TimeControl timeControl)
+    {
+        if (timeControl is not { Btime: not null, Wtime: not null }) return Search(depth);
+        
+        var relevantTime = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
+        var xMovesRemaining = timeControl.movesToGo ?? 40; // always assume 5 moves remaining??
+        var timeBudgetPerMove = relevantTime.Value / xMovesRemaining;
+        return Search(depth, timeBudgetPerMove);
+
+    }
+
     public (Move bestMove, int score) Search(int depth)
     {
         _timerManager.Start();
@@ -115,7 +127,7 @@ public class Engine
         _currentSearchID++;
 
         var searchResult = ExecuteSearch(depth, false);
-        
+
         _statistics.RunTime = _timerManager.Elapsed;
         Console.WriteLine(_statistics);
         return (searchResult.bestMove, searchResult.score);
@@ -179,9 +191,9 @@ public class Engine
             board.ApplyMove(move);
             var eval = -AlphaBeta(depth - 1, -beta, -alpha, board, timed);
             board.UndoMove(move);
-            
+
             if (timed && _timerManager.ShouldStop)
-                return maxEval; 
+                return maxEval;
 
             maxEval = Math.Max(maxEval, eval);
             alpha = Math.Max(alpha, eval);
@@ -214,7 +226,6 @@ public class Engine
         {
             if (entry.HasValue && entry.Value.Depth >= depth)
             {
-                _statistics.TtHits++;
                 switch (entry.Value.BoundFlag)
                 {
                     case BoundFlag.Exact:
@@ -250,4 +261,11 @@ public class Engine
     }
 
     private const int MateScore = 30000;
+
+    public void Reset()
+    {
+        _statistics = new SearchStatistics();
+        Board = new Board();
+        _timerManager = new TimerManager();
+    }
 }

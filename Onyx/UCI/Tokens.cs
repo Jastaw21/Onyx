@@ -21,7 +21,11 @@ public enum TokenType
     Dash,
     Btime,Wtime,
     Binc,
-    Winc
+    Winc,
+    UciNewGame,
+    IsReady,
+    Movestogo,
+    Quit
 }
 
 public struct Token

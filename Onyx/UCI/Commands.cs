@@ -5,15 +5,24 @@ namespace Onyx.UCI;
 public abstract record Command;
 public record UciCommand : Command;
 
-public record GoCommand : Command
+public struct TimeControl
 {
-    public bool IsPerft;
-    public int Depth;
     public int? Wtime;
     public int? Btime;
     public int? Binc;
     public int? Winc;
+    public int? movesToGo;
 }
+
+public record GoCommand : Command
+{
+    public bool IsPerft;
+    public int Depth;
+    public TimeControl TimeControl;
+}
+
+public record UciNewGameCommand : Command;
+public record IsReadyCommand : Command;
 
 public record PositionCommand : Command
 {

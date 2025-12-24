@@ -58,6 +58,15 @@ public class Tokeniser
             type = TokenType.Winc;
         else if (builtToken == "binc")
             type = TokenType.Binc;
+        else if (builtToken == "ucinewgame")
+            type = TokenType.UciNewGame;
+        else if (builtToken == "isready")
+            type = TokenType.IsReady;
+        else if (builtToken == "movestogo")
+            type = TokenType.Movestogo;
+        else if (builtToken == "quit")
+            type = TokenType.Quit;
+        
         else if (int.TryParse(builtToken, out var result))
             type = (TokenType.IntLiteral);
 

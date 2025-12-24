@@ -29,10 +29,17 @@ public class UciParser
             {
                 case TokenType.Uci:
                     return new UciCommand();
+                case TokenType.UciNewGame:
+                    return new UciNewGameCommand();
+                case TokenType.IsReady:
+                    return new IsReadyCommand();
                 case TokenType.Position:
                     return ParsePositionCommand();
                 case TokenType.Go:
                     return ParseGoCommand();
+                case TokenType.Quit:
+                    Environment.Exit(0);
+                    break;
                 default:
                     throw new ArgumentException(
                         $"Invalid starting token of type {currentToken.Type} with value {currentToken.Value}");
@@ -63,19 +70,23 @@ public class UciParser
             switch (anchorToken.Type)
             {
                 case TokenType.Btime:
-                    if (Peek().Type == TokenType.IntLiteral) command.Btime = int.Parse(Consume().Value);
+                    if (Peek().Type == TokenType.IntLiteral) command.TimeControl.Btime = int.Parse(Consume().Value);
                     break;
                 case TokenType.Wtime:
-                    if (Peek().Type == TokenType.IntLiteral) command.Wtime = int.Parse(Consume().Value);
+                    if (Peek().Type == TokenType.IntLiteral) command.TimeControl.Wtime = int.Parse(Consume().Value);
                     break;
                 case TokenType.Binc:
-                    if (Peek().Type == TokenType.IntLiteral) command.Binc = int.Parse(Consume().Value);
+                    if (Peek().Type == TokenType.IntLiteral) command.TimeControl.Binc = int.Parse(Consume().Value);
                     break;
                 case TokenType.Winc:
-                    if (Peek().Type == TokenType.IntLiteral) command.Winc = int.Parse(Consume().Value);
+                    if (Peek().Type == TokenType.IntLiteral) command.TimeControl.Winc = int.Parse(Consume().Value);
+                    break;
+                case TokenType.Movestogo:
+                    if (Peek().Type == TokenType.IntLiteral) command.TimeControl.movesToGo = int.Parse(Consume().Value);
                     break;
             }
         }
+
         return command;
     }
 
