@@ -74,12 +74,20 @@ public class UciInterface
         }
         else
         {
-            (Move bestMove, int score) move = _player.RequestSearch(depth, command.TimeControl);
+            var move = _player.RequestSearch(depth, command.TimeControl);
             var result = $"bestmove {move.bestMove}";
             Logger.Log(LogType.UCISent, result);
+            var infoString = GetInf(move.stats);
+            Logger.Log(LogType.UCISent,infoString);
             Console.WriteLine($"bestmove {move.bestMove}");
+            Console.WriteLine(infoString);
         }
     }
 
-    private UciParser _parser = new UciParser();
+    private string GetInf(SearchStatistics stats)
+    {
+        return $"info depth {stats.Depth} nodes {stats.Nodes}";
+    }
+
+    private readonly UciParser _parser = new UciParser();
 }

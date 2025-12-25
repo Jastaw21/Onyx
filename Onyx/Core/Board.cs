@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-
-namespace Onyx.Core;
+﻿namespace Onyx.Core;
 
 public static class BoardConstants
 {

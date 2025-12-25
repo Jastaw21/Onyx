@@ -4,18 +4,25 @@ using Onyx.UCI;
 
 namespace Onyx.Core;
 
-internal struct SearchStatistics
+public struct SearchStatistics : ILoggable
 {
     public int Nodes;
     public int TtHits;
     public int TtStores;
     public int BetaCutoffs;
     public long RunTime;
+    public int Depth;
+
+    public string Get()
+    {
+        return
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs},b vn ";
+    }
 
     public override string ToString()
     {
         return
-            $"Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
     }
 }
 
@@ -84,7 +91,7 @@ public class Engine
         return PerftSearcher.GetPerftResults(board: Board, depth);
     }
 
-    public (Move bestMove, int score) Search(int depth, long timeMS)
+    private (Move bestMove, int score) Search(int depth, long timeMS)
     {
         _timerManager.Start(timeMS);
         _statistics = new SearchStatistics();
@@ -101,26 +108,32 @@ public class Engine
             (Move bestMove, int score) searchResult = ExecuteSearch(depth, true);
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
+            _statistics.Depth = depth;
         }
 
         _statistics.RunTime = _timerManager.Elapsed;
 
-        Console.WriteLine(_statistics);
+        Logger.Log(LogType.EngineLog, _statistics);
         return (bestMove, bestScore);
     }
 
-    public (Move bestMove, int score) RequestSearch(int depth, TimeControl timeControl)
+    public (Move bestMove, int score, SearchStatistics stats) RequestSearch(int depth, TimeControl timeControl)
     {
-        if (timeControl is not { Btime: not null, Wtime: not null }) return Search(depth);
-        
+        if (timeControl is not { Btime: not null, Wtime: not null })
+        {
+            var result = Search(depth);
+            _statistics.Depth = depth;
+            return (result.bestMove, result.score, _statistics);
+        }
+
         var relevantTime = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
         var xMovesRemaining = timeControl.movesToGo ?? 40; // always assume 5 moves remaining??
         var timeBudgetPerMove = relevantTime.Value / xMovesRemaining;
-        return Search(depth, timeBudgetPerMove);
-
+        var searchResult = Search(depth, timeBudgetPerMove);
+        return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
-    public (Move bestMove, int score) Search(int depth)
+    private (Move bestMove, int score) Search(int depth)
     {
         _timerManager.Start();
         _statistics = new SearchStatistics();
@@ -129,7 +142,7 @@ public class Engine
         (Move bestMove, int score) searchResult = ExecuteSearch(depth, false);
 
         _statistics.RunTime = _timerManager.Elapsed;
-        Console.WriteLine(_statistics);
+        Logger.Log(LogType.EngineLog, _statistics);
         return (searchResult.bestMove, searchResult.score);
     }
 
