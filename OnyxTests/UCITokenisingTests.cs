@@ -84,4 +84,13 @@ public class UciParsingTests
                 Is.EqualTo("r1bqkbnr/pp1ppppp/2n5/2p5/5Q2/3PP3/PPP2PPP/RNB1KBNR w KQkq - 0 1"));
         });
     }
+
+    [Test]
+    public void ParsePositionWithMoves()
+    {
+        var uciInterface = new UciInterface();
+        uciInterface.HandleCommand("position startpos moves a2a4 b7b5");
+        Assert.That(uciInterface.Player.Board.GetFen(),
+            Is.EqualTo("rnbqkbnr/p1pppppp/8/1p6/P7/8/1PPPPPPP/RNBQKBNR w KQkq b6 0 2"));
+    }
 }

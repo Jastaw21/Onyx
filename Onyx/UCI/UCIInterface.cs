@@ -1,5 +1,5 @@
-﻿using System;
-using Onyx.Core;
+﻿using Onyx.Core;
+using Onyx.Statics;
 
 namespace Onyx.UCI;
 
@@ -11,9 +11,7 @@ public class UciInterface
 
     public void HandleCommand(string commandString)
     {
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logEntry = $"[{timestamp}] {commandString}";
-        File.AppendAllText("uci_commands.log", logEntry + Environment.NewLine);
+        Logger.Log(LogType.UCIReceived, commandString);
 
         Command? command = _parser.Parse(commandString);
         if (command is null)
@@ -30,9 +28,13 @@ public class UciInterface
         switch (command)
         {
             case UciCommand:
-                Console.WriteLine("id name Onyx");
-                Console.WriteLine("id author JackWeddell");
-                Console.WriteLine("uciok");
+                List<string> lines = ["id name Onyx", "id author JackWeddell", "uciok"];
+                foreach (var line in lines)
+                {
+                    Logger.Log(LogType.UCISent, line);
+                    Console.WriteLine(line);
+                }
+
                 break;
             case GoCommand goCommand:
                 HandleGo(goCommand);
@@ -65,12 +67,16 @@ public class UciInterface
             for (var i = 1; i <= depth; i++)
             {
                 var perftResult = _player.Perft(i);
+                var result = $"Depth {i} :  {perftResult}";
+                Logger.Log(LogType.UCISent, result);
                 Console.WriteLine($"Depth {i} :  {perftResult}");
             }
         }
         else
         {
             (Move bestMove, int score) move = _player.RequestSearch(depth, command.TimeControl);
+            var result = $"bestmove {move.bestMove}";
+            Logger.Log(LogType.UCISent, result);
             Console.WriteLine($"bestmove {move.bestMove}");
         }
     }
