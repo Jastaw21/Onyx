@@ -75,7 +75,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.1.0";
+    public string Version { get; } = "0.2.0";
 
     public Engine()
     {
