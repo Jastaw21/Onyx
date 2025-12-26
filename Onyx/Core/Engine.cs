@@ -2,6 +2,7 @@
 using Onyx.Statics;
 using Onyx.UCI;
 
+
 namespace Onyx.Core;
 
 public struct SearchStatistics : ILoggable
@@ -72,8 +73,9 @@ public class Engine
     public string Position => Board.GetFen();
 
     private SearchStatistics _statistics;
-    private int _currentSearchID = 0;
-    private TimerManager _timerManager = new TimerManager();
+    private int _currentSearchId;
+    private TimerManager _timerManager = new();
+    public string Version { get; } = "0.1.0";
 
     public Engine()
     {
@@ -91,11 +93,11 @@ public class Engine
         return PerftSearcher.GetPerftResults(board: Board, depth);
     }
 
-    private (Move bestMove, int score) Search(int depth, long timeMS)
+    public (Move bestMove, int score, SearchStatistics stats) TimedSearch(int depth, long timeMS)
     {
         _timerManager.Start(timeMS);
         _statistics = new SearchStatistics();
-        _currentSearchID++;
+        _currentSearchId++;
         Move bestMove = default;
 
         var bestScore = 0;
@@ -104,40 +106,46 @@ public class Engine
         {
             // time out
             if (_timerManager.ShouldStop)
-                return (bestMove, bestScore);
-            (Move bestMove, int score) searchResult = ExecuteSearch(depth, true);
+            {
+                _statistics.RunTime = _timerManager.Elapsed;
+                return (bestMove, bestScore, _statistics);
+            }
+
+            (Move bestMove, int score) searchResult = ExecuteSearch(i, true);
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
-            _statistics.Depth = depth;
+            _statistics.Depth = i;
         }
 
         _statistics.RunTime = _timerManager.Elapsed;
 
         Logger.Log(LogType.EngineLog, _statistics);
-        return (bestMove, bestScore);
+        return (bestMove, bestScore, _statistics);
     }
 
-    public (Move bestMove, int score, SearchStatistics stats) RequestSearch(int depth, TimeControl timeControl)
+    public (Move bestMove, int score, SearchStatistics stats) CalcAndDispatchTimedSearch(int depth,
+        TimeControl timeControl)
     {
-        if (timeControl is not { Btime: not null, Wtime: not null })
+        var relevantTimeControl = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
+        
+        if (relevantTimeControl is null)
         {
-            var result = Search(depth);
+            var result = DepthSearch(depth);
             _statistics.Depth = depth;
             return (result.bestMove, result.score, _statistics);
         }
-
-        var relevantTime = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
-        var xMovesRemaining = timeControl.movesToGo ?? 40; // always assume 5 moves remaining??
-        var timeBudgetPerMove = relevantTime.Value / xMovesRemaining;
-        var searchResult = Search(depth, timeBudgetPerMove);
+        
+        var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
+        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
+        var searchResult = TimedSearch(depth, timeBudgetPerMove);
         return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
-    private (Move bestMove, int score) Search(int depth)
+    public (Move bestMove, int score) DepthSearch(int depth)
     {
         _timerManager.Start();
         _statistics = new SearchStatistics();
-        _currentSearchID++;
+        _currentSearchId++;
 
         (Move bestMove, int score) searchResult = ExecuteSearch(depth, false);
 
@@ -178,7 +186,11 @@ public class Engine
     private int AlphaBeta(int depth, int alpha, int beta, Board board, bool timed)
     {
         if (timed && _timerManager.ShouldStop)
+        {
+            _statistics.RunTime = _timerManager.Elapsed;
             return 0;
+        }
+
         _statistics.Nodes++;
         List<Move> moves = MoveGenerator.GetLegalMoves(board);
 
@@ -231,7 +243,7 @@ public class Engine
                 flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
             }
 
-            TranspositionTable.Store(currentHash, maxEval, depth, _currentSearchID, flag);
+            TranspositionTable.Store(currentHash, maxEval, depth, _currentSearchId, flag);
             _statistics.TtStores++;
         }
 

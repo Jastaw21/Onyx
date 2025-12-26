@@ -28,7 +28,7 @@ public class UciInterface
         switch (command)
         {
             case UciCommand:
-                List<string> lines = ["id name Onyx", "id author JackWeddell", "uciok"];
+                List<string> lines = [$"id name Onyx {_player.Version}", "id author JackWeddell", "uciok"];
                 foreach (var line in lines)
                 {
                     Logger.Log(LogType.UCISent, line);
@@ -61,7 +61,7 @@ public class UciInterface
 
     private void HandleGo(GoCommand command)
     {
-        var depth = command.Depth ?? 5; // Default to 5 if not specified
+        var depth = command.Depth ?? 10; // Default to 5 if not specified
         if (command.IsPerft)
         {
             for (var i = 1; i <= depth; i++)
@@ -74,7 +74,7 @@ public class UciInterface
         }
         else
         {
-            var move = _player.RequestSearch(depth, command.TimeControl);
+            var move = _player.CalcAndDispatchTimedSearch(depth, command.TimeControl);
             var result = $"bestmove {move.bestMove}";
             Logger.Log(LogType.UCISent, result);
             var infoString = GetInf(move.stats);
@@ -86,8 +86,11 @@ public class UciInterface
 
     private string GetInf(SearchStatistics stats)
     {
-        return $"info depth {stats.Depth} nodes {stats.Nodes}";
+        var nps = 0;
+        if (stats.RunTime > 0)
+            nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
+        return $"info depth {stats.Depth} nodes {stats.Nodes} time {stats.RunTime} nps {nps}";
     }
 
-    private readonly UciParser _parser = new UciParser();
+    private readonly UciParser _parser = new();
 }
