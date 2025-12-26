@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Onyx.Statics;
 using Onyx.UCI;
 
@@ -25,6 +26,20 @@ public struct SearchStatistics : ILoggable
         return
             $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
     }
+}
+
+public readonly struct SearchResult
+{
+    public bool Completed { get; }
+    public int Value { get; }
+
+    public SearchResult(bool completed, int value)
+    {
+        Completed = completed;
+        Value = value;
+    }
+
+    public static SearchResult Abort => new(false, 0);
 }
 
 internal class TimerManager
@@ -75,6 +90,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
+    private bool _depthCompleted;
     public string Version { get; } = "0.2.0";
 
     public Engine()
@@ -98,8 +114,8 @@ public class Engine
         _timerManager.Start(timeMS);
         _statistics = new SearchStatistics();
         _currentSearchId++;
+        
         Move bestMove = default;
-
         var bestScore = 0;
 
         for (var i = 1; i <= depth; i++)
@@ -111,7 +127,9 @@ public class Engine
                 return (bestMove, bestScore, _statistics);
             }
 
-            (Move bestMove, int score) searchResult = ExecuteSearch(i, true);
+            var searchResult = ExecuteSearch(i, true);
+            if (!searchResult.completed) continue;
+            
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             _statistics.Depth = i;
@@ -127,18 +145,24 @@ public class Engine
         TimeControl timeControl)
     {
         var relevantTimeControl = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
-        
+
         if (relevantTimeControl is null)
         {
             var result = DepthSearch(depth);
             _statistics.Depth = depth;
             return (result.bestMove, result.score, _statistics);
         }
-        
-        var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
-        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
+
+        var timeBudgetPerMove = TimeBudgetPerMove(timeControl, relevantTimeControl);
         var searchResult = TimedSearch(depth, timeBudgetPerMove);
         return (searchResult.bestMove, searchResult.score, _statistics);
+    }
+
+    private static int TimeBudgetPerMove(TimeControl timeControl, [DisallowNull] int? relevantTimeControl)
+    {
+        var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
+        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
+        return timeBudgetPerMove;
     }
 
     public (Move bestMove, int score) DepthSearch(int depth)
@@ -147,29 +171,33 @@ public class Engine
         _statistics = new SearchStatistics();
         _currentSearchId++;
 
-        (Move bestMove, int score) searchResult = ExecuteSearch(depth, false);
+        var searchResult = ExecuteSearch(depth, false);
 
         _statistics.RunTime = _timerManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
         return (searchResult.bestMove, searchResult.score);
     }
 
-    private (Move bestMove, int score) ExecuteSearch(int depth, bool timed)
+    private (bool completed, Move bestMove, int score)
+        ExecuteSearch(int depth, bool timed)
     {
         List<Move> moves = MoveGenerator.GetLegalMoves(Board);
-        if (moves.Count == 0)
-            throw new InvalidOperationException("No Moves");
-
         Move bestMove = moves[0];
-        var bestScore = int.MinValue + 1;
-        var alpha = int.MinValue + 1;
-        var beta = int.MaxValue;
+        int bestScore = int.MinValue + 1;
+
+        int alpha = int.MinValue + 1;
+        int beta = int.MaxValue;
 
         foreach (Move move in moves)
         {
             Board.ApplyMove(move);
-            var score = -AlphaBeta(depth - 1, -beta, -alpha, Board, timed);
+            SearchResult result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed);
             Board.UndoMove(move);
+
+            if (!result.Completed)
+                return (false, default, 0);
+
+            int score = -result.Value;
 
             if (score > bestScore)
             {
@@ -180,48 +208,61 @@ public class Engine
             alpha = Math.Max(alpha, score);
         }
 
-        return (bestMove, bestScore);
+        return (true, bestMove, bestScore);
     }
 
-    private int AlphaBeta(int depth, int alpha, int beta, Board board, bool timed)
+
+    private SearchResult AlphaBeta(
+        int depth,
+        int alpha,
+        int beta,
+        Board board,
+        bool timed)
     {
         if (timed && _timerManager.ShouldStop)
-        {
-            _statistics.RunTime = _timerManager.Elapsed;
-            return 0;
-        }
+            return SearchResult.Abort;
+
+
+        // leaf node
+        if (depth == 0)
+            return new SearchResult(true, Evaluator.Evaluate(board));
+
 
         _statistics.Nodes++;
         List<Move> moves = MoveGenerator.GetLegalMoves(board);
 
+        // no moves, either checkmate or stalemate
         if (moves.Count == 0)
         {
-            if (Referee.IsCheckmate(board))
-                return -MateScore;
-            return 0;
+            return Referee.IsCheckmate(board)
+                ? new SearchResult(true, -MateScore)
+                : new SearchResult(true, 0); // stalemate
         }
 
-        if (depth == 0)
-            return Evaluator.Evaluate(board);
+        int alphaOrig = alpha;
+        int bestValue = int.MinValue + 1;
 
-        var maxEval = int.MinValue + 1;
-        var startingAlpha = alpha;
+        // ---- TT probe ----
+        ulong hash = board.Zobrist.HashValue;
+        if (TTProbe(depth, alpha, beta, hash, out SearchResult searchResult)) return searchResult;
 
-        var currentHash = board.Zobrist.HashValue;
-        TranspositionTableEntry? entry = TranspositionTable.Retrieve(currentHash);
-        if (RetrieveTTEntry(out var alphaBeta)) return alphaBeta;
-
+        // ---- main loop ----
         foreach (Move move in moves)
         {
             board.ApplyMove(move);
-            var eval = -AlphaBeta(depth - 1, -beta, -alpha, board, timed);
+            SearchResult child = AlphaBeta(depth - 1, -beta, -alpha, board, timed);
             board.UndoMove(move);
+            
+            if (!child.Completed)
+                return SearchResult.Abort;
 
-            if (timed && _timerManager.ShouldStop)
-                return maxEval;
+            int eval = -child.Value;
 
-            maxEval = Math.Max(maxEval, eval);
-            alpha = Math.Max(alpha, eval);
+            if (eval > bestValue)
+                bestValue = eval;
+
+            if (eval > alpha)
+                alpha = eval;
 
             if (alpha >= beta)
             {
@@ -229,60 +270,56 @@ public class Engine
                 break;
             }
         }
+        
+        BoundFlag flag;
+        if (bestValue <= alphaOrig)
+            flag = BoundFlag.Upper;
+        else if (bestValue >= beta)
+            flag = BoundFlag.Lower;
+        else
+            flag = BoundFlag.Exact;
 
-        StoreTTEntry();
+        TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag);
+        _statistics.TtStores++;
 
-        return maxEval;
+        return new SearchResult(true, bestValue);
+    }
 
-        void StoreTTEntry()
+    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchResult searchResult)
+    {
+        TranspositionTableEntry? entry = TranspositionTable.Retrieve(hash);
+
+        if (entry.HasValue && entry.Value.Depth >= depth)
         {
-            BoundFlag flag;
-            if (maxEval < startingAlpha) flag = BoundFlag.Upper;
-            else
+            switch (entry.Value.BoundFlag)
             {
-                flag = maxEval >= beta ? BoundFlag.Lower : BoundFlag.Exact;
-            }
+                case BoundFlag.Exact:
+                    _statistics.TtHits++;
+                    searchResult = new SearchResult(true, entry.Value.Eval);
+                    return true;
 
-            TranspositionTable.Store(currentHash, maxEval, depth, _currentSearchId, flag);
-            _statistics.TtStores++;
-        }
-
-        bool RetrieveTTEntry(out int valueEval)
-        {
-            if (entry.HasValue && entry.Value.Depth >= depth)
-            {
-                switch (entry.Value.BoundFlag)
-                {
-                    case BoundFlag.Exact:
+                case BoundFlag.Upper:
+                    if (entry.Value.Eval <= alpha)
+                    {
                         _statistics.TtHits++;
-                        valueEval = entry.Value.Eval;
+                        searchResult = new SearchResult(true, entry.Value.Eval);
                         return true;
+                    }
+                    break;
 
-                    case BoundFlag.Upper:
-                        if (entry.Value.Eval <= alpha)
-                        {
-                            _statistics.TtHits++;
-                            valueEval = entry.Value.Eval;
-                            return true;
-                        }
-
-                        break;
-
-                    case BoundFlag.Lower:
-                        if (entry.Value.Eval >= beta)
-                        {
-                            _statistics.TtHits++;
-                            valueEval = entry.Value.Eval;
-                            return true;
-                        }
-
-                        break;
-                }
+                case BoundFlag.Lower:
+                    if (entry.Value.Eval >= beta)
+                    {
+                        _statistics.TtHits++;
+                        searchResult = new SearchResult(true, entry.Value.Eval);
+                        return true;
+                    }
+                    break;
             }
-
-            valueEval = 0;
-            return false;
         }
+
+        searchResult = default;
+        return false;
     }
 
     private const int MateScore = 30000;
