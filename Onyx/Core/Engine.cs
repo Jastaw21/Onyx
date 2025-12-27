@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.2.3";
+    public string Version { get; } = "0.2.32";
 
     public Engine()
     {
@@ -156,11 +156,31 @@ public class Engine
         return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
-    private static int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
+    private int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
     {
-        var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
-        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
-        return timeBudgetPerMove;
+        
+        var xMovesRemaining = MovesRemaining(Board, timeControl);
+        var timeBudgetPerMove = CalculateRemainingTime(relevantTimeControl.Value);
+        
+        int baseTime = timeBudgetPerMove / xMovesRemaining;
+        int maxTime = timeBudgetPerMove / 3;
+
+        return Math.Clamp(baseTime, 100, maxTime);
+    }
+
+    private static int MovesRemaining(Board board, TimeControl tc)
+    {
+        int ply = board.FullMoves * 2;
+        
+        if (ply < 40) return 30;   // opening
+        if (ply < 80) return 20;   // middlegame
+        return 12;                // endgame
+    }
+
+    private int CalculateRemainingTime(int remainingTimeForTurnToMove)
+    {
+        // keep 5% or 100ms, whichever is larger
+        return Math.Max(remainingTimeForTurnToMove - Math.Max(remainingTimeForTurnToMove / 20, 100), 0);
     }
 
     public (Move bestMove, int score) DepthSearch(int depth)
