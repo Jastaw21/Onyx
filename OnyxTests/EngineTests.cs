@@ -8,6 +8,7 @@ namespace OnyxTests;
 
 public class EngineTests
 {
+    private string mateOne = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";
     [Test]
     public void FindsMateInOne()
     {

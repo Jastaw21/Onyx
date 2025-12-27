@@ -91,7 +91,7 @@ public class Engine
     private int _currentSearchId;
     private TimerManager _timerManager = new();
     private bool _depthCompleted;
-    public string Version { get; } = "0.2.0";
+    public string Version { get; } = "0.2.1";
 
     public Engine()
     {
