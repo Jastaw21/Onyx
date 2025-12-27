@@ -17,7 +17,7 @@ public struct SearchStatistics : ILoggable
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs},b vn ";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes,1.0/Depth)}";
     }
 
     public override string ToString()
@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.2.2";
+    public string Version { get; } = "0.2.3";
 
     public Engine()
     {
@@ -159,14 +159,17 @@ public class Engine
     private static int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
     {
         var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
-        var timeBudgetPerMove = relevantTimeControl ?? 5000 / xMovesRemaining;
+        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
         return timeBudgetPerMove;
     }
 
     public (Move bestMove, int score) DepthSearch(int depth)
     {
         _timerManager.Start();
-        _statistics = new SearchStatistics();
+        _statistics = new SearchStatistics
+        {
+            Depth = depth
+        };
         _currentSearchId++;
 
         var searchResult = ExecuteSearch(depth, false);
@@ -238,8 +241,11 @@ public class Engine
 
         // ---- TT probe ----
         var hash = board.Zobrist.HashValue;
-        if (TTProbe(depth, alpha, beta, hash, out var searchResult)) return searchResult;
+        if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove)) return searchResult;
+        
+        Evaluator.SortMoves(moves,ttMove);
 
+        Move bestMove = default;
         // ---- main loop ----
         foreach (var move in moves)
         {
@@ -253,7 +259,10 @@ public class Engine
             var eval = -child.Value;
 
             if (eval > bestValue)
+            {
                 bestValue = eval;
+                bestMove = move;
+            }
 
             if (eval > alpha)
                 alpha = eval;
@@ -272,13 +281,13 @@ public class Engine
         else
             flag = BoundFlag.Exact;
 
-        TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag);
+        TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
         _statistics.TtStores++;
 
         return new SearchResult(true, bestValue);
     }
 
-    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchResult searchResult)
+    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchResult searchResult, out Move bestMove)
     {
         var entry = TranspositionTable.Retrieve(hash);
 
@@ -289,6 +298,7 @@ public class Engine
                 case BoundFlag.Exact:
                     _statistics.TtHits++;
                     searchResult = new SearchResult(true, entry.Value.Eval);
+                    bestMove = entry.Value.bestMove;
                     return true;
 
                 case BoundFlag.Upper:
@@ -296,6 +306,7 @@ public class Engine
                     {
                         _statistics.TtHits++;
                         searchResult = new SearchResult(true, entry.Value.Eval);
+                        bestMove = entry.Value.bestMove;
                         return true;
                     }
 
@@ -306,6 +317,7 @@ public class Engine
                     {
                         _statistics.TtHits++;
                         searchResult = new SearchResult(true, entry.Value.Eval);
+                        bestMove = entry.Value.bestMove;
                         return true;
                     }
 
@@ -314,6 +326,7 @@ public class Engine
         }
 
         searchResult = default;
+        bestMove = default;
         return false;
     }
 

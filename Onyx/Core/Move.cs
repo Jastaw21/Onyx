@@ -1,6 +1,6 @@
 ﻿namespace Onyx.Core;
 
-public class MoveFlags
+public static class PreMoveFlags
 {
     public static readonly int NoFlag = 0;
     public static readonly int EnPassant = 1 << 0;
@@ -44,14 +44,15 @@ public struct Move
     public Square To { get; }
 
     public Piece? PromotedPiece = null;
-    public int MoveFlag = MoveFlags.NoFlag;
+    public Piece? CapturedPiece = null;
+    public int PreMoveFlag = PreMoveFlags.NoFlag;
 
     public string Notation => From.Notation + To.Notation +
                               (PromotedPiece.HasValue ? Fen.GetCharFromPiece(PromotedPiece.Value) : "");
 
-    public bool IsPromotion => (MoveFlag & MoveFlags.Promotion) > 0;
-    public bool IsCastling => (MoveFlag & MoveFlags.Castle) > 0;
-    public bool IsEnPassant => (MoveFlag & MoveFlags.EnPassant) > 0;
+    public bool IsPromotion => (PreMoveFlag & PreMoveFlags.Promotion) > 0;
+    public bool IsCastling => (PreMoveFlag & PreMoveFlags.Castle) > 0;
+    public bool IsEnPassant => (PreMoveFlag & PreMoveFlags.EnPassant) > 0;
 
     public override string ToString()
     {

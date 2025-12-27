@@ -5,6 +5,24 @@ namespace Onyx.Statics;
 
 public static class Evaluator
 {
+    public static void SortMoves(List<Move> moves, Move? transpositionTableMove)
+    {
+        moves.Sort((move, move1) =>
+        {
+            int aScore = move.PreMoveFlag;
+            int bScore = move1.PreMoveFlag;
+
+            if (transpositionTableMove.HasValue)
+            {
+                if (move.Notation == transpositionTableMove.Value.Notation)
+                    return int.MaxValue;
+                if (move1.Notation == transpositionTableMove.Value.Notation)
+                    return int.MinValue;
+            }
+            
+            return aScore.CompareTo(bScore);
+        } );
+    }
     public static int Evaluate(Board board)
     {
         var materialScore = MaterialScore(board);
@@ -26,7 +44,7 @@ public static class Evaluator
         {
             blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }
-
+        
         var score = whiteScore - blackScore;
         return board.TurnToMove == Colour.White ? score : -score;
     }
@@ -58,7 +76,6 @@ public static class Evaluator
                 placements &= placements - 1;
             }
         }
-
         var score = whiteScore - blackScore;
         return board.TurnToMove == Colour.White ? score : -score;
     }

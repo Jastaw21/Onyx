@@ -136,7 +136,7 @@ public class Board
             CapturedPiece = capturedPiece,
             EnPassantSquare = EnPassantSquare,
             CastlingRights = CastlingRights,
-            LastMoveFlags = move.MoveFlag,
+            LastMoveFlags = move.PreMoveFlag,
             FullMove = FullMoves,
             HalfMove = HalfMoves
         };
@@ -212,7 +212,7 @@ public class Board
         CastlingRights = previousState.CastlingRights;
         HalfMoves = previousState.HalfMove;
         FullMoves = previousState.FullMove;
-        move.MoveFlag = previousState.LastMoveFlags;
+        move.PreMoveFlag = previousState.LastMoveFlags;
         if (previousState.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
@@ -261,17 +261,17 @@ public class Board
             ((move.PieceMoved.Colour == Colour.White && move.To.RankIndex == 7) ||
              (move.PieceMoved.Colour == Colour.Black && move.To.RankIndex == 0)))
         {
-            move.MoveFlag |= MoveFlags.Promotion;
+            move.PreMoveFlag |= PreMoveFlags.Promotion;
         }
 
         if (move.PieceMoved.Type == PieceType.King && Math.Abs(move.From.FileIndex - move.To.FileIndex) > 1)
         {
-            move.MoveFlag |= MoveFlags.Castle;
+            move.PreMoveFlag |= PreMoveFlags.Castle;
         }
 
         if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 &&
             !Bitboards.PieceAtSquare(move.To).HasValue)
-            move.MoveFlag |= MoveFlags.EnPassant;
+            move.PreMoveFlag |= PreMoveFlags.EnPassant;
     }
 
     private void UpdateCastlingRights(Move move)

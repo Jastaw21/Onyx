@@ -14,6 +14,7 @@ public struct TranspositionTableEntry
     public int Depth;
     public int Age;
     public BoundFlag BoundFlag;
+    public Move bestMove;
 }
 
 public class TranspositionTable
@@ -29,7 +30,7 @@ public class TranspositionTable
     }
 
 
-    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag)
+    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
     {
         var index = hash % (ulong)_entries.Length;
 
@@ -43,7 +44,8 @@ public class TranspositionTable
                 Eval = eval,
                 Depth = depth,
                 Age = age,
-                BoundFlag = boundFlag
+                BoundFlag = boundFlag,
+                bestMove =  bestMove
             };
         }
     }
