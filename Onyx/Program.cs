@@ -14,6 +14,8 @@ public static class Program
         while (command != "quit")
         {
             command = Console.ReadLine();
+            if (command is null)
+                break;
             if (command != "quit")
                 engine.HandleCommand(command);
             else

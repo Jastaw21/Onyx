@@ -7,13 +7,16 @@ public class UciParser
 
     private Token Peek()
     {
+        if (_tokeniser is null)
+            return new Token();
         return _currentToken < _tokeniser.Tokens.Count
             ? _tokeniser.Tokens[_currentToken]
             : new Token { Type = TokenType.Eof, Value = "" };
     }
 
     private Token Consume()
-    {
+    {if (_tokeniser is null)
+            return new Token();
         return _tokeniser.Tokens[_currentToken++];
     }
 

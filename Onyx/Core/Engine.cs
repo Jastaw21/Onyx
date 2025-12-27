@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Onyx.Statics;
 using Onyx.UCI;
 
@@ -44,14 +43,14 @@ public readonly struct SearchResult
 
 internal class TimerManager
 {
-    private Stopwatch _stopwatch;
+    private Stopwatch _stopwatch = null!;
     private bool _started;
-    private long milliseconds;
+    private long _milliseconds;
 
     public void Start(long milliseconds_)
     {
         _stopwatch = Stopwatch.StartNew();
-        milliseconds = milliseconds_;
+        _milliseconds = milliseconds_;
         _started = true;
     }
 
@@ -65,7 +64,7 @@ internal class TimerManager
     {
         _stopwatch.Reset();
         _started = false;
-        milliseconds = 0;
+        _milliseconds = 0;
     }
 
     public long Elapsed => _stopwatch.ElapsedMilliseconds;
@@ -76,7 +75,7 @@ internal class TimerManager
         {
             if (!_started)
                 return false;
-            return _stopwatch.ElapsedMilliseconds > milliseconds;
+            return _stopwatch.ElapsedMilliseconds > _milliseconds;
         }
     }
 }
@@ -90,7 +89,6 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    private bool _depthCompleted;
     public string Version { get; } = "0.2.1";
 
     public Engine()
@@ -114,7 +112,7 @@ public class Engine
         _timerManager.Start(timeMS);
         _statistics = new SearchStatistics();
         _currentSearchId++;
-        
+
         Move bestMove = default;
         var bestScore = 0;
 
@@ -129,7 +127,7 @@ public class Engine
 
             var searchResult = ExecuteSearch(i, true);
             if (!searchResult.completed) continue;
-            
+
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             _statistics.Depth = i;
@@ -158,10 +156,10 @@ public class Engine
         return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
-    private static int TimeBudgetPerMove(TimeControl timeControl, [DisallowNull] int? relevantTimeControl)
+    private static int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
     {
         var xMovesRemaining = timeControl.movesToGo ?? 5; // always assume 5 moves remaining??
-        var timeBudgetPerMove = relevantTimeControl.Value / xMovesRemaining;
+        var timeBudgetPerMove = relevantTimeControl ?? 5000 / xMovesRemaining;
         return timeBudgetPerMove;
     }
 
@@ -220,7 +218,7 @@ public class Engine
     {
         if (timed && _timerManager.ShouldStop)
             return SearchResult.Abort;
-        
+
         _statistics.Nodes++;
         var moves = MoveGenerator.GetLegalMoves(board);
         // no moves, either checkmate or stalemate
@@ -246,9 +244,9 @@ public class Engine
         foreach (var move in moves)
         {
             board.ApplyMove(move);
-            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply+1);
+            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
             board.UndoMove(move);
-            
+
             if (!child.Completed)
                 return SearchResult.Abort;
 
@@ -261,11 +259,11 @@ public class Engine
                 alpha = eval;
 
             if (alpha < beta) continue;
-            
+
             _statistics.BetaCutoffs++;
             break;
         }
-        
+
         BoundFlag flag;
         if (bestValue <= alphaOrig)
             flag = BoundFlag.Upper;
@@ -300,6 +298,7 @@ public class Engine
                         searchResult = new SearchResult(true, entry.Value.Eval);
                         return true;
                     }
+
                     break;
 
                 case BoundFlag.Lower:
@@ -309,6 +308,7 @@ public class Engine
                         searchResult = new SearchResult(true, entry.Value.Eval);
                         return true;
                     }
+
                     break;
             }
         }

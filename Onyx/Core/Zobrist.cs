@@ -24,6 +24,7 @@ public class Zobrist
 
     public Zobrist(string fen)
     {
+        _random = new Random(_seed);
         InitZobrist();
         BuildZobristFromFen(fen);
     }
@@ -125,8 +126,6 @@ public class Zobrist
 
     private void InitZobrist()
     {
-        _random = new Random(_seed);
-
         FillRandomArray(_whitePawn);
         FillRandomArray(_whiteRook);
         FillRandomArray(_whiteBishop);

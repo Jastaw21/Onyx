@@ -8,8 +8,6 @@ namespace OnyxTests;
 
 public class EngineTests
 {
-    private string mateOne = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";
-
     [Test]
     public void FindsMateInOne()
     {
@@ -26,6 +24,26 @@ public class EngineTests
         Assert.Multiple(() => { Assert.That(timed.bestMove.Notation, Is.EqualTo("d8h4")); });
     }
 
+    [Test]
+    public void returnsBestMoveFromDepthOneIfTimedOut()
+    {
+        var fen = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";
+        var engine = new Engine();
+        engine.SetPosition(fen);
+
+        var directResult = engine.DepthSearch(1);
+
+        for (int i = 2; i < 16; i++)
+        {
+            var timedSearch = engine.TimedSearch(i, 1000);
+            var match = timedSearch.bestMove.Notation == directResult.bestMove.Notation;
+            var passString = match ? "passes" : $"fails with {timedSearch.bestMove}";
+            TestContext.Out.WriteLine($"Depth {i} {passString}");
+            Assert.That(match);
+        }
+    }
+    
+    
     [Test]
     public void OtherMateInOne()
     {

@@ -55,7 +55,7 @@ public class UciInterface
 
     private void HandlePosition(PositionCommand positionCommand)
     {
-        _player.Board = new Board(positionCommand.FenString);
+        if (positionCommand.FenString != null) _player.Board = new Board(positionCommand.FenString);
         _player.Board.ApplyMoves(positionCommand.Moves);
     }
 
@@ -78,7 +78,7 @@ public class UciInterface
             var result = $"bestmove {move.bestMove}";
             Logger.Log(LogType.UCISent, result);
             var infoString = GetInf(move.stats);
-            Logger.Log(LogType.UCISent,infoString);
+            Logger.Log(LogType.UCISent, infoString);
             Console.WriteLine($"bestmove {move.bestMove}");
             Console.WriteLine(infoString);
         }
