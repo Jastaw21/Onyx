@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.2.32";
+    public string Version { get; } = "0.2.33";
 
     public Engine()
     {

@@ -19,16 +19,18 @@ public static class Evaluator
                 if (move1.Notation == transpositionTableMove.Value.Notation)
                     return int.MinValue;
             }
-            
+
             return aScore.CompareTo(bScore);
-        } );
+        });
     }
+
     public static int Evaluate(Board board)
     {
         var materialScore = MaterialScore(board);
         var psScore = PieceSquareScore(board);
+        var mobilityScore = MobilityScore(board);
 
-        return materialScore + psScore;
+        return materialScore + psScore + mobilityScore;
     }
 
     private static int MaterialScore(Board board)
@@ -44,8 +46,8 @@ public static class Evaluator
         {
             blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }
-        
-        var score = whiteScore - blackScore;
+
+        var score = (whiteScore - blackScore);
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
@@ -76,7 +78,16 @@ public static class Evaluator
                 placements &= placements - 1;
             }
         }
-        var score = whiteScore - blackScore;
+
+        var score = (whiteScore - blackScore)/10;
+        return board.TurnToMove == Colour.White ? score : -score;
+    }
+
+    private static int MobilityScore(Board board)
+    {
+        var whiteMoves = MoveGenerator.GetLegalMoves(board, Colour.White).Count;
+        var blackMoves = MoveGenerator.GetLegalMoves(board, Colour.Black).Count;
+        var score = whiteMoves - blackMoves;
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
@@ -84,7 +95,7 @@ public static class Evaluator
     {
         { PieceType.Pawn, 100 },
         { PieceType.Knight, 300 },
-        { PieceType.Bishop, 300 },
+        { PieceType.Bishop, 320 },
         { PieceType.Rook, 500 },
         { PieceType.Queen, 900 },
         { PieceType.King, 0 }
@@ -104,14 +115,14 @@ public static class Evaluator
 
     private static readonly int[] BishopScores =
     [
-        -20, -10, -10, -10, -10, -10, -10, -20,
+        -10, -10, -10, -10, -10, -10, -10, -10,
         -10, 0, 0, 0, 0, 0, 0, -10,
-        -10, 0, 5, 10, 10, 5, 0, -10,
+        -10, 0, 15, 10, 10, 15, 0, -10,
         -10, 5, 5, 10, 10, 5, 5, -10,
         -10, 0, 10, 10, 10, 10, 0, -10,
         -10, 10, 10, 10, 10, 10, 10, -10,
-        -10, 5, 0, 0, 0, 0, 5, -10,
-        -20, -10, -10, -10, -10, -10, -10, -20,
+        -10, 15, 0, 0, 0, 0, 15, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
     ];
 
     private static readonly int[] KnightScores =

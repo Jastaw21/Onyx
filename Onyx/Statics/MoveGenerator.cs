@@ -4,6 +4,18 @@ namespace Onyx.Statics;
 
 public static class MoveGenerator
 {
+    public static List<Move> GetLegalMoves(Board board, Colour fromPerspective)
+    {
+        List<Move> rawMoves = GetMoves(fromPerspective, board);
+        var legalMoves = new List<Move>();
+        foreach (Move move in rawMoves)
+        {
+            if (Referee.MoveIsLegal(move,ref board))
+                legalMoves.Add(move);
+        }
+
+        return legalMoves;
+    }
     public static List<Move> GetLegalMoves(Board board)
     {
         List<Move> rawMoves = GetMoves(board.TurnToMove, board);
