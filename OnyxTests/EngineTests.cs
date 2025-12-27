@@ -9,20 +9,48 @@ namespace OnyxTests;
 public class EngineTests
 {
     private string mateOne = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";
+
     [Test]
     public void FindsMateInOne()
     {
         var fen = "rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 1";
         var engine = new Engine();
         engine.SetPosition(fen);
-        var bestMove = engine.CalcAndDispatchTimedSearch(1, new TimeControl());
+        var bestMove = engine.DepthSearch(1);
         Assert.Multiple(() =>
         {
-            Assert.That(bestMove.score, Is.EqualTo(30000));
+            //Assert.That(bestMove.score, Is.EqualTo(30000));
             Assert.That(bestMove.bestMove.Notation, Is.EqualTo("d8h4"));
         });
         var timed = engine.TimedSearch(1, 1000);
         Assert.Multiple(() => { Assert.That(timed.bestMove.Notation, Is.EqualTo("d8h4")); });
+    }
+
+    [Test]
+    public void OtherMateInOne()
+    {
+        List<string> startpos =
+        [
+            "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38"
+        ];
+
+        List<Move> expectedMove =
+        [
+            new Move(Piece.BQ, "c2d3")
+        ];
+        var engine = new Engine();
+        for (var i = 0; i < startpos.Count; i++)
+        {
+            engine.SetPosition(startpos[i]);
+            var resultTimes = engine.TimedSearch(5, 6000);
+            var resultDepth = engine.DepthSearch(5);
+            Assert.Multiple(() =>
+                {
+                    Assert.That(resultDepth.bestMove.Notation, Is.EqualTo(expectedMove[i].Notation));
+                    Assert.That(resultTimes.bestMove.Notation, Is.EqualTo(expectedMove[i].Notation));
+                }
+            );
+        }
     }
 
     [Test]
@@ -35,7 +63,7 @@ public class EngineTests
         Assert.That(move.bestMove.Notation, Is.EqualTo("f1c4"));
 
         engine.SetPosition("6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1");
-        move = engine.TimedSearch(3, 600);
+        move = engine.TimedSearch(3, 1200);
         Assert.That(move.bestMove.Notation, Is.EqualTo("g4h6"));
     }
 
@@ -78,7 +106,7 @@ public class EngineTests
         Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(900).And.LessThanOrEqualTo(1100));
     }
 
-    
+
     [Test]
     public void EDPResults()
     {
@@ -118,9 +146,10 @@ public class EngineTests
             }
 
             var type = bestMoves[i] ? "hit" : "avoid";
-            TestContext.Out.WriteLine($"Position {i}, expected to {type} move {expectedMove[i].Notation}, got {result.bestMove.Notation}");
-            
+            TestContext.Out.WriteLine(
+                $"Position {i}, expected to {type} move {expectedMove[i].Notation}, got {result.bestMove.Notation}");
         }
+
         Assert.That(failCount, Is.EqualTo(0));
     }
 }

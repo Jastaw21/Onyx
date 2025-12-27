@@ -181,23 +181,23 @@ public class Engine
     private (bool completed, Move bestMove, int score)
         ExecuteSearch(int depth, bool timed)
     {
-        List<Move> moves = MoveGenerator.GetLegalMoves(Board);
-        Move bestMove = moves[0];
-        int bestScore = int.MinValue + 1;
+        var moves = MoveGenerator.GetLegalMoves(Board);
+        var bestMove = moves[0];
+        var bestScore = int.MinValue + 1;
 
-        int alpha = int.MinValue + 1;
-        int beta = int.MaxValue;
+        var alpha = int.MinValue + 1;
+        var beta = int.MaxValue;
 
-        foreach (Move move in moves)
+        foreach (var move in moves)
         {
             Board.ApplyMove(move);
-            SearchResult result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed);
+            var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1);
             Board.UndoMove(move);
 
             if (!result.Completed)
                 return (false, default, 0);
 
-            int score = -result.Value;
+            var score = -result.Value;
 
             if (score > bestScore)
             {
@@ -212,51 +212,47 @@ public class Engine
     }
 
 
-    private SearchResult AlphaBeta(
-        int depth,
+    private SearchResult AlphaBeta(int depth,
         int alpha,
         int beta,
         Board board,
-        bool timed)
+        bool timed, int ply)
     {
         if (timed && _timerManager.ShouldStop)
             return SearchResult.Abort;
-
+        
+        _statistics.Nodes++;
+        var moves = MoveGenerator.GetLegalMoves(board);
+        // no moves, either checkmate or stalemate
+        if (moves.Count == 0)
+        {
+            return Referee.IsCheckmate(board)
+                ? new SearchResult(true, -(MateScore - ply))
+                : new SearchResult(true, 0); // stalemate
+        }
 
         // leaf node
         if (depth == 0)
             return new SearchResult(true, Evaluator.Evaluate(board));
 
-
-        _statistics.Nodes++;
-        List<Move> moves = MoveGenerator.GetLegalMoves(board);
-
-        // no moves, either checkmate or stalemate
-        if (moves.Count == 0)
-        {
-            return Referee.IsCheckmate(board)
-                ? new SearchResult(true, -MateScore)
-                : new SearchResult(true, 0); // stalemate
-        }
-
-        int alphaOrig = alpha;
-        int bestValue = int.MinValue + 1;
+        var alphaOrig = alpha;
+        var bestValue = int.MinValue + 1;
 
         // ---- TT probe ----
-        ulong hash = board.Zobrist.HashValue;
-        if (TTProbe(depth, alpha, beta, hash, out SearchResult searchResult)) return searchResult;
+        var hash = board.Zobrist.HashValue;
+        if (TTProbe(depth, alpha, beta, hash, out var searchResult)) return searchResult;
 
         // ---- main loop ----
-        foreach (Move move in moves)
+        foreach (var move in moves)
         {
             board.ApplyMove(move);
-            SearchResult child = AlphaBeta(depth - 1, -beta, -alpha, board, timed);
+            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply+1);
             board.UndoMove(move);
             
             if (!child.Completed)
                 return SearchResult.Abort;
 
-            int eval = -child.Value;
+            var eval = -child.Value;
 
             if (eval > bestValue)
                 bestValue = eval;
@@ -264,11 +260,10 @@ public class Engine
             if (eval > alpha)
                 alpha = eval;
 
-            if (alpha >= beta)
-            {
-                _statistics.BetaCutoffs++;
-                break;
-            }
+            if (alpha < beta) continue;
+            
+            _statistics.BetaCutoffs++;
+            break;
         }
         
         BoundFlag flag;
@@ -287,7 +282,7 @@ public class Engine
 
     private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchResult searchResult)
     {
-        TranspositionTableEntry? entry = TranspositionTable.Retrieve(hash);
+        var entry = TranspositionTable.Retrieve(hash);
 
         if (entry.HasValue && entry.Value.Depth >= depth)
         {
