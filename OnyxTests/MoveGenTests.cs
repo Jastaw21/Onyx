@@ -8,7 +8,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenContainsBasicExpectedMoves()
     {
-        var board = new Board(Fen.DefaultFen);
+        var board = new Board();
 
         var aPawnMoves = MoveGenerator.GetMoves(Piece.WP, new Square(8), board);
         Assert.That(aPawnMoves, Has.Member(new Move(Piece.WP, "a2a3")));

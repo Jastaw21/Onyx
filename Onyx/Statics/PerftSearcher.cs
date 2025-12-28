@@ -32,13 +32,13 @@ public static class PerftSearcher
         if (depth == 0)
             return 1;
 
-        List<Move> moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
         ulong total = 0;
         object lockObj = new();
 
         Parallel.ForEach(moves, move =>
         {
-            Board localBoard = board.Clone();
+            var localBoard = board.Clone();
             localBoard.ApplyMove(move);
             if (!Referee.IsInCheck(board.TurnToMove, localBoard))
             {
@@ -54,11 +54,11 @@ public static class PerftSearcher
     public static void PerftDivide(Board board, int depth)
     {
         ulong total = 0;
-        List<Move> moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
 
-        foreach (Move move in moves)
+        foreach (var move in moves)
         {
-            Colour side = board.TurnToMove;
+            var side = board.TurnToMove;
             board.ApplyMove(move);
 
             if (!Referee.IsInCheck(side, board))
@@ -80,10 +80,10 @@ public static class PerftSearcher
         var results = 0ul;
         if (depth == 0) return 1ul;
 
-        List<Move> moves = MoveGenerator.GetMoves(board.TurnToMove, board);
-        foreach (Move move in moves)
+        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        foreach (var move in moves)
         {
-            Colour sideToMve = board.TurnToMove;
+            var sideToMve = board.TurnToMove;
             board.ApplyMove(move);
             if (!Referee.IsInCheck(sideToMve, board))
             {

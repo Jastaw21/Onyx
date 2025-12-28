@@ -28,10 +28,10 @@ public readonly struct Piece(PieceType type, Colour colour)
 
     public static Piece[] All()
     {
-        return _allPieces;
+        return AllPieces;
     }
 
-    private static Piece[] _allPieces =
+    public readonly static Piece[] AllPieces =
     [
         WP, WB, WK, WQ, WN, WR,
         BP, BB, BK, BQ, BN, BR

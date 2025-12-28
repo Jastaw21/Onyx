@@ -90,9 +90,12 @@ public static class MagicBitboards
     private static readonly ulong[] _knightAttacks = new ulong[64];
     private static readonly ulong[] _kingAttacks = new ulong[64];
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetMovesByPiece(Piece piece, Square square, ulong boardState)
     {
-        switch (piece.Type)
+        var type = piece.Type;        
+        var squareIndex = square.SquareIndex;
+        switch (type)
         {
             case PieceType.Queen:
                 return GetDiagAttacks(square, boardState) | GetStraightAttacks(square, boardState);
@@ -103,31 +106,36 @@ public static class MagicBitboards
             case PieceType.Pawn:
                 return GetPawnMoves(piece.Colour, square, boardState);
             case PieceType.Knight:
-                return _knightAttacks[square.SquareIndex];
-            case PieceType.King:
-                var attacks = _kingAttacks[square.SquareIndex];
-                return attacks;
+                return _knightAttacks[squareIndex];
+            case PieceType.King:               
+                return _kingAttacks[squareIndex];
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     private static ulong GetDiagAttacks(Square square, ulong occupancy)
     {
-        occupancy &= _diagMagics[square.SquareIndex].Mask;
-        occupancy *= _diagMagics[square.SquareIndex].MagicNumber;
-        occupancy >>= _diagMagics[square.SquareIndex].Shift;
+        var squareIndex = square.SquareIndex;
+        var magic = _diagMagics[squareIndex];
+        occupancy &= magic.Mask;
+        occupancy *= magic.MagicNumber;
+        occupancy >>= magic.Shift;
 
-        return _diagMagics[square.SquareIndex].Attacks[occupancy];
+        return magic.Attacks[(int)occupancy];
     }
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     private static ulong GetStraightAttacks(Square square, ulong occupancy)
     {
-        occupancy &= _straightMagics[square.SquareIndex].Mask;
-        occupancy *= _straightMagics[square.SquareIndex].MagicNumber;
-        occupancy >>= _straightMagics[square.SquareIndex].Shift;
+        var squareIndex = square.SquareIndex;
+        var magic = _straightMagics[squareIndex];
+        occupancy &= magic.Mask;
+        occupancy *= magic.MagicNumber;
+        occupancy >>= magic.Shift;
 
-        return _straightMagics[square.SquareIndex].Attacks[occupancy];
+        return magic.Attacks[(int)occupancy];
     }
 
     private static void BuildKnightMoves(Square square)
@@ -185,6 +193,8 @@ public static class MagicBitboards
         return result;
     }
 
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetPawnPushes(Colour colour, Square square, ulong boardState)
     {
         if (square.RankIndex is 7 or 0)

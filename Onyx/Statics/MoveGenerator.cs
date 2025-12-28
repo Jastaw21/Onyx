@@ -6,9 +6,9 @@ public static class MoveGenerator
 {
     public static List<Move> GetLegalMoves(Board board, Colour fromPerspective)
     {
-        List<Move> rawMoves = GetMoves(fromPerspective, board);
+        var rawMoves = GetMoves(fromPerspective, board);
         var legalMoves = new List<Move>();
-        foreach (Move move in rawMoves)
+        foreach (var move in rawMoves)
         {
             if (Referee.MoveIsLegal(move,ref board))
                 legalMoves.Add(move);
@@ -18,9 +18,9 @@ public static class MoveGenerator
     }
     public static List<Move> GetLegalMoves(Board board)
     {
-        List<Move> rawMoves = GetMoves(board.TurnToMove, board);
+        var rawMoves = GetMoves(board.TurnToMove, board);
         var legalMoves = new List<Move>();
-        foreach (Move move in rawMoves)
+        foreach (var move in rawMoves)
         {
             if (Referee.MoveIsLegal(move,ref board))
                 legalMoves.Add(move);
@@ -65,9 +65,9 @@ public static class MoveGenerator
 
     public static List<Move> GetMoves(Colour colour, Board board)
     {
-        List<Move> moves = [];
+        List<Move> moves = new(32);
 
-        foreach (Piece piece in Piece.ByColour(colour))
+        foreach (var piece in Piece.ByColour(colour))
         {
             moves.AddRange(GetMoves(piece, board));
         }
@@ -81,15 +81,16 @@ public static class MoveGenerator
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
         if ((piece.Colour == Colour.White && square.RankIndex == 6) ||
             (piece.Colour == Colour.Black && square.RankIndex == 1))
-            return;
+            return;       
 
-        var rawMoveOutput = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
-        var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(piece.Colour, square, board.Bitboards.Occupancy());
-        var attacks = rawMoveOutput ^ pushes;
-
-        Colour opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
+        var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
         var opponentOccupancy = board.Bitboards.OccupancyByColour(opponentColour);
+        var movingSideOccupancy = board.Bitboards.OccupancyByColour(piece.Colour);
+        var occupancy = opponentOccupancy | movingSideOccupancy;
 
+        var rawMoveOutput = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, occupancy);
+        var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(piece.Colour, square, occupancy);
+        var attacks = rawMoveOutput ^ pushes;     
 
         var normalAttacks = opponentOccupancy & attacks;
 
@@ -102,9 +103,8 @@ public static class MoveGenerator
                 normalAttacks |= board.EnPassantSquare.Value.Bitboard;
         }
 
-        var result = pushes | normalAttacks;
-        var movingSideOccupancy = board.Bitboards.OccupancyByColour(piece.Colour);
-        result &= ~movingSideOccupancy;
+        var result = pushes | normalAttacks;       
+        result &= ~board.Bitboards.OccupancyByColour(piece.Colour);
         // Add moves from result bitboard
         while (result > 0)
         {
@@ -125,7 +125,7 @@ public static class MoveGenerator
         if (square.SquareIndex != expectedSquare)
             return;
 
-        Colour opponentColour = isWhite ? Colour.Black : Colour.White;
+        var opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
 
 
@@ -223,7 +223,7 @@ public static class MoveGenerator
             return;
 
         var offset = piece.Colour == Colour.White ? 8 : -8;
-        foreach (Piece promotionType in Piece.PromotionTypes(piece.Colour))
+        foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
         {
             PushPromotion(promotionType);
         }

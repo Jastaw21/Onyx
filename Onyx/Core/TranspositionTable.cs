@@ -34,7 +34,7 @@ public class TranspositionTable
     {
         var index = hash % (ulong)_entries.Length;
 
-        TranspositionTableEntry existingEntry = _entries[index];
+        var existingEntry = _entries[index];
         if (existingEntry.Hash == 0 || existingEntry.Hash == hash || existingEntry.Age != age ||
             depth > existingEntry.Depth)
         {
@@ -53,7 +53,7 @@ public class TranspositionTable
     public TranspositionTableEntry? Retrieve(ulong hash)
     {
         var index = hash % (ulong)_entries.Length;
-        TranspositionTableEntry entry = _entries[index];
+        var entry = _entries[index];
 
         if (entry.Hash == hash)
             return entry;

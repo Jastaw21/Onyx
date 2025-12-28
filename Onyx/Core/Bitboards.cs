@@ -38,7 +38,7 @@ public class Bitboards
     public void LoadFen(string fenString)
     {
         _boards = new ulong[_colourCount * _pieceTypeCount];
-
+       
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
 
@@ -64,7 +64,7 @@ public class Bitboards
             // this is a piece, so set it and move the file on
             else
             {
-                Piece piece = Fen.GetPieceFromChar(fenString[currentIndex]);
+                var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
                 SetOn(piece, new Square(rankIndex, fileIndex));
                 fileIndex++;
             }
@@ -73,7 +73,7 @@ public class Bitboards
         }
     }
 
-    private ulong[] _boards;
+    private ulong[] _boards;   
     private int _pieceTypeCount;
     private int _colourCount;
     public ulong[] Boards => _boards;
@@ -81,7 +81,9 @@ public class Bitboards
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(Piece piece)
     {
-        return _boards[(int)piece.Colour * _pieceTypeCount + (int)piece.Type];
+        int t = (int)piece.Type;
+        int colourOffset = piece.Colour == Colour.White ? 0 : 6;
+        return _boards[t + colourOffset];
     }
 
     public ulong OccupancyByColour(Colour colour)
@@ -98,24 +100,25 @@ public class Bitboards
     {
         var col = (int)piece.Colour;
         var type = (int)piece.Type;
-        var index = col * _pieceTypeCount + type;
-
-        _boards[index] = boardByPiece;
+        var index = col * _pieceTypeCount + type;        
+        _boards[index] = boardByPiece;       
     }
 
     public void SetAllOff(Square square)
     {
+        var index = (1ul << square.SquareIndex);
         for (var i = 0; i < _boards.Length; i++)
         {
-            _boards[i] &= ~(1ul << square.SquareIndex);
-        }
+            _boards[i] &= ~index;
+        }      
+
     }
 
     public void SetOff(Piece piece, Square square)
     {
         var index = Index(piece);
         var mask = ~(1ul << square.SquareIndex);
-        _boards[index] &= mask;
+        _boards[index] &= mask;        
     }
 
     public void SetOn(Piece piece, Square square)
@@ -124,7 +127,7 @@ public class Bitboards
 
         var value = 1ul << square.SquareIndex;
 
-        _boards[index] |= value;
+        _boards[index] |= value;        
     }
 
     private int Index(Piece piece)
@@ -136,17 +139,17 @@ public class Bitboards
     }
 
     public bool SquareOccupied(Square squareToTest)
-    {
+    {       
         return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest.SquareIndex)) > 0);
     }
 
     public Piece? PieceAtSquare(Square squareToTest)
-    {
-        foreach (Piece piece in Piece.All())
-
+    {    
+        ulong mask = 1UL << squareToTest.SquareIndex;
+        var pieces = Piece.AllPieces;
+        foreach (var piece in pieces)
         {
-            var board = OccupancyByPiece(piece);
-            var mask = 1ul << squareToTest.SquareIndex;
+            var board = OccupancyByPiece(piece);            
             if ((board & mask) != 0)
                 return piece;
         }
@@ -164,7 +167,7 @@ public class Bitboards
 
             for (var fileIndex = 0; fileIndex <= 7; fileIndex++)
             {
-                Piece? pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
+                var pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
 
                 if (pieceHere.HasValue)
                 {

@@ -109,17 +109,17 @@ public class Board
         return builtFen;
     }
 
-    public void ApplyMove(Move move)
+    public void ApplyMove(Move move, bool fullApplyMove = true)
     {
         ApplyMoveFlags(ref move);
 
-        Colour opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+        var opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
         Piece? capturedPiece;
         Square? capturedSquare;
 
         if (move.IsEnPassant)
         {
-            capturedPiece = Piece.MakePiece(PieceType.Pawn, opponentColour);
+            capturedPiece = opponentColour == Colour.Black ? Piece.BP : Piece.WP;
             var captureRank = opponentColour == Colour.White ? 3 : 4;
             capturedSquare = new Square(captureRank, move.To.FileIndex);
         }
@@ -129,7 +129,8 @@ public class Board
             capturedSquare = move.To;
         }
 
-        Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
+        if (fullApplyMove)
+            Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
 
         var state = new BoardState
         {
@@ -163,7 +164,7 @@ public class Board
         // handle castling
         if (move.IsCastling)
         {
-            Piece affectedRook = move.PieceMoved.Colour == Colour.White
+            var affectedRook = move.PieceMoved.Colour == Colour.White
                 ? Piece.WR
                 : Piece.BR;
 
@@ -201,13 +202,13 @@ public class Board
         }
     }
 
-    public void UndoMove(Move move)
+    public void UndoMove(Move move, bool fullUndoMove = true)
     {
         //ApplyMoveFlags(move: ref move);
 
         Square? capturedOn = null;
 
-        BoardState previousState = _boardStateHistory.Pop();
+        var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
         HalfMoves = previousState.HalfMove;
@@ -243,13 +244,14 @@ public class Board
         if (move.IsEnPassant)
         {
             var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
-            Colour capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
+            var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
             capturedOn = new Square(pawnHomeRank, move.To.FileIndex);
             Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
                 capturedOn.Value);
         }
 
-        Zobrist.ApplyMove(move, previousState.CapturedPiece, capturedOn);
+        if (fullUndoMove)
+            Zobrist.ApplyMove(move, previousState.CapturedPiece, capturedOn);
 
 
         SwapTurns();
@@ -326,7 +328,7 @@ public class Board
 
     private void ApplyBoardStateFromFen(string fen)
     {
-        FenDetails fenDetails = Fen.FromString(fen);
+        var fenDetails = Fen.FromString(fen);
 
         TurnToMove = fenDetails.ColourToMove;
 
@@ -351,7 +353,7 @@ public class Board
             var from = move[..2];
             var squareFrom = new Square(from);
 
-            Piece? pieceMoved = Bitboards.PieceAtSquare(squareFrom);
+            var pieceMoved = Bitboards.PieceAtSquare(squareFrom);
             if (!pieceMoved.HasValue)
                 throw new InvalidOperationException("No piece at moved from square");
 

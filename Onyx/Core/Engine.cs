@@ -23,7 +23,7 @@ public struct SearchStatistics : ILoggable
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 }
 
@@ -161,15 +161,15 @@ public class Engine
         var xMovesRemaining = MovesRemaining(Board, timeControl);
         var timeBudgetPerMove = CalculateRemainingTime(relevantTimeControl.Value);
 
-        int baseTime = timeBudgetPerMove / xMovesRemaining;
-        int maxTime = timeBudgetPerMove / 3;
+        var baseTime = timeBudgetPerMove / xMovesRemaining;
+        var maxTime = timeBudgetPerMove / 3;
 
         return Math.Clamp(baseTime, 100, maxTime);
     }
 
     private static int MovesRemaining(Board board, TimeControl tc)
     {
-        int ply = board.FullMoves * 2;
+        var ply = board.FullMoves * 2;
 
         if (ply < 40) return 30; // opening
         if (ply < 80) return 20; // middlegame

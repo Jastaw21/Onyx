@@ -31,7 +31,7 @@ public class Zobrist
 
     private void BuildZobristFromFen(string fen)
     {
-        FenDetails fenDetails = Fen.FromString(fen);
+        var fenDetails = Fen.FromString(fen);
         HashValue = 0;
         if (fenDetails.ColourToMove == Colour.White)
             HashValue ^= _whiteToMove;
@@ -102,7 +102,7 @@ public class Zobrist
 
         if (move.IsCastling)
         {
-            Piece affectedRook = move.PieceMoved.Colour == Colour.White
+            var affectedRook = move.PieceMoved.Colour == Colour.White
                 ? Piece.WR
                 : Piece.BR;
 

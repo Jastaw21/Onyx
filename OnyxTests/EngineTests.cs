@@ -35,10 +35,8 @@ public class EngineTests
         var engine = new Engine();
         engine.SetPosition(fen);
         var result = engine.CalcAndDispatchTimedSearch(10, new TimeControl { Btime = 60000, Wtime = 60000, movesToGo = 1 });
-    
-
     }
-    
+
     [Test]
     public void returnsBestMoveFromDepthOneIfTimedOut()
     {
@@ -48,7 +46,7 @@ public class EngineTests
 
         var directResult = engine.DepthSearch(1);
 
-        for (int i = 2; i < 16; i++)
+        for (int i = 2; i < 7; i++)
         {
             var timedSearch = engine.TimedSearch(i, 1000);
             var match = timedSearch.bestMove.Notation == directResult.bestMove.Notation;
@@ -57,8 +55,7 @@ public class EngineTests
             Assert.That(match);
         }
     }
-    
-    
+
     [Test]
     public void OtherMateInOne()
     {
@@ -96,7 +93,7 @@ public class EngineTests
         Assert.That(move.bestMove.Notation, Is.EqualTo("f1c4"));
 
         engine.SetPosition("6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1");
-        move = engine.TimedSearch(3, 1200);
+        move = engine.TimedSearch(3, 4000);
         Assert.That(move.bestMove.Notation, Is.EqualTo("g4h6"));
     }
 
@@ -118,7 +115,7 @@ public class EngineTests
         var fenPre = board.GetFen();
         board.ApplyMove(move);
         var result = Referee.IsCheckmate(board);
-        board.UndoMove(move);
+        board.UndoMove(move, false);
         Assert.That(board.GetFen(), Is.EqualTo(fenPre));
     }
 

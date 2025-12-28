@@ -72,7 +72,7 @@ public class Tokeniser
 
         else
         {
-            TokenType? optionalType = ParseUnknownToken(builtToken);
+            var optionalType = ParseUnknownToken(builtToken);
             if (!optionalType.HasValue)
                 throw new ArgumentException($"Unknown token type {builtToken}");
             type = optionalType.Value;
@@ -119,7 +119,7 @@ public class Tokeniser
             }
 
             var validCastlingString = false;
-            foreach (KeyValuePair<char, int> pair in charsInString)
+            foreach (var pair in charsInString)
             {
                 if (pair.Value is not ('k' or 'q' or 'K' or 'Q'))
                     validCastlingString = true;

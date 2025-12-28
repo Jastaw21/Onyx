@@ -106,7 +106,7 @@ public class ZobristTests
             var hashPre = board.Zobrist.HashValue;
             var move = moves[i];
             board.ApplyMove(move);
-            board.UndoMove(move);
+            board.UndoMove(move, false);
             Assert.That(board.Zobrist.HashValue, Is.EqualTo(hashPre));
         }
     }

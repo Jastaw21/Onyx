@@ -51,7 +51,7 @@ public static class MaskGenerator
         var rank = RankAndFileHelpers.RankIndex(square);
         var file = RankAndFileHelpers.FileIndex(square);
 
-        foreach (MoveDir direction in MoveDir.All())
+        foreach (var direction in MoveDir.All())
         {
             var targetRank = rank + direction.DeltaRank;
             var targetFile = file + direction.DeltaFile;
@@ -141,7 +141,7 @@ public static class MaskGenerator
         var rank = RankAndFileHelpers.RankIndex(square);
         var file = RankAndFileHelpers.FileIndex(square);
 
-        foreach (MoveDir direction in MoveDir.All())
+        foreach (var direction in MoveDir.All())
         {
             var r = rank + direction.DeltaRank;
             var f = file + direction.DeltaFile;

@@ -13,7 +13,7 @@ public class UciInterface
     {
         Logger.Log(LogType.UCIReceived, commandString);
 
-        Command? command = _parser.Parse(commandString);
+        var command = _parser.Parse(commandString);
         if (command is null)
         {
             Console.WriteLine($"Unknown command {commandString}");

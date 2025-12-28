@@ -68,7 +68,7 @@ public class RefereeTests
     [Test]
     public void KingInCheck()
     {
-        var defaultBoard = new Board(Fen.DefaultFen);
+        var defaultBoard = new Board();
         Assert.Multiple(() =>
         {
             Assert.That(Referee.IsInCheck(Colour.White, defaultBoard), Is.False);

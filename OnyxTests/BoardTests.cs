@@ -32,7 +32,7 @@ public class ApplyMove
     [Test]
     public void ApplyPawnPush()
     {
-        var board = new Board(Fen.DefaultFen);
+        var board = new Board();
 
         var move = new Move(
             Piece.MakePiece(PieceType.Pawn, Colour.White),
@@ -191,7 +191,7 @@ public class ApplyMove
     [Test]
     public void BasicEnPassantSquareSetting()
     {
-        var board = new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        var board = new Board();
         board.ApplyMove(new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "d2d4"));
         Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"));
 
@@ -229,17 +229,17 @@ public class UndoMove
     [Test]
     public void UndoPush()
     {
-        var board = new Board(Fen.DefaultFen);
+        var board = new Board();
         var fenPrior = board.GetFen();
         var push = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "b2b4");
         board.ApplyMove(push);
 
-        board.UndoMove(push);
+        board.UndoMove(push, false);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
 
         var knight = new Move(Piece.MakePiece(PieceType.Knight, Colour.White), "b1c3");
         board.ApplyMove(knight);
-        board.UndoMove(knight);
+        board.UndoMove(knight, false);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
     }
 
@@ -253,7 +253,7 @@ public class UndoMove
 
         Assert.That(board.GetFen(), Is.Not.EqualTo(fenBefore));
 
-        board.UndoMove(capture);
+        board.UndoMove(capture, false);
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
     }
 
@@ -268,7 +268,7 @@ public class UndoMove
 
         Assert.That(board.GetFen(), Is.Not.EqualTo(fenBefore));
 
-        board.UndoMove(promotionMove);
+        board.UndoMove(promotionMove, false);
 
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
     }
@@ -310,7 +310,7 @@ public class UndoMove
             var board = new Board(startingPositions[test]);
             var fenBefore = board.GetFen();
             board.ApplyMove(moves[test]);
-            board.UndoMove(moves[test]);
+            board.UndoMove(moves[test], false);
 
             Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
         }
@@ -323,7 +323,7 @@ public class UndoMove
         var rightsBefore = board.CastlingRights;
         var kingMove = new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1f2");
         board.ApplyMove(kingMove);
-        board.UndoMove(kingMove);
+        board.UndoMove(kingMove, false);
         Assert.That(board.CastlingRights, Is.EqualTo(rightsBefore));
     }
 
@@ -348,11 +348,11 @@ public class UndoMove
     [Test]
     public void UndoLossOfEnPassantSquare()
     {
-        var board = new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        var board = new Board();
         var previousEP = board.EnPassantSquare;
         var move = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "d2d4");
         board.ApplyMove(move);
-        board.UndoMove(move);
+        board.UndoMove(move, false);
 
         Assert.That(previousEP, Is.EqualTo(board.EnPassantSquare));
     }
@@ -366,7 +366,7 @@ public class UndoMove
         board.ApplyMove(captureMove);
         var fenDuring = board.GetFen();
         
-        board.UndoMove(captureMove);
+        board.UndoMove(captureMove, false);
         var fenAfter = board.GetFen();
         Assert.That(fenBefore,Is.EqualTo(fenAfter));
     }
@@ -377,7 +377,7 @@ public class BoardTests
     [Test]
     public void InitFromFen()
     {
-        var board = new Board(Fen.DefaultFen);
+        var board = new Board();
 
         Assert.Multiple(() =>
         {
