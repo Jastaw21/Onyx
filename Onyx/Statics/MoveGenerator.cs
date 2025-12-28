@@ -93,11 +93,12 @@ public static class MoveGenerator
 
         var normalAttacks = opponentOccupancy & attacks;
 
-        // the board has a viable en passant square, and we're on an appropriate rank
+        // the board has a viable en passant square, and we're on an appropriate file
         if (board.EnPassantSquare.HasValue && Math.Abs(board.EnPassantSquare.Value.FileIndex - square.FileIndex) == 1)
         {
+            var relevantAttackRank = piece.Colour == Colour.Black ? 2 : 5;
             var pawnHomeRank = piece.Colour == Colour.Black ? 3 : 4;
-            if (square.RankIndex == pawnHomeRank)
+            if (square.RankIndex == pawnHomeRank && relevantAttackRank == board.EnPassantSquare.Value.RankIndex )
                 normalAttacks |= board.EnPassantSquare.Value.Bitboard;
         }
 

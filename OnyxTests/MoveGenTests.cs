@@ -215,4 +215,16 @@ public class MoveGenTests
         var board = new Board("r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/P1N2Q2/1PPBBPpP/R3K2R b KQkq - 0 1");
         Assert.That(MoveGenerator.GetMoves(Piece.BP,new Square(44),board),Does.Contain(new Move(Piece.BP,"e6e5")));
     }
+
+    [Test]
+    public void MovGenDoesntAffectBoard()
+    {
+        var fen = "rnbqkbnr/p1pppppp/8/3N4/1p6/1P6/P1PPPPPP/R1BQKBNR b KQkq - 1 3";
+
+        var board = new Board(fen);
+        MoveGenerator.GetLegalMoves(board,Colour.White);
+        Assert.That(board.GetFen(), Is.EqualTo(fen));
+        MoveGenerator.GetLegalMoves(board, Colour.Black);
+        Assert.That(board.GetFen(), Is.EqualTo(fen));
+    }
 }

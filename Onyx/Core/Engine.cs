@@ -17,7 +17,7 @@ public struct SearchStatistics : ILoggable
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes,1.0/Depth)}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 
     public override string ToString()
@@ -158,10 +158,9 @@ public class Engine
 
     private int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
     {
-        
         var xMovesRemaining = MovesRemaining(Board, timeControl);
         var timeBudgetPerMove = CalculateRemainingTime(relevantTimeControl.Value);
-        
+
         int baseTime = timeBudgetPerMove / xMovesRemaining;
         int maxTime = timeBudgetPerMove / 3;
 
@@ -171,10 +170,10 @@ public class Engine
     private static int MovesRemaining(Board board, TimeControl tc)
     {
         int ply = board.FullMoves * 2;
-        
-        if (ply < 40) return 30;   // opening
-        if (ply < 80) return 20;   // middlegame
-        return 12;                // endgame
+
+        if (ply < 40) return 30; // opening
+        if (ply < 80) return 20; // middlegame
+        return 12; // endgame
     }
 
     private int CalculateRemainingTime(int remainingTimeForTurnToMove)
@@ -232,7 +231,6 @@ public class Engine
         return (true, bestMove, bestScore);
     }
 
-
     private SearchResult AlphaBeta(int depth,
         int alpha,
         int beta,
@@ -262,8 +260,8 @@ public class Engine
         // ---- TT probe ----
         var hash = board.Zobrist.HashValue;
         if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove)) return searchResult;
-        
-        Evaluator.SortMoves(moves,ttMove);
+
+        Evaluator.SortMoves(moves, ttMove);
 
         Move bestMove = default;
         // ---- main loop ----

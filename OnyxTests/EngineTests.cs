@@ -25,6 +25,21 @@ public class EngineTests
     }
 
     [Test]
+    public void MoveGenOnlyLegal()
+    {
+        var fen = "rnbqkbnr/p1pppppp/8/3N4/1p6/1P6/P1PPPPPP/R1BQKBNR b KQkq - 1 3";
+        var board = new Board(fen);
+        var moves = MoveGenerator.GetLegalMoves(board, Colour.Black);
+
+
+        var engine = new Engine();
+        engine.SetPosition(fen);
+        var result = engine.CalcAndDispatchTimedSearch(10, new TimeControl { Btime = 60000, Wtime = 60000, movesToGo = 1 });
+    
+
+    }
+    
+    [Test]
     public void returnsBestMoveFromDepthOneIfTimedOut()
     {
         var fen = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";

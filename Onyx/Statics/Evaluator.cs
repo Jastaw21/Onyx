@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Diagnostics;
+using Onyx.Core;
 
 
 namespace Onyx.Statics;
@@ -26,10 +27,10 @@ public static class Evaluator
 
     public static int Evaluate(Board board)
     {
+        
         var materialScore = MaterialScore(board);
         var psScore = PieceSquareScore(board);
         var mobilityScore = MobilityScore(board);
-
         return materialScore + psScore + mobilityScore;
     }
 
@@ -79,14 +80,18 @@ public static class Evaluator
             }
         }
 
-        var score = (whiteScore - blackScore)/10;
+        var score = (whiteScore - blackScore) / 10;
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
     private static int MobilityScore(Board board)
     {
-        var whiteMoves = MoveGenerator.GetLegalMoves(board, Colour.White).Count;
-        var blackMoves = MoveGenerator.GetLegalMoves(board, Colour.Black).Count;
+        var boardTurnToMove = board.TurnToMove;
+        board.TurnToMove = Colour.White;
+        var whiteMoves = MoveGenerator.GetLegalMoves(board).Count;
+        board.TurnToMove = Colour.Black;
+        var blackMoves = MoveGenerator.GetLegalMoves(board).Count;
+        board.TurnToMove = boardTurnToMove;
         var score = whiteMoves - blackMoves;
         return board.TurnToMove == Colour.White ? score : -score;
     }
