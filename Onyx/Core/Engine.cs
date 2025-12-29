@@ -218,7 +218,7 @@ public class Engine
 
         foreach (var move in moves)
         {
-          
+            if (!Referee.MoveIsLegal(move, Board)) continue;
             Board.ApplyMove(move);
             var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1);
             Board.UndoMove(move);
@@ -251,7 +251,7 @@ public class Engine
         _statistics.Nodes++;
         
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetLegalMoves(board, moveBuffer);
+        int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
         Span<Move> moves = moveBuffer[..moveCount];
         // no moves, either checkmate or stalemate
         if (moveCount == 0)
@@ -263,7 +263,10 @@ public class Engine
 
         // leaf node
         if (depth == 0)
+        {
+            if (Referee.IsCheckmate(board)) return new SearchResult(true, -(MateScore - ply));
             return new SearchResult(true, Evaluator.Evaluate(board));
+        }
 
         var alphaOrig = alpha;
         var bestValue = int.MinValue + 1;
@@ -278,6 +281,7 @@ public class Engine
         // ---- main loop ----
         foreach (var move in moves)
         {
+            if (!Referee.MoveIsLegal(move, board)) continue;
             board.ApplyMove(move);
             var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
             board.UndoMove(move);
