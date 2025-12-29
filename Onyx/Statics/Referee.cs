@@ -32,14 +32,15 @@ public static class Referee
         return !result;
     }
 
-    private static bool IsPinnedToKing(Square pinnedPieceSquare, Square kingSquare, Colour kingColour, Board position)
+    private static bool IsPinnedToKing(int pinnedPieceSquare, int kingSquare, Colour kingColour, Board position,
+        int squareMoveTo)
     {
         // 1. Get the ray between the piece and the king.
         var rayBetween = RankAndFileHelpers.GetRayBetween(pinnedPieceSquare, kingSquare);
         if (rayBetween == 0) return false;
 
-        var occupancyWithoutPinnedPiece = position.Bitboards.Occupancy() & ~(1UL << pinnedPieceSquare.SquareIndex);
         // 2. See if there is an attacker behind the piece on this ray.
+        var occupancyWithoutPinnedPiece = position.Bitboards.Occupancy() & ~(1UL << pinnedPieceSquare);
 
         // Check Diagonals
         var diagAttacks =
@@ -83,7 +84,7 @@ public static class Referee
         var square = ulong.TrailingZeroCount(kingBitBoard);
         if (square == 64) return false; // no king on the board 
         var attackingColour = colour == Colour.White ? Colour.Black : Colour.White;
-        return IsSquareAttacked(new Square((int)square), position, attackingColour);
+        return IsSquareAttacked((int)square, position, attackingColour);
     }
 
     public static bool IsCheckmate(Colour colourInCheckmate, Board position)
@@ -115,10 +116,10 @@ public static class Referee
         return IsCheckmate(Colour.White, position) || IsCheckmate(Colour.Black, position);
     }
 
-    public static bool IsSquareAttacked(Square square, Board board, Colour byColour)
+    public static bool IsSquareAttacked(int square, Board board, Colour byColour)
     {
         var occupancy = board.Bitboards.Occupancy();
-        var squareIndex = square.SquareIndex;
+
 
         // what squares could a bishop attack from where the king currently is?
         var diagAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, square, occupancy);
@@ -155,18 +156,19 @@ public static class Referee
         var pawnColour = byColour == Colour.White ? Colour.Black : Colour.White;
         var pawnsBB = board.Bitboards.OccupancyByPiece(attackingPiece);
 
-        if (square.FileIndex > 0)
+        var fileIndex = RankAndFileHelpers.FileIndex(square);
+        if (fileIndex > 0)
         {
-            int targetIndex = byColour == Colour.White ? squareIndex - 9 : squareIndex + 7;
+            int targetIndex = byColour == Colour.White ? square - 9 : square + 7;
             if ((uint)targetIndex < 64)
             {
                 if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;
             }
         }
 
-        if (square.FileIndex < 7)
+        if (fileIndex < 7)
         {
-            int targetIndex = byColour == Colour.White ? squareIndex - 7 : squareIndex + 9;
+            int targetIndex = byColour == Colour.White ? square - 7 : square + 9;
             if ((uint)targetIndex < 64)
             {
                 if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;

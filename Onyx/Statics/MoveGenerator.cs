@@ -43,7 +43,7 @@ public static class MoveGenerator
         return legalMoves.ToList();
     }
 
-    public static List<Move> GetMoves(Piece piece, Square square, Board board)
+    public static List<Move> GetMoves(Piece piece, int square, Board board)
     {
         var moveList = new List<Move>();
         if (piece.Type != PieceType.Pawn)
@@ -68,7 +68,7 @@ public static class MoveGenerator
         while (thisPieceStartSquares > 0)
         {
             var lowestSetBit = ulong.TrailingZeroCount(thisPieceStartSquares);
-            var thisSquare = new Square((int)lowestSetBit);
+            var thisSquare = (int)lowestSetBit;
             moves.AddRange(GetMoves(piece, thisSquare, board));
 
             thisPieceStartSquares &= thisPieceStartSquares - 1;
@@ -90,11 +90,12 @@ public static class MoveGenerator
         return moves;
     }
 
-    private static void GeneratePawnMoves(Piece piece, Square square, Board board, List<Move> moveList)
+    private static void GeneratePawnMoves(Piece piece, int square, Board board, List<Move> moveList)
     {
+        var rankIndex = RankAndFileHelpers.RankIndex(square);
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
-        if ((piece.Colour == Colour.White && square.RankIndex == 6) ||
-            (piece.Colour == Colour.Black && square.RankIndex == 1))
+        if ((piece.Colour == Colour.White && rankIndex == 6) ||
+            (piece.Colour == Colour.Black && rankIndex == 1))
             return;       
 
         var opponentColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
@@ -109,11 +110,11 @@ public static class MoveGenerator
         var normalAttacks = opponentOccupancy & attacks;
 
         // the board has a viable en passant square, and we're on an appropriate file
-        if (board.EnPassantSquare.HasValue && Math.Abs(board.EnPassantSquare.Value.FileIndex - square.FileIndex) == 1)
+        if (board.EnPassantSquare.HasValue && Math.Abs(board.EnPassantSquare.Value.FileIndex - RankAndFileHelpers.FileIndex(square)) == 1)
         {
             var relevantAttackRank = piece.Colour == Colour.Black ? 2 : 5;
             var pawnHomeRank = piece.Colour == Colour.Black ? 3 : 4;
-            if (square.RankIndex == pawnHomeRank && relevantAttackRank == board.EnPassantSquare.Value.RankIndex )
+            if (rankIndex == pawnHomeRank && relevantAttackRank == board.EnPassantSquare.Value.RankIndex )
                 normalAttacks |= board.EnPassantSquare.Value.Bitboard;
         }
 
@@ -123,12 +124,12 @@ public static class MoveGenerator
         while (result > 0)
         {
             var lowest = ulong.TrailingZeroCount(result);
-            moveList.Add(new Move(piece, square, new Square((int)lowest)));
+            moveList.Add(new Move(piece, square, (int)lowest));
             result &= result - 1;
         }
     }
 
-    private static void GenerateCastlingMoves(Piece piece, Square square, Board board, List<Move> moveList)
+    private static void GenerateCastlingMoves(Piece piece, int square, Board board, List<Move> moveList)
     {
         if (piece.Type != PieceType.King || board.CastlingRights == 0)
             return;
@@ -136,15 +137,15 @@ public static class MoveGenerator
         var isWhite = piece.Colour == Colour.White;
         var expectedSquare = isWhite ? BoardConstants.E1 : BoardConstants.E8;
 
-        if (square.SquareIndex != expectedSquare)
+        if (square != expectedSquare)
             return;
 
         var opponentColour = isWhite ? Colour.Black : Colour.White;
         var occupancy = board.Bitboards.Occupancy();
 
 
-        var kingSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.H1 : BoardConstants.H8);
-        var queenSideRookSquare = new Square(piece.Colour == Colour.White ? BoardConstants.A1 : BoardConstants.A8);
+        var kingSideRookSquare =piece.Colour == Colour.White ? BoardConstants.H1 : BoardConstants.H8;
+        var queenSideRookSquare = piece.Colour == Colour.White ? BoardConstants.A1 : BoardConstants.A8;
 
         // Try kingside
         if (board.Bitboards.PieceAtSquare(kingSideRookSquare).HasValue
@@ -182,7 +183,7 @@ public static class MoveGenerator
     private static void TryCastling(
         Board board,
         Piece piece,
-        Square fromSquare,
+        int fromSquare,
         int castlingFlag,
         ulong requiredEmptySquares,
         int targetSquare,
@@ -199,7 +200,7 @@ public static class MoveGenerator
             return;
 
         // Check if any square the king passes through is attacked (including where it starts)
-        var squaresToCheck = requiredEmptySquares | fromSquare.Bitboard;
+        var squaresToCheck = requiredEmptySquares | (1ul <<fromSquare);
         while (squaresToCheck != 0)
         {
             var squareIndex = (int)ulong.TrailingZeroCount(squaresToCheck);
@@ -207,33 +208,34 @@ public static class MoveGenerator
             // Don't check b1/b8 for attack (queenside rook square)
             if (squareIndex != BoardConstants.B1 && squareIndex != BoardConstants.B8)
             {
-                if (Referee.IsSquareAttacked(new Square(squareIndex), board, opponentColour))
+                if (Referee.IsSquareAttacked(squareIndex, board, opponentColour))
                     return;
             }
 
             squaresToCheck &= squaresToCheck - 1;
         }
 
-        moveList.Add(new Move(piece, fromSquare, new Square(targetSquare)));
+        moveList.Add(new Move(piece, fromSquare, targetSquare));
     }
 
-    private static void GenerateBasicMoves(Piece piece, Square square, Board board, List<Move> moveList)
+    private static void GenerateBasicMoves(Piece piece, int square, Board board, List<Move> moveList)
     {
         var moves = GetMovesUlong(piece, square, board);
         while (moves > 0)
         {
             var lowest = ulong.TrailingZeroCount(moves);
-            moveList.Add(new Move(piece, square, new Square((int)lowest)));
+            moveList.Add(new Move(piece, square, (int)lowest));
             moves &= moves - 1;
         }
     }
 
-    private static void GeneratePawnPromotionMoves(Piece piece, Square square, Board board, List<Move> moveList)
+    private static void GeneratePawnPromotionMoves(Piece piece, int square, Board board, List<Move> moveList)
     {
         if (piece.Type != PieceType.Pawn)
             return;
-        if ((piece.Colour == Colour.White && square.RankIndex != 6) ||
-            (piece.Colour == Colour.Black && square.RankIndex != 1))
+        var rankIndex = RankAndFileHelpers.RankIndex(square);
+        if ((piece.Colour == Colour.White && rankIndex!= 6) ||
+            (piece.Colour == Colour.Black && rankIndex != 1))
             return;
 
         var offset = piece.Colour == Colour.White ? 8 : -8;
@@ -248,7 +250,7 @@ public static class MoveGenerator
 
         void PushPromotion(Piece promotionType)
         {
-            var targetSquare = new Square(square.SquareIndex + offset);
+            var targetSquare = square + offset;
             if (board.Bitboards.PieceAtSquare(targetSquare).HasValue)
                 return;
             var move = new Move(piece, square, targetSquare)
@@ -260,12 +262,13 @@ public static class MoveGenerator
 
         void CapturePromotions()
         {
-            List<Square> captureTargetSquares = [];
+            List<int> captureTargetSquares = [];
 
+            var fileIndex = RankAndFileHelpers.FileIndex(square);
             // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
-            if (square.FileIndex < 7)
+            if (fileIndex < 7)
             {
-                var targetSquare = new Square(square.SquareIndex + offset + 1);
+                var targetSquare = square + offset + 1;
                 if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
                     && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
                     && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
@@ -273,9 +276,9 @@ public static class MoveGenerator
             }
 
             // can go left (board wise, not piece wise, it's right as far as a black pawn is concerned)
-            if (square.FileIndex > 0)
+            if (fileIndex > 0)
             {
-                var targetSquare = new Square(square.SquareIndex + offset - 1);
+                var targetSquare = square + offset - 1;
                 if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
                     && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
                     && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
@@ -288,7 +291,7 @@ public static class MoveGenerator
         }
     }
 
-    private static ulong GetMovesUlong(Piece piece, Square square, Board board)
+    private static ulong GetMovesUlong(Piece piece, int square, Board board)
     {
         var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
         var movingSideOccupancy = board.Bitboards.OccupancyByColour(piece.Colour);

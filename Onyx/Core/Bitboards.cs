@@ -143,9 +143,9 @@ public class Bitboards
         return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest.SquareIndex)) > 0);
     }
 
-    public Piece? PieceAtSquare(Square squareToTest)
+    public Piece? PieceAtSquare(int squareToTest)
     {    
-        ulong mask = 1UL << squareToTest.SquareIndex;
+        ulong mask = 1UL << squareToTest;
         var pieces = Piece.AllPieces;
         foreach (var piece in pieces)
         {
@@ -167,7 +167,7 @@ public class Bitboards
 
             for (var fileIndex = 0; fileIndex <= 7; fileIndex++)
             {
-                var pieceHere = PieceAtSquare(new Square(rankIndex, fileIndex));
+                var pieceHere = PieceAtSquare(RankAndFileHelpers.SquareIndex(rankIndex, fileIndex));
 
                 if (pieceHere.HasValue)
                 {

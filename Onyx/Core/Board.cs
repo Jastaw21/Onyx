@@ -125,7 +125,7 @@ public class Board
         }
         else
         {
-            capturedPiece = Bitboards.PieceAtSquare(move.To);
+            capturedPiece = Bitboards.PieceAtSquare(move.To.SquareIndex);
             capturedSquare = move.To;
         }
 
@@ -275,7 +275,7 @@ public class Board
         }
 
         if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 &&
-            !Bitboards.PieceAtSquare(move.To).HasValue)
+            !Bitboards.PieceAtSquare(move.To.SquareIndex).HasValue)
             move.PreMoveFlag |= PreMoveFlags.EnPassant;
     }
 
@@ -356,7 +356,7 @@ public class Board
             var from = move[..2];
             var squareFrom = new Square(from);
 
-            var pieceMoved = Bitboards.PieceAtSquare(squareFrom);
+            var pieceMoved = Bitboards.PieceAtSquare(squareFrom.SquareIndex);
             if (!pieceMoved.HasValue)
                 throw new InvalidOperationException("No piece at moved from square");
 

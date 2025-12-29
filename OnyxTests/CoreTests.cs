@@ -229,9 +229,9 @@ public class CoreTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(board.PieceAtSquare(new Square(1, 0)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.White)));
-            Assert.That(board.PieceAtSquare(new Square(6, 7)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.Black)));
-            Assert.That(board.PieceAtSquare(new Square(3, 3)).HasValue, Is.False);
+            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(1, 0)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.White)));
+            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(6, 7)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.Black)));
+            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(3, 3)).HasValue, Is.False);
         });
     }
 

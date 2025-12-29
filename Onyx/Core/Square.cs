@@ -48,6 +48,35 @@ public static class RankAndFileHelpers
         return rank * 8 + file;
     }
 
+    public static ulong GetRayBetween(int from, int to)
+    {
+        var result = 0ul;
+        var fromFileIndex = FileIndex(from);
+        var toFileIndex = FileIndex(to);
+        var fromRankIndex = RankIndex(from);
+        var toRankIndex = RankIndex(to);
+
+        var diag = Math.Abs(fromFileIndex - toFileIndex) == Math.Abs(fromRankIndex - toRankIndex);
+        var straight = fromFileIndex == toFileIndex || fromRankIndex == toRankIndex;
+
+        if (!diag && !straight)
+            return 0ul;
+
+        var deltaRank = toRankIndex - fromRankIndex;
+        var deltaFile = toFileIndex - fromFileIndex;
+        var steps = diag ? deltaRank : deltaFile != 0 ? deltaFile : deltaRank;
+        var rankSign = Math.Sign(deltaRank);
+        var fileSign = Math.Sign(deltaFile);
+        for (var step = 0; step <= Math.Abs(steps); step++)
+        {
+            var rank = fromRankIndex + step * rankSign;
+            var file = fromFileIndex + step * fileSign;
+            var squareIndex = SquareIndex(rank, file);
+            var thisSquare = 1ul << squareIndex;
+            result |= thisSquare;
+        }
+        return result;
+    }
     public static ulong GetRayBetween(Square from, Square to)
     {
         var result = 0ul;

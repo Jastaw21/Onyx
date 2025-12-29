@@ -14,6 +14,7 @@ public static class PostMoveFlags
     public static readonly int Capture = 0;
 }
 
+
 public struct Move
 {
     public Move(Piece pieceMoved, Square from, Square to)
@@ -22,6 +23,13 @@ public struct Move
         From = from;
         To = to;
     }
+    public Move(Piece pieceMoved, int from, int to)
+    {
+        PieceMoved = pieceMoved;
+        From = new Square(from);
+        To = new Square(to);
+    }
+    
 
     public Move(Piece pieceMoved, string notation)
     {

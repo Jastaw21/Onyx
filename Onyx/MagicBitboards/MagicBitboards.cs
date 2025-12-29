@@ -91,10 +91,10 @@ public static class MagicBitboards
     private static readonly ulong[] _kingAttacks = new ulong[64];
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static ulong GetMovesByPiece(Piece piece, Square square, ulong boardState)
+    public static ulong GetMovesByPiece(Piece piece, int square, ulong boardState)
     {
-        var type = piece.Type;        
-        var squareIndex = square.SquareIndex;
+        var type = piece.Type;       
+        
         switch (type)
         {
             case PieceType.Queen:
@@ -106,19 +106,18 @@ public static class MagicBitboards
             case PieceType.Pawn:
                 return GetPawnMoves(piece.Colour, square, boardState);
             case PieceType.Knight:
-                return _knightAttacks[squareIndex];
+                return _knightAttacks[square];
             case PieceType.King:               
-                return _kingAttacks[squareIndex];
+                return _kingAttacks[square];
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static ulong GetDiagAttacks(Square square, ulong occupancy)
+    private static ulong GetDiagAttacks(int square, ulong occupancy)
     {
-        var squareIndex = square.SquareIndex;
-        var magic = _diagMagics[squareIndex];
+        var magic = _diagMagics[square];
         occupancy &= magic.Mask;
         occupancy *= magic.MagicNumber;
         occupancy >>= magic.Shift;
@@ -127,10 +126,9 @@ public static class MagicBitboards
     }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static ulong GetStraightAttacks(Square square, ulong occupancy)
+    private static ulong GetStraightAttacks(int square, ulong occupancy)
     {
-        var squareIndex = square.SquareIndex;
-        var magic = _straightMagics[squareIndex];
+        var magic = _straightMagics[square];
         occupancy &= magic.Mask;
         occupancy *= magic.MagicNumber;
         occupancy >>= magic.Shift;
@@ -170,24 +168,25 @@ public static class MagicBitboards
         _kingAttacks[square.SquareIndex] = movesFromHere;
     }
 
-    private static ulong GetPawnMoves(Colour colour, Square square, ulong boardState)
+    private static ulong GetPawnMoves(Colour colour, int square, ulong boardState)
     {
         var result = 0ul;
 
         result |= GetPawnPushes(colour, square, boardState);
-        var squareIndex = square.SquareIndex;
+       
 
         // can go right
-        if (square.FileIndex < 7)
+        var FileIndex = RankAndFileHelpers.FileIndex(square);
+        if (FileIndex < 7)
         {
             var rightIndex = (colour == Colour.White) ? 9 : -7;
-            result |= 1ul << squareIndex + rightIndex;
+            result |= 1ul << square + rightIndex;
         }
 
-        if (square.FileIndex > 0)
+        if (FileIndex > 0)
         {
             var leftIndex = (colour == Colour.White) ? 7 : -9;
-            result |= 1ul << squareIndex + leftIndex;
+            result |= 1ul << square + leftIndex;
         }
 
         return result;
@@ -195,20 +194,21 @@ public static class MagicBitboards
 
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static ulong GetPawnPushes(Colour colour, Square square, ulong boardState)
+    public static ulong GetPawnPushes(Colour colour, int square, ulong boardState)
     {
-        if (square.RankIndex is 7 or 0)
+        var rankIndex = RankAndFileHelpers.RankIndex(square);
+        if (rankIndex is 7 or 0)
             return 0ul;
 
-        var squareIndex = square.SquareIndex;
+       
         var squareOffset = (colour == Colour.White) ? 8 : -8;
 
-        var isWhiteDoublePush = colour == Colour.White && square.RankIndex == 1;
-        var isBlackDoublePush = colour == Colour.Black && square.RankIndex == 6;
+        var isWhiteDoublePush = colour == Colour.White && rankIndex == 1;
+        var isBlackDoublePush = colour == Colour.Black && rankIndex == 6;
 
 
         // add the single push
-        var result = 1ul << squareIndex + squareOffset;
+        var result = 1ul << square + squareOffset;
         
         // cant go anywhere occupied
         if ((result & boardState) > 0)
@@ -222,24 +222,24 @@ public static class MagicBitboards
         {
             case Colour.White:
                 // if there's anything on the immediate next rank, can't do a double push
-                if (((1ul << squareIndex + 8) & boardState) > 0)
+                if (((1ul << square + 8) & boardState) > 0)
                     break;
                 // or on the square we're going to
-                if (((1ul << squareIndex + 16) & boardState) > 0)
+                if (((1ul << square + 16) & boardState) > 0)
                     break;
 
-                result |= 1ul << squareIndex + 16;
+                result |= 1ul << square + 16;
                 break;
             case Colour.Black:
                 // if there's anything on the immediate next rank, can't do a double push
-                if (((1ul << squareIndex - 8) & boardState) > 0)
+                if (((1ul << square - 8) & boardState) > 0)
                     break;
                 
                 // or on the square we're going to
-                if (((1ul << squareIndex - 16) & boardState) > 0)
+                if (((1ul << square - 16) & boardState) > 0)
                     break;
 
-                result |= 1ul << squareIndex - 16;
+                result |= 1ul << square - 16;
                 break;
         }
 

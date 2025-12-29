@@ -10,11 +10,11 @@ public class MoveGenTests
     {
         var board = new Board();
 
-        var aPawnMoves = MoveGenerator.GetMoves(Piece.WP, new Square(8), board);
+        var aPawnMoves = MoveGenerator.GetMoves(Piece.WP, 8, board);
         Assert.That(aPawnMoves, Has.Member(new Move(Piece.WP, "a2a3")));
         Assert.That(aPawnMoves, Has.Member(new Move(Piece.WP, "a2a4")));
 
-        var bKnightMoves = MoveGenerator.GetMoves(Piece.WN, new Square(1), board);
+        var bKnightMoves = MoveGenerator.GetMoves(Piece.WN, 1, board);
         Assert.That(bKnightMoves, Has.Member(new Move(Piece.WN, "b1a3")));
         Assert.That(bKnightMoves, Has.Member(new Move(Piece.WN, "b1c3")));
     }
@@ -34,7 +34,7 @@ public class MoveGenTests
 
         foreach (var move in movesToTest)
         {
-            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard);
+            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard);
             Assert.That(movesByPieceBySquare, Does.Not.Contain(move));
         }
     }
@@ -61,13 +61,13 @@ public class MoveGenTests
 
         foreach (var move in illegalMoves)
         {
-            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard);
+            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard);
             Assert.That(movesByPieceBySquare, Does.Not.Contain(move));
         }
 
         foreach (var move in legalMoves)
         {
-            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard);
+            var movesByPieceBySquare = MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard);
             Assert.That(movesByPieceBySquare, Does.Contain(move));
         }
     }
@@ -96,7 +96,7 @@ public class MoveGenTests
         {
             var pos = new Board(startingPositions[scen]);
             var move = moves[scen];
-            Assert.That(MoveGenerator.GetMoves(move.PieceMoved, move.From, pos), Does.Contain(move));
+            Assert.That(MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, pos), Does.Contain(move));
         }
     }
 
@@ -124,7 +124,7 @@ public class MoveGenTests
         {
             var pos = new Board(startingPositions[scen]);
             var move = moves[scen];
-            Assert.That(MoveGenerator.GetMoves(move.PieceMoved, move.From, pos), Does.Not.Contain(move));
+            Assert.That(MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, pos), Does.Not.Contain(move));
         }
     }
 
@@ -132,7 +132,7 @@ public class MoveGenTests
     public void MoveGenIncludesPromotionMoves()
     {
         var board = new Board("8/P7/8/8/8/8/8/8 w - - 0 1");
-        var moves = MoveGenerator.GetMoves(Piece.WP, new Square("a7"), board: board);
+        var moves = MoveGenerator.GetMoves(Piece.WP, new Square("a7").SquareIndex, board: board);
         Assert.That(moves.Count, Is.EqualTo(4));
     }
 
@@ -205,7 +205,7 @@ public class MoveGenTests
     public void CanCaptureAndPromoteTogether()
     {
         var board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 1");
-        var moves = MoveGenerator.GetMoves(Piece.BP, new Square("g2"), board);
+        var moves = MoveGenerator.GetMoves(Piece.BP, new Square("g2").SquareIndex, board);
         Assert.That(moves,Does.Contain(new Move(Piece.BP,"g2h1q")));
     }
 
@@ -213,7 +213,7 @@ public class MoveGenTests
     public void MissingPawnPushFixed()
     {
         var board = new Board("r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/P1N2Q2/1PPBBPpP/R3K2R b KQkq - 0 1");
-        Assert.That(MoveGenerator.GetMoves(Piece.BP,new Square(44),board),Does.Contain(new Move(Piece.BP,"e6e5")));
+        Assert.That(MoveGenerator.GetMoves(Piece.BP,new Square(44).SquareIndex,board),Does.Contain(new Move(Piece.BP,"e6e5")));
     }
 
     [Test]
@@ -222,9 +222,10 @@ public class MoveGenTests
         var fen = "rnbqkbnr/p1pppppp/8/3N4/1p6/1P6/P1PPPPPP/R1BQKBNR b KQkq - 1 3";
 
         var board = new Board(fen);
-        MoveGenerator.GetLegalMoves(board,Colour.White);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        MoveGenerator.GetLegalMoves(board);
         Assert.That(board.GetFen(), Is.EqualTo(fen));
-        MoveGenerator.GetLegalMoves(board, Colour.Black);
+        MoveGenerator.GetLegalMoves(board);
         Assert.That(board.GetFen(), Is.EqualTo(fen));
     }
 
