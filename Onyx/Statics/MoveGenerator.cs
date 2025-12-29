@@ -5,17 +5,22 @@ namespace Onyx.Statics;
 
 public static class MoveGenerator
 {
-    public static List<Move> GetLegalMoves(Board board)
+    public static int GetLegalMoves(Board board, Span<Move> moveBuffer)
     {
-        var rawMoves = GetMoves(board.TurnToMove, board);
-        var legalMoves = new List<Move>();
-        foreach (var move in rawMoves)
+        Span<Move> pseudoMovesBuffer = stackalloc Move[256];
+        int pseudoMoveCount = GetMoves(board.TurnToMove, board, pseudoMovesBuffer);
+        int legalMoveCount = 0;
+
+        for (int i = 0; i < pseudoMoveCount; i++)
         {
+            var move = pseudoMovesBuffer[i];
             if (Referee.MoveIsLegal(move, board))
-                legalMoves.Add(move);
+            {
+                moveBuffer[legalMoveCount++] = move;
+            }
         }
 
-        return legalMoves;
+        return legalMoveCount;
     }
 
     public static int GetMoves(Board board, Span<Move> moveBuffer)
@@ -23,85 +28,35 @@ public static class MoveGenerator
         return GetMoves(board.TurnToMove, board, moveBuffer);
     }
 
-    public static List<Move> GetMoves(Piece piece, int square, Board board)
+    public static int GetMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
-        var moveList = new List<Move>();
         if (piece.Type != PieceType.Pawn)
         {
-            GenerateBasicMoves(piece, square, board, moveList);
-            GenerateCastlingMoves(piece, square, board, moveList);
+            GenerateBasicMoves(piece, square, board, moveBuffer, ref count);
+            GenerateCastlingMoves(piece, square, board, moveBuffer, ref count);
         }
         else
         {
-            GeneratePawnMoves(piece, square, board, moveList);
-            GeneratePawnPromotionMoves(piece, square, board, moveList);
+            GeneratePawnMoves(piece, square, board, moveBuffer, ref count);
+            GeneratePawnPromotionMoves(piece, square, board, moveBuffer, ref count);
         }
 
-
-        return moveList;
+        return count;
     }
 
-    public static int GetMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, int startPos)
+    public static int GetMoves(Piece piece, Board board, Span<Move> moveBuffer, ref int count)
     {
-        List<Move> moves = new(32);
-        if (piece.Type != PieceType.Pawn)
-        {
-            GenerateBasicMoves(piece, square, board,moves);
-            GenerateCastlingMoves(piece, square, board, moves);
-        }
-        else
-        {
-            GeneratePawnMoves(piece, square, board, moves);
-            GeneratePawnPromotionMoves(piece, square, board, moves);
-        }
-
-        moves.CopyTo(moveBuffer.Slice(startPos));
-        return moves.Count;
-    }
-
-    public static List<Move> GetMoves(Piece piece, Board board)
-    {
-        var thisPieceStartSquares = board.Bitboards.OccupancyByPiece(piece);
-        List<Move> moves = [];
-        while (thisPieceStartSquares > 0)
-        {
-            var lowestSetBit = ulong.TrailingZeroCount(thisPieceStartSquares);
-            var thisSquare = (int)lowestSetBit;
-            moves.AddRange(GetMoves(piece, thisSquare, board));
-
-            thisPieceStartSquares &= thisPieceStartSquares - 1;
-        }
-
-        return moves;
-    }
-
-    public static int GetMoves(Piece piece, Board board, Span<Move> moveBuffer, int startPos)
-    {
-        int moveCount = 0;
         var thisPieceStartSquares = board.Bitboards.OccupancyByPiece(piece);
         while (thisPieceStartSquares > 0)
         {
             var lowestSetBit = ulong.TrailingZeroCount(thisPieceStartSquares);
             var thisSquare = (int)lowestSetBit;
-            var thisMoveCount = GetMoves(piece, thisSquare, board, moveBuffer, startPos + moveCount);
-            moveCount += thisMoveCount;
-            
+            GetMoves(piece, thisSquare, board, moveBuffer, ref count);
+
             thisPieceStartSquares &= thisPieceStartSquares - 1;
         }
-        
-        return moveCount;
-    }
 
-    public static List<Move> GetMoves(Colour colour, Board board)
-    {
-        List<Move> moves = new(32);
-
-        foreach (var piece in Piece.ByColour(colour))
-        {
-            moves.AddRange(GetMoves(piece, board));
-        }
-
-        return moves;
+        return count;
     }
 
     public static int GetMoves(Colour colour, Board board, Span<Move> moveBuffer)
@@ -109,14 +64,13 @@ public static class MoveGenerator
         int moveCount = 0;
         foreach (var piece in Piece.ByColour(colour))
         {
-            var moves = GetMoves(piece, board, moveBuffer, moveCount);
-            moveCount += moves;
+            GetMoves(piece, board, moveBuffer, ref moveCount);
         }
 
         return moveCount;
     }
 
-    private static void GeneratePawnMoves(Piece piece, int square, Board board, List<Move> moveList)
+    private static void GeneratePawnMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         var rankIndex = RankAndFileHelpers.RankIndex(square);
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
@@ -151,12 +105,12 @@ public static class MoveGenerator
         while (result > 0)
         {
             var lowest = ulong.TrailingZeroCount(result);
-            moveList.Add(new Move(piece, square, (int)lowest));
+            moveBuffer[count++] = new Move(piece, square, (int)lowest);
             result &= result - 1;
         }
     }
 
-    private static void GeneratePawnPromotionMoves(Piece piece, int square, Board board, List<Move> moveList)
+    private static void GeneratePawnPromotionMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         if (piece.Type != PieceType.Pawn)
             return;
@@ -168,57 +122,50 @@ public static class MoveGenerator
         var offset = piece.Colour == Colour.White ? 8 : -8;
         foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
         {
-            PushPromotion(promotionType);
-        }
-
-        CapturePromotions();
-
-        return;
-
-        void PushPromotion(Piece promotionType)
-        {
             var targetSquare = square + offset;
-            if (board.Bitboards.PieceAtSquare(targetSquare).HasValue)
-                return;
-            var move = new Move(piece, square, targetSquare)
+            if (!board.Bitboards.PieceAtSquare(targetSquare).HasValue)
             {
-                PromotedPiece = promotionType
-            };
-            moveList.Add(move);
+                var move = new Move(piece, square, targetSquare)
+                {
+                    PromotedPiece = promotionType
+                };
+                moveBuffer[count++] = move;
+            }
         }
 
-        void CapturePromotions()
+        var fileIndex = RankAndFileHelpers.FileIndex(square);
+        // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
+        if (fileIndex < 7)
         {
-            List<int> captureTargetSquares = [];
-
-            var fileIndex = RankAndFileHelpers.FileIndex(square);
-            // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
-            if (fileIndex < 7)
+            var targetSquare = square + offset + 1;
+            if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
+                && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
+                && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
             {
-                var targetSquare = square + offset + 1;
-                if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
-                    && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
-                    && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
-                    captureTargetSquares.Add(targetSquare);
+                foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
+                {
+                    moveBuffer[count++] = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                }
             }
+        }
 
-            // can go left (board wise, not piece wise, it's right as far as a black pawn is concerned)
-            if (fileIndex > 0)
+        // can go left (board wise, not piece wise, it's right as far as a black pawn is concerned)
+        if (fileIndex > 0)
+        {
+            var targetSquare = square + offset - 1;
+            if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
+                && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
+                && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
             {
-                var targetSquare = square + offset - 1;
-                if (board.Bitboards.PieceAtSquare(targetSquare).HasValue // needs to be a piece there 
-                    && board.Bitboards.PieceAtSquare(targetSquare)!.Value.Colour != piece.Colour // of the other colour
-                    && board.Bitboards.PieceAtSquare(targetSquare) is not { Type: PieceType.King }) // and not a king
-                    captureTargetSquares.Add(targetSquare);
+                foreach (var promotionType in Piece.PromotionTypes(piece.Colour))
+                {
+                    moveBuffer[count++] = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                }
             }
-
-            moveList.AddRange(from targetSquare in captureTargetSquares
-                from promotionType in Piece.PromotionTypes(piece.Colour)
-                select new Move(piece, square, targetSquare) { PromotedPiece = promotionType });
         }
     }
 
-    private static void GenerateCastlingMoves(Piece piece, int square, Board board, List<Move> moveList)
+    private static void GenerateCastlingMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         if (piece.Type != PieceType.King || board.CastlingRights == 0)
             return;
@@ -249,7 +196,8 @@ public static class MoveGenerator
                 isWhite ? BoardConstants.G1 : BoardConstants.G8,
                 occupancy,
                 opponentColour,
-                moveList
+                moveBuffer,
+                ref count
             );
 
         // Try queenside
@@ -265,7 +213,8 @@ public static class MoveGenerator
                 isWhite ? BoardConstants.C1 : BoardConstants.C8,
                 occupancy,
                 opponentColour,
-                moveList
+                moveBuffer,
+                ref count
             );
     }
 
@@ -278,7 +227,8 @@ public static class MoveGenerator
         int targetSquare,
         ulong occupancy,
         Colour opponentColour,
-        List<Move> moveList)
+        Span<Move> moveBuffer,
+        ref int count)
     {
         // check board castling state
         if ((board.CastlingRights & castlingFlag) == 0)
@@ -304,17 +254,17 @@ public static class MoveGenerator
             squaresToCheck &= squaresToCheck - 1;
         }
 
-        moveList.Add(new Move(piece, fromSquare, targetSquare));
+        moveBuffer[count++] = new Move(piece, fromSquare, targetSquare);
     }
 
 
-    private static void GenerateBasicMoves(Piece piece, int square, Board board, List<Move> moveList)
+    private static void GenerateBasicMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         var moves = GetMovesUlong(piece, square, board);
         while (moves > 0)
         {
             var lowest = ulong.TrailingZeroCount(moves);
-            moveList.Add(new Move(piece, square, (int)lowest));
+            moveBuffer[count++] = new Move(piece, square, (int)lowest);
             moves &= moves - 1;
         }
     }

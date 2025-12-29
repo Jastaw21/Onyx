@@ -33,7 +33,9 @@ public static class PerftSearcher
         if (depth == 0)
             return 1;
 
-        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(board.TurnToMove, board, moveBuffer);
+        var moves = moveBuffer[..moveCount].ToArray(); // Convert to array for Parallel.ForEach
         ulong total = 0;
         object lockObj = new();
 
@@ -56,7 +58,9 @@ public static class PerftSearcher
     {
         ulong total = 0;
 
-        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(board.TurnToMove, board, moveBuffer);
+        var moves = moveBuffer[..moveCount];
 
         foreach (var move in moves)
         {
