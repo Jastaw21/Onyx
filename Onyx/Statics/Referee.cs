@@ -16,7 +16,12 @@ public static class Referee
             var pieceMovedColour = move.PieceMoved.Colour;
             var relevantKing = pieceMovedColour == Colour.White ? Piece.WK : Piece.BK;
             var kingBoard = position.Bitboards.OccupancyByPiece(relevantKing);
-            return !IsPinnedToKing(move.From.SquareIndex, (int)ulong.TrailingZeroCount(kingBoard), pieceMovedColour,
+            var kingSquare = (int)ulong.TrailingZeroCount(kingBoard);
+            
+            // Should not happen in a valid game, but for safety in tests
+            if (kingSquare == 64) return FullLegalityCheck(move, position);
+            
+            return !IsPinnedToKing(move.From.SquareIndex, kingSquare, pieceMovedColour,
                 position, move.To.SquareIndex);
         }
 
@@ -93,22 +98,21 @@ public static class Referee
             return false;
 
         // check each of the pieces they have moves with
-        var piecesTheyCanMove = Piece.ByColour(colourInCheckmate);
-        foreach (var piece in piecesTheyCanMove)
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(colourInCheckmate, position, moveBuffer);
+
+        // then see if these moves take the board out of check
+        for (int i = 0; i < moveCount; i++)
         {
-            var moves = MoveGenerator.GetMoves(piece, position);
-            // then see if these moves take the board out of check
-            foreach (var move in moves)
-            {
-                position.ApplyMove(move);
-                var isInCheck = IsInCheck(colourInCheckmate, position);
-                position.UndoMove(move);
-                if (isInCheck)
-                    return true;
-            }
+            var move = moveBuffer[i];
+            position.ApplyMove(move);
+            var isInCheck = IsInCheck(colourInCheckmate, position);
+            position.UndoMove(move);
+            if (!isInCheck)
+                return false;
         }
 
-        return false;
+        return true;
     }
 
     public static bool IsCheckmate(Board position)
