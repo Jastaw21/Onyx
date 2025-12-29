@@ -82,9 +82,13 @@ public static class PerftSearcher
     {
         var results = 0ul;
         if (depth == 0) return 1ul;
-        var moves = MoveGenerator.GetLegalMoves(board);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
+        Span<Move> moves = moveBuffer[..moveCount];
         foreach (var move in moves)
         {
+            if (!Referee.MoveIsLegal(move, board))
+                continue;
             var sideToMve = board.TurnToMove;
             board.ApplyMove(move);
 

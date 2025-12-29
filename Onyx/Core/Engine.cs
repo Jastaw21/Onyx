@@ -207,7 +207,9 @@ public class Engine
     private (bool completed, Move bestMove, int score)
         ExecuteSearch(int depth, bool timed)
     {
-        var moves = MoveGenerator.GetLegalMoves(Board);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(Board, moveBuffer);
+        Span<Move> moves = moveBuffer[..moveCount];
         var bestMove = moves[0];
         var bestScore = int.MinValue + 1;
 
@@ -248,10 +250,11 @@ public class Engine
 
         _statistics.Nodes++;
         
-        
-        var moves = MoveGenerator.GetLegalMoves(board);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
+        Span<Move> moves = moveBuffer[..moveCount];
         // no moves, either checkmate or stalemate
-        if (moves.Count == 0)
+        if (moveCount == 0)
         {
             return Referee.IsCheckmate(board)
                 ? new SearchResult(true, -(MateScore - ply))
@@ -275,6 +278,8 @@ public class Engine
         // ---- main loop ----
         foreach (var move in moves)
         {
+            if (!Referee.MoveIsLegal(move, board))
+                continue;
             board.ApplyMove(move);
             var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
             board.UndoMove(move);
