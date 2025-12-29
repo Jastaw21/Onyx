@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Diagnostics;
+using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -54,6 +55,7 @@ public static class PerftSearcher
     public static void PerftDivide(Board board, int depth)
     {
         ulong total = 0;
+
         var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
 
         foreach (var move in moves)
@@ -68,6 +70,7 @@ public static class PerftSearcher
                 Console.WriteLine($"{move}: {nodes}");
             }
 
+
             board.UndoMove(move);
         }
 
@@ -79,12 +82,12 @@ public static class PerftSearcher
     {
         var results = 0ul;
         if (depth == 0) return 1ul;
-
-        var moves = MoveGenerator.GetMoves(board.TurnToMove, board);
+        var moves = MoveGenerator.GetLegalMoves(board);
         foreach (var move in moves)
         {
             var sideToMve = board.TurnToMove;
             board.ApplyMove(move);
+
             if (!Referee.IsInCheck(sideToMve, board))
             {
                 var childResults = ExecutePerft(board, depth - 1);

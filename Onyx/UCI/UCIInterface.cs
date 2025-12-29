@@ -64,12 +64,19 @@ public class UciInterface
         var depth = command.Depth ?? 10; // Default to 5 if not specified
         if (command.IsPerft)
         {
-            for (var i = 1; i <= depth; i++)
+            if (command.IsPerftDivide)
             {
-                var perftResult = _player.Perft(i);
-                var result = $"Depth {i} :  {perftResult}";
-                Logger.Log(LogType.UCISent, result);
-                Console.WriteLine($"Depth {i} :  {perftResult}");
+                _player.PerftDivide(depth);
+            }
+            else
+            {
+                for (var i = 1; i <= depth; i++)
+                {
+                    var perftResult = _player.Perft(i);
+                    var result = $"Depth {i} :  {perftResult}";
+                    Logger.Log(LogType.UCISent, result);
+                    Console.WriteLine($"Depth {i} :  {perftResult}");
+                }
             }
         }
         else

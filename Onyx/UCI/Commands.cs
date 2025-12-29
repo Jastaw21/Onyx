@@ -19,6 +19,7 @@ public record GoCommand : Command
     public bool IsPerft;
     public int? Depth;
     public TimeControl TimeControl;
+    public bool IsPerftDivide;
 }
 
 public record UciNewGameCommand : Command;

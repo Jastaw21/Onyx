@@ -71,6 +71,11 @@ public class UciParser
                 case TokenType.Perft:
                     Consume();
                     command.IsPerft = true;
+                    if (Peek().Type == TokenType.Divide)
+                    {
+                        command.IsPerftDivide = true;
+                        Consume();
+                    }
                     if (Peek().Type == TokenType.IntLiteral)
                         command.Depth = int.Parse(Consume().Value);
                     break;

@@ -107,6 +107,11 @@ public class Engine
         return PerftSearcher.GetPerftResults(board: Board, depth);
     }
 
+    public void PerftDivide(int depth)
+    {
+        PerftSearcher.PerftDivide(Board, depth);
+    }
+
     public (Move bestMove, int score, SearchStatistics stats) TimedSearch(int depth, long timeMS)
     {
         _timerManager.Start(timeMS);
