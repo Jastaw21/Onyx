@@ -28,9 +28,9 @@ public static class Evaluator
     {
         var materialScore = MaterialScore(board);
         var psScore = PieceSquareScore(board);
-        var mobilityScore = MobilityScore(board);
+        //var mobilityScore = MobilityScore(board);
         var bishopPairScore = BishopPairScore(board);
-        return materialScore + psScore + bishopPairScore+ mobilityScore;
+        return materialScore + psScore + bishopPairScore; //+ mobilityScore;
     }
 
     private static int MaterialScore(Board board)
@@ -47,7 +47,7 @@ public static class Evaluator
             blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
         }
 
-        var score = (whiteScore - blackScore);
+        var score = whiteScore - blackScore;
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
@@ -90,7 +90,7 @@ public static class Evaluator
 
         var whiteScore = whiteBishops >= 2 ? 50 : 0;
         var blackScore = blackBishops >= 2 ? 50 : 0;
-        var score = (whiteScore - blackScore);
+        var score = whiteScore - blackScore;
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
