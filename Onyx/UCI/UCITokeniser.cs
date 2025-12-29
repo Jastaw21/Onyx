@@ -66,8 +66,10 @@ public class Tokeniser
             type = TokenType.Movestogo;
         else if (builtToken == "quit")
             type = TokenType.Quit;
+        else if (builtToken == "divide")
+            type = TokenType.Divide;
         
-        else if (int.TryParse(builtToken, out var result))
+        else if (int.TryParse(builtToken, out _))
             type = (TokenType.IntLiteral);
 
         else
@@ -105,7 +107,7 @@ public class Tokeniser
             return TokenType.Colour;
 
         // could be a castling token
-        if (builtToken.Length is 1 or 4)
+        if (builtToken.Length >= 1 && builtToken.Length <= 4)
         {
             var charsInString = new Dictionary<char, int>();
             foreach (var character in builtToken)

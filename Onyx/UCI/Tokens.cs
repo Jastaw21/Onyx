@@ -25,7 +25,8 @@ public enum TokenType
     UciNewGame,
     IsReady,
     Movestogo,
-    Quit
+    Quit,
+    Divide
 }
 
 public struct Token
