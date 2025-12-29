@@ -113,17 +113,17 @@ public static class Evaluator
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
-    private static int MobilityScore(Board board)
-    {
-        var boardTurnToMove = board.TurnToMove;
-        board.TurnToMove = Colour.White;
-        var whiteMoves = MoveGenerator.GetLegalMoves(board).Count;
-        board.TurnToMove = Colour.Black;
-        var blackMoves = MoveGenerator.GetLegalMoves(board).Count;
-        board.TurnToMove = boardTurnToMove;
-        var score = whiteMoves - blackMoves;
-        return board.TurnToMove == Colour.White ? score : -score;
-    }
+    // private static int MobilityScore(Board board)
+    // {
+    //     var boardTurnToMove = board.TurnToMove;
+    //     board.TurnToMove = Colour.White;
+    //     var whiteMoves = MoveGenerator.GetLegalMoves(board).Count;
+    //     board.TurnToMove = Colour.Black;
+    //     var blackMoves = MoveGenerator.GetLegalMoves(board).Count;
+    //     board.TurnToMove = boardTurnToMove;
+    //     var score = whiteMoves - blackMoves;
+    //     return board.TurnToMove == Colour.White ? score : -score;
+    // }
 
     private static readonly Dictionary<PieceType, int> PieceValues = new()
     {

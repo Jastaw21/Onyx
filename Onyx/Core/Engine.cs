@@ -251,7 +251,7 @@ public class Engine
         _statistics.Nodes++;
         
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
+        int moveCount = MoveGenerator.GetLegalMoves(board, moveBuffer);
         Span<Move> moves = moveBuffer[..moveCount];
         // no moves, either checkmate or stalemate
         if (moveCount == 0)
@@ -278,8 +278,6 @@ public class Engine
         // ---- main loop ----
         foreach (var move in moves)
         {
-            if (!Referee.MoveIsLegal(move, board))
-                continue;
             board.ApplyMove(move);
             var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
             board.UndoMove(move);
