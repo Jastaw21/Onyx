@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.4.3";
+    public string Version { get; } = "0.4.5";
 
     public Engine()
     {
@@ -269,7 +269,7 @@ public class Engine
         var hash = board.Zobrist.HashValue;
         if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove)) return searchResult;
 
-        //Evaluator.SortMoves(moves, ttMove);
+        Evaluator.SortMoves(moves, ttMove);
 
         Move bestMove = default;
         // ---- main loop ----
