@@ -109,4 +109,13 @@ public class RefereeTests
         var blackNotInCheckMate = new Board("rnbqkbnr/ppppp1pp/5p2/7Q/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1");
         Assert.That(Referee.IsCheckmate(Colour.Black,blackNotInCheckMate), Is.True);
     }
+
+    [Test]
+    public void MoveLegalIfCapturePinningPiece()
+    {
+        var fen = "rnbq1k1r/pp1Pbppp/2p4B/8/2B5/8/PPP1NnPP/RN1QK2R b KQ - 2 8";
+        var board = new Board(fen);
+        var move = new Move(Piece.BP, "g7h6");
+        Assert.That(Referee.MoveIsLegal(move, board), Is.True);
+    }
 }

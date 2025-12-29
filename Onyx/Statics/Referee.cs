@@ -16,8 +16,8 @@ public static class Referee
             var pieceMovedColour = move.PieceMoved.Colour;
             var relevantKing = pieceMovedColour == Colour.White ? Piece.WK : Piece.BK;
             var kingBoard = position.Bitboards.OccupancyByPiece(relevantKing);
-            var kingSquare = new Square((int)ulong.TrailingZeroCount(kingBoard));
-            return !IsPinnedToKing(move.From, kingSquare, pieceMovedColour, position);
+            return !IsPinnedToKing(move.From.SquareIndex, (int)ulong.TrailingZeroCount(kingBoard), pieceMovedColour,
+                position, move.To.SquareIndex);
         }
 
         // in check
@@ -34,34 +34,48 @@ public static class Referee
 
     private static bool IsPinnedToKing(Square pinnedPieceSquare, Square kingSquare, Colour kingColour, Board position)
     {
+        // 1. Get the ray between the piece and the king.
         var rayBetween = RankAndFileHelpers.GetRayBetween(pinnedPieceSquare, kingSquare);
-        if (rayBetween == 0)
-            return false;
+        if (rayBetween == 0) return false;
 
         var occupancyWithoutPinnedPiece = position.Bitboards.Occupancy() & ~(1UL << pinnedPieceSquare.SquareIndex);
+        // 2. See if there is an attacker behind the piece on this ray.
 
-        var diagonalAttacks =
+        // Check Diagonals
+        var diagAttacks =
             MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, kingSquare, occupancyWithoutPinnedPiece);
         var relevantBishop = kingColour == Colour.White ? Piece.BB : Piece.WB;
         var relevantQueen = kingColour == Colour.White ? Piece.BQ : Piece.WQ;
+        var diagAttackers =
+            (position.Bitboards.OccupancyByPiece(relevantQueen) | position.Bitboards.OccupancyByPiece(relevantBishop)) &
+            diagAttacks;
 
-        var queenOccupancy = position.Bitboards.OccupancyByPiece(relevantQueen);
-        var diagonalAttackers = queenOccupancy |
-                                position.Bitboards.OccupancyByPiece(relevantBishop);
-        diagonalAttackers &= diagonalAttacks;
-        if ((diagonalAttackers & ~rayBetween) != 0)
-            return true;
-        
+        if (diagAttackers != 0)
+        {
+            // If the piece is on a diagonal ray and there's a diagonal attacker...
+            // it can ONLY move if the destination is also on the ray between the king and that attacker.
+            int attackerSquare = (int)ulong.TrailingZeroCount(diagAttackers);
+            var pinRay = RankAndFileHelpers.GetRayBetween(kingSquare, attackerSquare);
+            return (pinRay & (1ul << squareMoveTo)) == 0;
+        }
+
+        // Check Straights
         var straightAttacks =
             MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WR, kingSquare, occupancyWithoutPinnedPiece);
         var relevantRook = kingColour == Colour.White ? Piece.BR : Piece.WR;
-        var straightAttackers = queenOccupancy | position.Bitboards.OccupancyByPiece(relevantRook);
-        straightAttackers &= straightAttacks;
-        if ((straightAttackers & ~rayBetween) != 0)
-            return true;
+        var straightAttackers =
+            (position.Bitboards.OccupancyByPiece(relevantQueen) | position.Bitboards.OccupancyByPiece(relevantRook)) &
+            straightAttacks;
+
+        if (straightAttackers != 0)
+        {
+            int attackerSquare = (int)ulong.TrailingZeroCount(straightAttackers);
+            var pinRay = RankAndFileHelpers.GetRayBetween(kingSquare, attackerSquare);
+            return (pinRay & (1ul << squareMoveTo)) == 0;
+        }
+
         return false;
     }
-
 
     public static bool IsInCheck(Colour colour, Board position)
     {

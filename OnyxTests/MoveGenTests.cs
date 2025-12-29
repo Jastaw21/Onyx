@@ -235,4 +235,12 @@ public class MoveGenTests
         var moves = MoveGenerator.GetLegalMoves(new Board(fen));
         Assert.That(moves,Does.Not.Contain(new Move(Piece.WP,"g2g3")));
     }
+
+    [Test]
+    public void PinnedPieceCanMoveStayingPinned()
+    {
+        var fen = "rnQq1k1r/pp2bppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R b KQ - 0 1";
+        var moves = MoveGenerator.GetLegalMoves(new Board(fen));
+        Assert.That(moves,Does.Contain(new Move(Piece.BQ,"d8e8")));
+    }
 }
