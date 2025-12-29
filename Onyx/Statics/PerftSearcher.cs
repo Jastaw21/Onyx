@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Onyx.Core;
+﻿using Onyx.Core;
 
 namespace Onyx.Statics;
 
