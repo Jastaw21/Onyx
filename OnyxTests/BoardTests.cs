@@ -234,12 +234,12 @@ public class UndoMove
         var push = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "b2b4");
         board.ApplyMove(push);
 
-        board.UndoMove(push, false);
+        board.UndoMove(push);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
 
         var knight = new Move(Piece.MakePiece(PieceType.Knight, Colour.White), "b1c3");
         board.ApplyMove(knight);
-        board.UndoMove(knight, false);
+        board.UndoMove(knight);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
     }
 
@@ -253,7 +253,7 @@ public class UndoMove
 
         Assert.That(board.GetFen(), Is.Not.EqualTo(fenBefore));
 
-        board.UndoMove(capture, false);
+        board.UndoMove(capture);
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
     }
 
@@ -268,7 +268,7 @@ public class UndoMove
 
         Assert.That(board.GetFen(), Is.Not.EqualTo(fenBefore));
 
-        board.UndoMove(promotionMove, false);
+        board.UndoMove(promotionMove);
 
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
     }
@@ -310,7 +310,7 @@ public class UndoMove
             var board = new Board(startingPositions[test]);
             var fenBefore = board.GetFen();
             board.ApplyMove(moves[test]);
-            board.UndoMove(moves[test], false);
+            board.UndoMove(moves[test]);
 
             Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
         }
@@ -323,7 +323,7 @@ public class UndoMove
         var rightsBefore = board.CastlingRights;
         var kingMove = new Move(Piece.MakePiece(PieceType.King, Colour.White), "e1f2");
         board.ApplyMove(kingMove);
-        board.UndoMove(kingMove, false);
+        board.UndoMove(kingMove);
         Assert.That(board.CastlingRights, Is.EqualTo(rightsBefore));
     }
 
@@ -352,7 +352,7 @@ public class UndoMove
         var previousEP = board.EnPassantSquare;
         var move = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "d2d4");
         board.ApplyMove(move);
-        board.UndoMove(move, false);
+        board.UndoMove(move);
 
         Assert.That(previousEP, Is.EqualTo(board.EnPassantSquare));
     }
@@ -366,7 +366,7 @@ public class UndoMove
         board.ApplyMove(captureMove);
         var fenDuring = board.GetFen();
         
-        board.UndoMove(captureMove, false);
+        board.UndoMove(captureMove);
         var fenAfter = board.GetFen();
         Assert.That(fenBefore,Is.EqualTo(fenAfter));
     }

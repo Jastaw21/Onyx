@@ -227,4 +227,12 @@ public class MoveGenTests
         MoveGenerator.GetLegalMoves(board, Colour.Black);
         Assert.That(board.GetFen(), Is.EqualTo(fen));
     }
+
+    [Test]
+    public void MoveGenDoesntMovePinnedPieces()
+    {
+        var fen = "6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1";
+        var moves = MoveGenerator.GetLegalMoves(new Board(fen));
+        Assert.That(moves,Does.Not.Contain(new Move(Piece.WP,"g2g3")));
+    }
 }

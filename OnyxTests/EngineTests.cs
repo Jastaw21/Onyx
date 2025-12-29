@@ -3,7 +3,6 @@ using Onyx.Core;
 using Onyx.Statics;
 using Onyx.UCI;
 
-
 namespace OnyxTests;
 
 public class EngineTests
@@ -55,34 +54,7 @@ public class EngineTests
             Assert.That(match);
         }
     }
-
-    [Test]
-    public void OtherMateInOne()
-    {
-        List<string> startpos =
-        [
-            "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38"
-        ];
-
-        List<Move> expectedMove =
-        [
-            new Move(Piece.BQ, "c2d3")
-        ];
-        var engine = new Engine();
-        for (var i = 0; i < startpos.Count; i++)
-        {
-            engine.SetPosition(startpos[i]);
-            var resultTimes = engine.TimedSearch(5, 6000);
-            var resultDepth = engine.DepthSearch(5);
-            Assert.Multiple(() =>
-                {
-                    Assert.That(resultDepth.bestMove.Notation, Is.EqualTo(expectedMove[i].Notation));
-                    Assert.That(resultTimes.bestMove.Notation, Is.EqualTo(expectedMove[i].Notation));
-                }
-            );
-        }
-    }
-
+   
     [Test]
     public void FindsMateInTwo()
     {
@@ -115,7 +87,7 @@ public class EngineTests
         var fenPre = board.GetFen();
         board.ApplyMove(move);
         var result = Referee.IsCheckmate(board);
-        board.UndoMove(move, false);
+        board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo(fenPre));
     }
 

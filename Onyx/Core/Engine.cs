@@ -17,13 +17,13 @@ public struct SearchStatistics : ILoggable
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime,2) /1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime} , TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime,2) /1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 }
 
@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.2.33";
+    public string Version { get; } = "0.4.2";
 
     public Engine()
     {
@@ -192,6 +192,7 @@ public class Engine
         _currentSearchId++;
 
         var searchResult = ExecuteSearch(depth, false);
+        
 
         _statistics.RunTime = _timerManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
@@ -210,10 +211,10 @@ public class Engine
 
         foreach (var move in moves)
         {
+          
             Board.ApplyMove(move);
             var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1);
             Board.UndoMove(move);
-
             if (!result.Completed)
                 return (false, default, 0);
 

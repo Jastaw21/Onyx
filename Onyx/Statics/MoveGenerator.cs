@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Collections.Concurrent;
+using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -10,7 +11,7 @@ public static class MoveGenerator
         var legalMoves = new List<Move>();
         foreach (var move in rawMoves)
         {
-            if (Referee.MoveIsLegal(move,ref board))
+            if (Referee.MoveIsLegal(move,board))
                 legalMoves.Add(move);
         }
 
@@ -22,11 +23,24 @@ public static class MoveGenerator
         var legalMoves = new List<Move>();
         foreach (var move in rawMoves)
         {
-            if (Referee.MoveIsLegal(move,ref board))
+            if (Referee.MoveIsLegal(move,board))
                 legalMoves.Add(move);
         }
-
+        
         return legalMoves;
+    }
+
+    public static List<Move> GetLegalMovesThreaded(Board board)
+    {
+        var rawMoves = GetMoves(board.TurnToMove, board);
+        var legalMoves = new ConcurrentBag<Move>();
+        Parallel.ForEach(rawMoves, move =>
+        {
+            var localBoard = board.Clone();
+            if (Referee.MoveIsLegal(move, localBoard))
+                legalMoves.Add(move);
+        });
+        return legalMoves.ToList();
     }
 
     public static List<Move> GetMoves(Piece piece, Square square, Board board)

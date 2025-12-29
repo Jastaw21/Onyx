@@ -369,7 +369,44 @@ class HelperTests
             targetBitboard <<= 1;
         }
     }
-    
-    
+
+    [Test]
+    public void RayBetween()
+    {
+        var a1 = new Square("a1");
+        var h8 = new Square("h8");
+        var c3 = new Square("c3");
+        var d1 = new Square("d1");
+        var h1 = new Square("h1");
+        var a8 = new Square("a8");
+        Assert.Multiple(() =>
+        {
+            // easy diagonal
+            Assert.That(RankAndFileHelpers.GetRayBetween(a1, h8), Is.EqualTo(0x8040201008040201));
+            Assert.That(RankAndFileHelpers.GetRayBetween(h8, a1), Is.EqualTo(0x8040201008040201));
+            Assert.That(RankAndFileHelpers.GetRayBetween(a1, c3), Is.EqualTo(0x40201));
+            Assert.That(RankAndFileHelpers.GetRayBetween(c3, a1), Is.EqualTo(0x40201));
+            
+            // backwards diagonal
+            Assert.That(RankAndFileHelpers.GetRayBetween(h8, c3), Is.EqualTo(0x8040201008040000));
+            
+            // not on a line
+            Assert.That(RankAndFileHelpers.GetRayBetween(d1, c3), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.GetRayBetween(c3, d1), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.GetRayBetween(d1, h8), Is.EqualTo(0));
+            Assert.That(RankAndFileHelpers.GetRayBetween(h8, d1), Is.EqualTo(0));
+            
+            // backwards
+            Assert.That(RankAndFileHelpers.GetRayBetween(a8, h1), Is.EqualTo(0x102040810204080));
+            Assert.That(RankAndFileHelpers.GetRayBetween(h1, a8), Is.EqualTo(0x102040810204080));
+            
+            // straight line
+            Assert.That(RankAndFileHelpers.GetRayBetween(a1, a8), Is.EqualTo(0x101010101010101));
+            Assert.That(RankAndFileHelpers.GetRayBetween(a8, a1), Is.EqualTo(0x101010101010101));
+            Assert.That(RankAndFileHelpers.GetRayBetween(a1, h1), Is.EqualTo(0xff));
+            Assert.That(RankAndFileHelpers.GetRayBetween(h1, a1), Is.EqualTo(0xff));
+        });
+
+    }
     
 }

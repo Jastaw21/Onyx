@@ -8,6 +8,12 @@ public static class PreMoveFlags
     public static readonly int Castle = 1 << 2;
 }
 
+public static class PostMoveFlags
+{
+    public static readonly int NoFlag = 0;
+    public static readonly int Capture = 0;
+}
+
 public struct Move
 {
     public Move(Piece pieceMoved, Square from, Square to)
@@ -44,8 +50,8 @@ public struct Move
     public Square To { get; }
 
     public Piece? PromotedPiece = null;
-    public Piece? CapturedPiece = null;
     public int PreMoveFlag = PreMoveFlags.NoFlag;
+    public int PostMoveFlag = PostMoveFlags.NoFlag;
 
     public string Notation => From.Notation + To.Notation +
                               (PromotedPiece.HasValue ? Fen.GetCharFromPiece(PromotedPiece.Value) : "");

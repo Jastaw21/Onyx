@@ -1,8 +1,4 @@
-﻿using Onyx.Core;
-using Onyx.Statics;
-
-
-namespace OnyxTests;
+﻿namespace OnyxTests;
 
 public class EvaluatorTests
 {

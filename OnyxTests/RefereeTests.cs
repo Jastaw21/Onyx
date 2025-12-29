@@ -91,9 +91,9 @@ public class RefereeTests
         var moveIntoCheck = new Move(Piece.BK, "d5c5");
         Assert.Multiple(() =>
         {
-            Assert.That(Referee.MoveIsLegal(exposeKingMove, ref board), Is.False);
-            Assert.That(Referee.MoveIsLegal(normalKingMove, ref board), Is.True);
-            Assert.That(Referee.MoveIsLegal(moveIntoCheck, ref board), Is.False);
+            Assert.That(Referee.MoveIsLegal(exposeKingMove, board), Is.False);
+            Assert.That(Referee.MoveIsLegal(normalKingMove, board), Is.True);
+            Assert.That(Referee.MoveIsLegal(moveIntoCheck, board), Is.False);
         });
     }
 

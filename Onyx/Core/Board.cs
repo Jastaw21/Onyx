@@ -148,7 +148,10 @@ public class Board
 
         // get rid of the captured piece
         if (capturedPiece.HasValue)
+        {
             Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
+            move.PostMoveFlag |= PostMoveFlags.Capture;
+        }
 
 
         // action the promotion

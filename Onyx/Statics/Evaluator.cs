@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Onyx.Core;
+﻿using Onyx.Core;
 
 
 namespace Onyx.Statics;
@@ -10,8 +9,8 @@ public static class Evaluator
     {
         moves.Sort((move, move1) =>
         {
-            var aScore = move.PreMoveFlag;
-            var bScore = move1.PreMoveFlag;
+            var aScore = move.PostMoveFlag & PostMoveFlags.Capture;
+            var bScore = move.PostMoveFlag & PostMoveFlags.Capture;
 
             if (transpositionTableMove.HasValue)
             {
@@ -31,7 +30,7 @@ public static class Evaluator
         var psScore = PieceSquareScore(board);
         var mobilityScore = MobilityScore(board);
         var bishopPairScore = BishopPairScore(board);
-        return materialScore + psScore + mobilityScore + bishopPairScore;
+        return materialScore + psScore + bishopPairScore+ mobilityScore;
     }
 
     private static int MaterialScore(Board board)
