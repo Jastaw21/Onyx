@@ -89,7 +89,7 @@ public class Engine
     private SearchStatistics _statistics;
     private int _currentSearchId;
     private TimerManager _timerManager = new();
-    public string Version { get; } = "0.4.5";
+    public string Version { get; } = "0.5.0";
 
     public Engine()
     {
@@ -264,7 +264,10 @@ public class Engine
         // leaf node
         if (depth == 0)
         {
-            if (Referee.IsCheckmate(board)) return new SearchResult(true, -(MateScore - ply));
+            if (Referee.IsCheckmate(board))
+            {
+                return new SearchResult(true, -(MateScore - ply));
+            };
             return new SearchResult(true, Evaluator.Evaluate(board));
         }
 
@@ -278,10 +281,12 @@ public class Engine
         Evaluator.SortMoves(moves, ttMove);
 
         Move bestMove = default;
+        var legalMoveCount = 0;
         // ---- main loop ----
         foreach (var move in moves)
         {
             if (!Referee.MoveIsLegal(move, board)) continue;
+            legalMoveCount++;
             board.ApplyMove(move);
             var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
             board.UndoMove(move);
@@ -316,7 +321,13 @@ public class Engine
 
         TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
         _statistics.TtStores++;
-
+        if (legalMoveCount == 0)
+        {
+            // No legal moves were found in the loop
+            return Referee.IsCheckmate(board)
+                ? new SearchResult(true, -(MateScore - ply)) // Checkmate
+                : new SearchResult(true, 0);                 // Stalemate
+        }
         return new SearchResult(true, bestValue);
     }
 

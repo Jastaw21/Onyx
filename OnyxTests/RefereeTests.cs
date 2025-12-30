@@ -108,6 +108,9 @@ public class RefereeTests
         
         var blackNotInCheckMate = new Board("rnbqkbnr/ppppp1pp/5p2/7Q/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1");
         Assert.That(Referee.IsCheckmate(Colour.Black,blackNotInCheckMate), Is.False);
+        
+        var blackInCheckMate2 = new Board("3N1Q2/7P/8/8/8/Qk4PK/4Q3/8 b - - 2 96");
+        Assert.That(Referee.IsCheckmate(Colour.Black,blackInCheckMate2), Is.True);
     }
 
     [Test]

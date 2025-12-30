@@ -24,6 +24,20 @@ public class EngineTests
     }
 
     [Test]
+    public void FindsMateInThree()
+    {
+        var fen = "3NQQ2/P6P/8/8/8/1k4PK/8/8 w - - 0 94";
+        var engine = new Engine();
+        engine.SetPosition(fen);
+        var bestMove = engine.DepthSearch(6);
+        //Assert.Multiple(() => { Assert.That(bestMove.bestMove.Notation, Is.EqualTo("e8e2")); });
+        
+        engine.SetPosition("Q2NQQQQ/8/8/8/8/8/5K2/1k6 w - - 5 104");
+        bestMove = engine.DepthSearch(3);
+        Assert.Multiple(() => { Assert.That(bestMove.bestMove.Notation, Is.EqualTo("g8h7")); });
+    }
+
+    [Test]
     public void returnsBestMoveFromDepthOneIfTimedOut()
     {
         var fen = "r1b1kbbR/8/3p4/2n5/3K1Pnp/3N4/2q5/R2b4 b q - 3 38";

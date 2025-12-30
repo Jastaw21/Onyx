@@ -26,12 +26,12 @@ public struct Move
     {
         PieceMoved = pieceMoved;
         var fromSquare = notation[..2];
-        var toSquare = notation.Length == 4 ? notation[^2..] : notation[2..5];
+        var toSquare = notation.Length == 4 ? notation[^2..] : notation[2..4];
         var fromIndex = RankAndFileHelpers.SquareIndex(fromSquare);
         var toIndex = RankAndFileHelpers.SquareIndex(toSquare);
         if (notation.Length == 5)
         {
-            PromotedPiece = notation[4] switch
+            PromotedPiece = char.ToLower(notation[4]) switch
             {
                 'q' => Piece.MakePiece(PieceType.Queen, pieceMoved.Colour),
                 'b' => Piece.MakePiece(PieceType.Bishop, pieceMoved.Colour),
