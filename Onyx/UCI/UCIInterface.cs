@@ -48,6 +48,9 @@ public class UciInterface
             case IsReadyCommand:
                 Console.WriteLine("readyok");
                 break;
+            case DebugCommand:
+                Console.WriteLine(_player.Board.GetFen());
+                break;
         }
 
         Console.Out.Flush();

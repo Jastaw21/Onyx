@@ -4,7 +4,7 @@ namespace Onyx.UCI;
 
 public abstract record Command;
 public record UciCommand : Command;
-
+public record DebugCommand : Command;
 public struct TimeControl
 {
     public int? Wtime;

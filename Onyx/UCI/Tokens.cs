@@ -26,7 +26,9 @@ public enum TokenType
     IsReady,
     Movestogo,
     Quit,
-    Divide
+    Divide,
+    
+    DebugBoard
 }
 
 public struct Token

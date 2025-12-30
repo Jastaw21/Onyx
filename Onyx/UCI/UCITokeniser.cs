@@ -68,6 +68,8 @@ public class Tokeniser
             type = TokenType.Quit;
         else if (builtToken == "divide")
             type = TokenType.Divide;
+        else if (builtToken == "d")
+            type = TokenType.DebugBoard;
         
         else if (int.TryParse(builtToken, out _))
             type = TokenType.IntLiteral;

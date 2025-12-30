@@ -43,6 +43,8 @@ public class UciParser
                 case TokenType.Quit:
                     Environment.Exit(0);
                     break;
+                case TokenType.DebugBoard:
+                    return new DebugCommand();
                 default:
                     throw new ArgumentException(
                         $"Invalid starting token of type {currentToken.Type} with value {currentToken.Value}");
