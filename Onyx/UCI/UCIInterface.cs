@@ -64,7 +64,7 @@ public class UciInterface
 
     private void HandleGo(GoCommand command)
     {
-        var depth = command.Depth ?? 10; // Default to 5 if not specified
+        var depth = command.Depth ?? 5; // Default to 5 if not specified
         if (command.IsPerft)
         {
             if (command.IsPerftDivide)

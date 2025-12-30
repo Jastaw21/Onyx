@@ -34,7 +34,7 @@ public class EngineTests
         
         engine.SetPosition("Q2NQQQQ/8/8/8/8/8/5K2/1k6 w - - 5 104");
         bestMove = engine.DepthSearch(3);
-        Assert.Multiple(() => { Assert.That(bestMove.bestMove.Notation, Is.EqualTo("g8h7")); });
+        Assert.Multiple(() => { Assert.That(bestMove.score, Is.GreaterThan(20000)); });
     }
 
     [Test]

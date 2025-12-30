@@ -17,13 +17,13 @@ public struct SearchStatistics : ILoggable
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime,2) /1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime,2) /1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
     }
 }
 
@@ -157,7 +157,7 @@ public class Engine
         }
 
         var timeBudgetPerMove = TimeBudgetPerMove(timeControl, relevantTimeControl);
-        var searchResult = TimedSearch(depth, timeBudgetPerMove);
+        var searchResult = TimedSearch(20, timeBudgetPerMove);
         return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
@@ -197,7 +197,7 @@ public class Engine
         _currentSearchId++;
 
         var searchResult = ExecuteSearch(depth, false);
-        
+
 
         _statistics.RunTime = _timerManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
@@ -249,7 +249,7 @@ public class Engine
             return SearchResult.Abort;
 
         _statistics.Nodes++;
-        
+
         Span<Move> moveBuffer = stackalloc Move[256];
         int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
         Span<Move> moves = moveBuffer[..moveCount];
@@ -267,7 +267,9 @@ public class Engine
             if (Referee.IsCheckmate(board))
             {
                 return new SearchResult(true, -(MateScore - ply));
-            };
+            }
+
+            ;
             return new SearchResult(true, Evaluator.Evaluate(board));
         }
 
@@ -276,7 +278,15 @@ public class Engine
 
         // ---- TT probe ----
         var hash = board.Zobrist.HashValue;
-        if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove)) return searchResult;
+        if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
+        {
+            if (Math.Abs(searchResult.Value) >= MateScore)
+                Console.WriteLine("Excessive TT hit");
+            else
+            {
+                return searchResult;
+            }
+        }
 
         Evaluator.SortMoves(moves, ttMove);
 
@@ -311,7 +321,23 @@ public class Engine
             break;
         }
 
+
+        var endGameScore = 0;
+        var endGameScoreModified = false;
+        // No legal moves were found in the loop -- need to make sure we've cleared the nonsense Int.MaxValue score.
+        if (legalMoveCount == 0)
+        {
+            endGameScoreModified = true;
+            if (Referee.IsCheckmate(board))
+                endGameScore = -(MateScore - ply);
+            else
+                endGameScore = 0;
+        }
+
+        // only store in the transposition table if legal moves were found
         BoundFlag flag;
+        if (endGameScoreModified)
+            bestValue = endGameScore;
         if (bestValue <= alphaOrig)
             flag = BoundFlag.Upper;
         else if (bestValue >= beta)
@@ -321,13 +347,8 @@ public class Engine
 
         TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
         _statistics.TtStores++;
-        if (legalMoveCount == 0)
-        {
-            // No legal moves were found in the loop
-            return Referee.IsCheckmate(board)
-                ? new SearchResult(true, -(MateScore - ply)) // Checkmate
-                : new SearchResult(true, 0);                 // Stalemate
-        }
+
+
         return new SearchResult(true, bestValue);
     }
 
