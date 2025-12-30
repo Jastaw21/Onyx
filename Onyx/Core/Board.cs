@@ -39,9 +39,9 @@ public static class BoardConstants
 internal class BoardState
 {
     public Piece? CapturedPiece;
-    public Square? EnPassantSquare;
+    public int? EnPassantSquare;
     public int CastlingRights;
-    public int LastMoveFlags;
+    public uint LastMoveFlags;
     public int HalfMove;
     public int FullMove;
 }
@@ -59,7 +59,7 @@ public class Board
 
     // bit field - from the lowest bit in this order White : K, Q, Black K,Q
     public int CastlingRights { get; private set; }
-    public Square? EnPassantSquare { get; private set; }
+    public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
     private readonly Stack<BoardState> _boardStateHistory;
@@ -101,7 +101,7 @@ public class Board
 
         builtFen += castlingRightsString;
 
-        var enPassantString = EnPassantSquare.HasValue ? EnPassantSquare.Value.Notation : "-";
+        var enPassantString = EnPassantSquare.HasValue ? RankAndFileHelpers.Notation(EnPassantSquare.Value) : "-";
         builtFen += enPassantString;
         builtFen += $" {HalfMoves}";
         builtFen += $" {FullMoves}";
@@ -137,7 +137,7 @@ public class Board
             CapturedPiece = capturedPiece,
             EnPassantSquare = EnPassantSquare,
             CastlingRights = CastlingRights,
-            LastMoveFlags = move.PreMoveFlag,
+            LastMoveFlags = move.Data,
             FullMove = FullMoves,
             HalfMove = HalfMoves
         };
@@ -150,7 +150,6 @@ public class Board
         if (capturedPiece.HasValue)
         {
             Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
-            move.PostMoveFlag |= PostMoveFlags.Capture;
         }
 
         // action the promotion
@@ -161,19 +160,20 @@ public class Board
             Bitboards.SetOff(move.PieceMoved, move.To);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
         }
+
         var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
         var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
         var fromRankIndex = RankAndFileHelpers.RankIndex(move.From);
         var fromFileIndex = RankAndFileHelpers.FileIndex(move.From);
-        
+
         // handle castling
         if (move.IsCastling)
         {
             var affectedRook = move.PieceMoved.Colour == Colour.White
                 ? Piece.WR
                 : Piece.BR;
-            
-            
+
+
             var rookNewFile = toFileIndex == 2 ? 3 : 5;
             var rookOldFile = toFileIndex == 2 ? 0 : 7;
 
@@ -189,7 +189,7 @@ public class Board
         if (move.PieceMoved.Type == PieceType.Pawn && Math.Abs(fromRankIndex - toRankIndex) == 2)
         {
             var targetRank = move.PieceMoved.Colour == Colour.White ? 2 : 5;
-            EnPassantSquare = new Square(targetRank, fromFileIndex);
+            EnPassantSquare = RankAndFileHelpers.SquareIndex(targetRank, fromFileIndex);
         }
         else
         {
@@ -219,13 +219,13 @@ public class Board
         CastlingRights = previousState.CastlingRights;
         HalfMoves = previousState.HalfMove;
         FullMoves = previousState.FullMove;
-        move.PreMoveFlag = previousState.LastMoveFlags;
+        move.Data = previousState.LastMoveFlags;
         if (previousState.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
             {
                 Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
-                capturedOn = (move.To);
+                capturedOn = move.To;
             }
         }
 
@@ -243,8 +243,10 @@ public class Board
             var file = RankAndFileHelpers.FileIndex(move.To);
             var rookHomeFile = file > 4 ? 7 : 0;
             var rookNewFile = file == 2 ? 3 : 5;
-            Bitboards.SetOn(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), RankAndFileHelpers.SquareIndex(rank, rookHomeFile));
-            Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), RankAndFileHelpers.SquareIndex(rank, rookNewFile));
+            Bitboards.SetOn(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour),
+                RankAndFileHelpers.SquareIndex(rank, rookHomeFile));
+            Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour),
+                RankAndFileHelpers.SquareIndex(rank, rookNewFile));
         }
 
 
@@ -268,24 +270,27 @@ public class Board
     {
         var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
         var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
-        RankAndFileHelpers.RankIndex(move.From);
         var fromFileIndex = RankAndFileHelpers.FileIndex(move.From);
-        
+
         if (move.PieceMoved.Type == PieceType.Pawn &&
             ((move.PieceMoved.Colour == Colour.White && toRankIndex == 7) ||
              (move.PieceMoved.Colour == Colour.Black && toRankIndex == 0)))
         {
-            move.PreMoveFlag |= PreMoveFlags.Promotion;
+            move.IsPromotion = true;
         }
 
         if (move.PieceMoved.Type == PieceType.King && Math.Abs(fromFileIndex - toFileIndex) > 1)
         {
-            move.PreMoveFlag |= PreMoveFlags.Castle;
+            
+            move.IsCastling = true;
         }
 
         if (move.PieceMoved.Type == PieceType.Pawn && fromFileIndex - toFileIndex != 0 &&
             !Bitboards.PieceAtSquare(move.To).HasValue)
-            move.PreMoveFlag |= PreMoveFlags.EnPassant;
+        {
+           
+            move.IsEnPassant = true;
+        }
     }
 
     private void UpdateCastlingRights(Move move)
@@ -363,9 +368,9 @@ public class Board
         foreach (var move in positionCommandMoves)
         {
             var from = move[..2];
-            var squareFrom = new Square(from);
+            var squareFrom = RankAndFileHelpers.SquareIndex(from);
 
-            var pieceMoved = Bitboards.PieceAtSquare(squareFrom.SquareIndex);
+            var pieceMoved = Bitboards.PieceAtSquare(squareFrom);
             if (!pieceMoved.HasValue)
                 throw new InvalidOperationException("No piece at moved from square");
 

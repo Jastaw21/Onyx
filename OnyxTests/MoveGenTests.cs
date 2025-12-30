@@ -30,11 +30,11 @@ public class MoveGenTests
         var testBoard = new Board("8/8/8/8/8/NRBBN3/PKQBN3/8 w - - 0 1");
         List<Move> movesToTest =
         [
-            new(Piece.WP, new Square(8), new Square(16)),
-            new(Piece.WK, new Square(9), new Square(17)),
-            new(Piece.WQ, new Square(10), new Square(18)),
-            new(Piece.WB, new Square(11), new Square(18)),
-            new(Piece.WB, new Square(12), new Square(18)),
+            new(Piece.WP, (8), (16)),
+            new(Piece.WK, (9), (17)),
+            new(Piece.WQ, (10), (18)),
+            new(Piece.WB, (11), (18)),
+            new(Piece.WB, (12), (18)),
         ];
 
         Span<Move> moveBuffer = stackalloc Move[256];
@@ -155,7 +155,7 @@ public class MoveGenTests
         var board = new Board("8/P7/8/8/8/8/8/8 w - - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
-        MoveGenerator.GetMoves(Piece.WP, new Square("a7").SquareIndex, board, moveBuffer, ref count);
+        MoveGenerator.GetMoves(Piece.WP, RankAndFileHelpers.SquareIndex("a7"), board, moveBuffer, ref count);
         Assert.That(count, Is.EqualTo(4));
     }
 
@@ -254,7 +254,7 @@ public class MoveGenTests
         var board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
-        MoveGenerator.GetMoves(Piece.BP, new Square("g2").SquareIndex, board, moveBuffer, ref count);
+        MoveGenerator.GetMoves(Piece.BP, RankAndFileHelpers.SquareIndex("g2"), board, moveBuffer, ref count);
         var moves = moveBuffer[..count].ToArray();
         Assert.That(moves, Does.Contain(new Move(Piece.BP,"g2h1q")));
     }

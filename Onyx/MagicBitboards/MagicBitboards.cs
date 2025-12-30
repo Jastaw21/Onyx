@@ -27,9 +27,8 @@ public static class MagicBitboards
 
         for (var square = 0; square < 64; square++)
         {
-            var sq = new Square(square);
-            BuildKnightMoves(sq);
-            BuildKingMoves(sq);
+            BuildKnightMoves(square);
+            BuildKingMoves(square);
         }
     }
 
@@ -136,36 +135,36 @@ public static class MagicBitboards
         return magic.Attacks[(int)occupancy];
     }
 
-    private static void BuildKnightMoves(Square square)
+    private static void BuildKnightMoves(int square)
     {
         var movesFromHere = 0ul;
         foreach (var knightMove in BoardConstants.KnightMoves)
         {
-            var newRank = square.RankIndex + knightMove[0];
-            var newFile = square.FileIndex + knightMove[1];
+            var newRank = RankAndFileHelpers.RankIndex(square) + knightMove[0];
+            var newFile = RankAndFileHelpers.FileIndex(square) + knightMove[1];
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
-            var newSquare = new Square(newRank, newFile);
-            movesFromHere |= 1ul << newSquare.SquareIndex;
+            var newSquare = RankAndFileHelpers.SquareIndex(newRank, newFile);
+            movesFromHere |= 1ul << newSquare;
         }
 
-        _knightAttacks[square.SquareIndex] = movesFromHere;
+        _knightAttacks[square] = movesFromHere;
     }
 
-    private static void BuildKingMoves(Square square)
+    private static void BuildKingMoves(int square)
     {
         var movesFromHere = 0ul;
         foreach (var kingMove in BoardConstants.KingMoves)
         {
-            var newRank = square.RankIndex + kingMove[0];
-            var newFile = square.FileIndex + kingMove[1];
+            var newRank = RankAndFileHelpers.RankIndex(square)  + kingMove[0];
+            var newFile = RankAndFileHelpers.FileIndex(square) + kingMove[1];
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
-            var newSquare = new Square(newRank, newFile);
-            movesFromHere |= 1ul << newSquare.SquareIndex;
+            var newSquare = RankAndFileHelpers.SquareIndex(newRank, newFile);
+            movesFromHere |= 1ul << newSquare;
         }
 
-        _kingAttacks[square.SquareIndex] = movesFromHere;
+        _kingAttacks[square] = movesFromHere;
     }
 
     private static ulong GetPawnMoves(Colour colour, int square, ulong boardState)

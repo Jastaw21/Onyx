@@ -9,8 +9,8 @@ public static class Evaluator
     {
         moves.Sort((move, move1) =>
         {
-            var aScore = move.PostMoveFlag & PostMoveFlags.Capture;
-            var bScore = move.PostMoveFlag & PostMoveFlags.Capture;
+            var aScore = move.IsPromotion ? 1:0;
+            var bScore = move.IsPromotion ? 1:0;
 
             if (transpositionTableMove.HasValue)
             {
@@ -23,26 +23,6 @@ public static class Evaluator
             return aScore.CompareTo(bScore);
         });
     }
-
-    public static void SortMoves(List<Move> moves, Move? transpositionTableMove)
-    {
-        moves.Sort((move, move1) =>
-        {
-            var aScore = move.PostMoveFlag & PostMoveFlags.Capture;
-            var bScore = move.PostMoveFlag & PostMoveFlags.Capture;
-
-            if (transpositionTableMove.HasValue)
-            {
-                if (move.Notation == transpositionTableMove.Value.Notation)
-                    return int.MaxValue;
-                if (move1.Notation == transpositionTableMove.Value.Notation)
-                    return int.MinValue;
-            }
-
-            return aScore.CompareTo(bScore);
-        });
-    }
-
     public static int Evaluate(Board board)
     {
         var materialScore = MaterialScore(board);

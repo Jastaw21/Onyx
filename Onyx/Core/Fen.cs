@@ -7,7 +7,7 @@ public struct FenDetails
     public string PositionFen;
     public Colour ColourToMove;
     public string CastlingString;
-    public Square? EnPassantSquare;
+    public int? EnPassantSquare;
     public int HalfMove;
     public int FullMove;
 }
@@ -33,7 +33,7 @@ public static class Fen
         var enPassantString = fen[enPassantSquareTokenLocation..(halfMoveTokenLocation - 1)];
         if (enPassantString.Length == 2)
         {
-            details.EnPassantSquare = new Square(enPassantString);
+            details.EnPassantSquare = RankAndFileHelpers.SquareIndex(enPassantString);
         }
         else
         {

@@ -4,63 +4,6 @@ namespace OnyxTests;
 
 public class CoreTests
 {
-    [Test]
-    public void SquareInitFromSquareIndex()
-    {
-        var bottomLeft = new Square(0);
-        Assert.Multiple(() =>
-        {
-            Assert.That(bottomLeft.RankIndex, Is.EqualTo(0));
-            Assert.That(bottomLeft.FileIndex, Is.EqualTo(0));
-        });
-
-        var topRight = new Square(63);
-        Assert.Multiple(() =>
-        {
-            Assert.That(topRight.RankIndex, Is.EqualTo(7));
-            Assert.That(topRight.FileIndex, Is.EqualTo(7));
-        });
-
-        var topLeft = new Square(56);
-        Assert.Multiple(() =>
-        {
-            Assert.That(topLeft.RankIndex, Is.EqualTo(7));
-            Assert.That(topLeft.FileIndex, Is.EqualTo(0));
-        });
-
-        var bottomRight = new Square(7);
-        Assert.Multiple(() =>
-        {
-            Assert.That(bottomRight.RankIndex, Is.EqualTo(0));
-            Assert.That(bottomRight.FileIndex, Is.EqualTo(7));
-        });
-    }
-
-    [Test]
-    public void SquareIndexGetProperty()
-    {
-        for (var i = 0; i < 64; i++)
-        {
-            var thisSquare = new Square(i);
-            Assert.That(thisSquare.SquareIndex, Is.EqualTo(i));
-        }
-    }
-
-    [Test]
-    public void SquareRepr()
-    {
-        var bottomLeft = new Square(0);
-        Assert.That(bottomLeft.Notation, Is.EqualTo("a1"));
-
-        var topRight = new Square(63);
-        Assert.That(topRight.Notation, Is.EqualTo("h8"));
-
-        var topLeft = new Square(56);
-        Assert.That(topLeft.Notation, Is.EqualTo("a8"));
-
-        var bottomRight = new Square(7);
-        Assert.That(bottomRight.Notation, Is.EqualTo("h1"));
-    }
 
     [Test]
     public void BoardInit()
@@ -173,7 +116,7 @@ public class CoreTests
     [Test]
     public void MoveUCI()
     {
-        var fullMove = new Move(new Piece(PieceType.Bishop, Colour.White), new Square(0, 0), new Square(7, 7));
+        var fullMove = new Move(new Piece(PieceType.Bishop, Colour.White), RankAndFileHelpers.SquareIndex(0, 0), RankAndFileHelpers.SquareIndex(7, 7));
         Assert.That(fullMove.Notation, Is.EqualTo("a1h8"));
     }
 
@@ -266,16 +209,7 @@ public class CoreTests
         Assert.That(board.GetFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R"));
     }
 
-    [Test]
-    public void SquareFromFen()
-    {
-        Assert.Multiple(() =>
-        {
-            Assert.That(new Square("a1").Notation, Is.EqualTo("a1"));
-            Assert.That(new Square("c6").Notation, Is.EqualTo("c6"));
-        });
-    }
-
+ 
     [Test]
     public void MoveFromNotation()
     {
@@ -353,32 +287,17 @@ class HelperTests
         });
     }
 
-    [Test]
-    public void SquareToBitBoard()
-    {
-        ulong targetBitboard = 1;
-        for (var square = 0; square < 64; square++)
-        {
-            var s = new Square(square);
-            Assert.That(s.Bitboard, Is.EqualTo(targetBitboard));
-            
-            
-            if (square == 63)
-                Assert.That(s.Bitboard, Is.EqualTo(0x8000000000000000));
-            
-            targetBitboard <<= 1;
-        }
-    }
+   
 
     [Test]
     public void RayBetween()
     {
-        var a1 = new Square("a1");
-        var h8 = new Square("h8");
-        var c3 = new Square("c3");
-        var d1 = new Square("d1");
-        var h1 = new Square("h1");
-        var a8 = new Square("a8");
+        var a1 = RankAndFileHelpers.SquareIndex("a1");
+        var h8 = RankAndFileHelpers.SquareIndex("h8");
+        var c3 = RankAndFileHelpers.SquareIndex("c3");
+        var d1 = RankAndFileHelpers.SquareIndex("d1");
+        var h1 = RankAndFileHelpers.SquareIndex("h1");
+        var a8 = RankAndFileHelpers.SquareIndex("a8");
         Assert.Multiple(() =>
         {
             // easy diagonal

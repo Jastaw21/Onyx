@@ -1,19 +1,5 @@
 ﻿namespace Onyx.Core;
 
-public static class PreMoveFlags
-{
-    public static readonly int NoFlag = 0;
-    public static readonly int EnPassant = 1 << 0;
-    public static readonly int Promotion = 1 << 1;
-    public static readonly int Castle = 1 << 2;
-}
-
-public static class PostMoveFlags
-{
-    public static readonly int NoFlag = 0;
-    public static readonly int Capture = 0;
-}
-
 public static class MoveFlags
 {
     public static readonly uint ToSquareBits = 0x3f;
@@ -23,18 +9,11 @@ public static class MoveFlags
     public static readonly uint Castling = 3 << 14;
 }
 
-// 0000  000000 000000
-//       from   to  
+// 00   00       000000 000000
+//      special  from   to  
 
 public struct Move
 {
-    public Move(Piece pieceMoved, Square from, Square to)
-    {
-        PieceMoved = pieceMoved;
-        Data |= (uint)from.SquareIndex << 6;
-        Data |= (uint)to.SquareIndex;
-    }
-
     public Move(Piece pieceMoved, int from, int to)
     {
         PieceMoved = pieceMoved;
@@ -73,9 +52,7 @@ public struct Move
     public int From => (int)((Data & MoveFlags.FromSquareBits) >> 6);
 
     public Piece? PromotedPiece = null;
-    public int PreMoveFlag = PreMoveFlags.NoFlag;
-    public int PostMoveFlag = PostMoveFlags.NoFlag;
-    private uint Data = 0;
+    public uint Data { get; set; } = 0;
 
     public string Notation
     {
@@ -85,15 +62,29 @@ public struct Move
             var toNotation = RankAndFileHelpers.Notation(To);
             var isPromotion = PromotedPiece.HasValue;
             if (isPromotion)
-                return $"{fromNotation}{toNotation}{Fen.GetCharFromPiece(PromotedPiece.Value)}";
+                return $"{fromNotation}{toNotation}{Fen.GetCharFromPiece(PromotedPiece!.Value)}";
             return $"{fromNotation}{toNotation}";
         }
     }
 
 
-    public bool IsPromotion => (PreMoveFlag & PreMoveFlags.Promotion) > 0;
-    public bool IsCastling => (PreMoveFlag & PreMoveFlags.Castle) > 0;
-    public bool IsEnPassant => (PreMoveFlag & PreMoveFlags.EnPassant) > 0;
+    public bool IsPromotion
+    {
+        get => (Data &(3<<14)) == MoveFlags.Promotion;
+        set => Data |= MoveFlags.Promotion;
+    }
+    public bool IsCastling
+    {
+        get => (Data &(3<<14)) ==  MoveFlags.Castling;
+        set => Data |= MoveFlags.Castling;
+    }
+
+
+    public bool IsEnPassant
+    {
+        get => (Data &(3<<14)) ==   MoveFlags.EnPassant;
+        set => Data |= MoveFlags.EnPassant;
+    }
 
     public override string ToString()
     {

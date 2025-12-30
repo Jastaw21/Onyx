@@ -90,12 +90,12 @@ public static class MoveGenerator
 
         // the board has a viable en passant square, and we're on an appropriate file
         if (board.EnPassantSquare.HasValue &&
-            Math.Abs(board.EnPassantSquare.Value.FileIndex - RankAndFileHelpers.FileIndex(square)) == 1)
+            Math.Abs(RankAndFileHelpers.FileIndex(board.EnPassantSquare.Value) - RankAndFileHelpers.FileIndex(square)) == 1)
         {
             var relevantAttackRank = piece.Colour == Colour.Black ? 2 : 5;
             var pawnHomeRank = piece.Colour == Colour.Black ? 3 : 4;
-            if (rankIndex == pawnHomeRank && relevantAttackRank == board.EnPassantSquare.Value.RankIndex)
-                normalAttacks |= board.EnPassantSquare.Value.Bitboard;
+            if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFileHelpers.RankIndex(board.EnPassantSquare.Value))
+                normalAttacks |= 1ul << board.EnPassantSquare.Value;
         }
 
         var result = pushes | normalAttacks;
