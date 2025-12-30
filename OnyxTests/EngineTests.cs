@@ -86,7 +86,7 @@ public class EngineTests
     public void MoveResetExtension()
     {
         var board = new Board("5k2/4pp1p/p5pN/1p1q4/4b3/P1Q4P/1PP3P1/7K w - - 0 1");
-        var move = new Move(Piece.WQ, "c3h8");
+        var move = new Move(Pc.WQ, "c3h8");
         var fenPre = board.GetFen();
         board.ApplyMove(move);
         var result = Referee.IsCheckmate(board);

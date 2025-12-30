@@ -73,7 +73,7 @@ public class MagicBitboardTests
     [Test]
     public void GetQueenMoves()
     {
-        Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Queen, Colour.White), 0, 0ul),
+        Assert.That(MagicBitboards.GetMovesByPiece(Pc.WQ, 0, 0ul),
             Is.EqualTo(0x81412111090503fe));
     }
 
@@ -82,13 +82,13 @@ public class MagicBitboardTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), 0, 0ul),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BR, 0, 0ul),
                 Is.EqualTo(0x1010101010101fe));
 
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), 0, 0x10090),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BR, 0, 0x10090),
                 Is.EqualTo(0x1011e));
 
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Rook, Colour.Black), 20, 0x10090),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BR, 20, 0x10090),
                 Is.EqualTo(0x1010101010ef1010));
         });
     }
@@ -98,13 +98,13 @@ public class MagicBitboardTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black),0, 0ul),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BN,0, 0ul),
                     Is.EqualTo(0x20400));
 
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black), 35, 0ul),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BN, 35, 0ul),
                 Is.EqualTo(0x14220022140000));
 
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.Knight, Colour.Black), 46, 0ul),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BN, 46, 0ul),
                 Is.EqualTo(0xa0100010a0000000));
         });
     }
@@ -112,7 +112,7 @@ public class MagicBitboardTests
     [Test]
     public void GetKingMoves()
     {
-        Assert.That(MagicBitboards.GetMovesByPiece(Piece.MakePiece(PieceType.King,Colour.White),0,0ul),
+        Assert.That(MagicBitboards.GetMovesByPiece(Pc.WK,0,0ul),
             Is.EqualTo(0x302));
     }
 
@@ -122,13 +122,13 @@ public class MagicBitboardTests
         Assert.Multiple(() =>
         {
             // starting rank moves
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.WP, 8, 0),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.WP, 8, 0),
                     Is.EqualTo(0x1030000));
 
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.BP, 48, 0),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.BP, 48, 0),
                 Is.EqualTo(0x30100000000));
             
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.WP, 19, 0),
+            Assert.That(MagicBitboards.GetMovesByPiece(Pc.WP, 19, 0),
                 Is.EqualTo(0x1c000000));
         });
     }

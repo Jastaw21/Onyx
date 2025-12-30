@@ -33,7 +33,7 @@ public static class PerftSearcher
             return 1;
 
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(board.TurnToMove, board, moveBuffer);
+        int moveCount = MoveGenerator.GetMoves(board.WhiteToMove, board, moveBuffer);
         var moves = moveBuffer[..moveCount].ToArray(); // Convert to array for Parallel.ForEach
         ulong total = 0;
         object lockObj = new();
@@ -42,7 +42,7 @@ public static class PerftSearcher
         {
             var localBoard = board.Clone();
             localBoard.ApplyMove(move);
-            if (!Referee.IsInCheck(board.TurnToMove, localBoard))
+            if (!Referee.IsInCheck(board.WhiteToMove, localBoard))
             {
                 var count = ExecutePerft(localBoard, depth - 1);
                 lock (lockObj)
@@ -58,12 +58,12 @@ public static class PerftSearcher
         ulong total = 0;
 
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(board.TurnToMove, board, moveBuffer);
+        int moveCount = MoveGenerator.GetMoves(board.WhiteToMove, board, moveBuffer);
         var moves = moveBuffer[..moveCount];
 
         foreach (var move in moves)
         {
-            var side = board.TurnToMove;
+            var side = board.WhiteToMove;
             board.ApplyMove(move);
 
             if (!Referee.IsInCheck(side, board))
@@ -92,7 +92,7 @@ public static class PerftSearcher
         {
             if (!Referee.MoveIsLegal(move, board))
                 continue;
-            var sideToMve = board.TurnToMove;
+            var sideToMve = board.WhiteToMove;
             board.ApplyMove(move);
 
             if (!Referee.IsInCheck(sideToMve, board))

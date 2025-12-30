@@ -38,7 +38,7 @@ public static class Evaluator
         var blackScore = 0;
         foreach (var piece in Pc._whitePieces)
         {
-            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece];
+            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Pc.PieceTypeIndex(piece)];
             
             var placements = board.Bitboards.OccupancyByPiece(piece);
             while (placements > 0)
@@ -52,7 +52,7 @@ public static class Evaluator
 
         foreach (var piece in Pc._blackPieces)
         {
-            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece];
+            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Pc.PieceTypeIndex(piece)];
             
             var placements = board.Bitboards.OccupancyByPiece(piece);
             while (placements > 0)
@@ -65,7 +65,7 @@ public static class Evaluator
         }
 
         var score = whiteScore - blackScore;
-        return board.TurnToMove == Colour.White ? score : -score;
+        return board.WhiteToMove ? score : -score;
     }
 
     private static int BishopPairScore(Board board)
@@ -76,7 +76,7 @@ public static class Evaluator
         var whiteScore = whiteBishops >= 2 ? 50 : 0;
         var blackScore = blackBishops >= 2 ? 50 : 0;
         var score = whiteScore - blackScore;
-        return board.TurnToMove == Colour.White ? score : -score;
+        return board.WhiteToMove  ? score : -score;
     }
 
     // private static int MobilityScore(Board board)

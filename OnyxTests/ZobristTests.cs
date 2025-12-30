@@ -37,15 +37,15 @@ public class ZobristTests
         ];
         List<Move> moves =
         [
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1f2"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8e7"),
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8"),
-            new(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
-            new(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3"),
-            new Move(Piece.MakePiece(PieceType.Queen, Colour.White), "d2f4")
+            new(Pc.WK, "e1f2"),
+            new(Pc.BK, "e8e7"),
+            new(Pc.WK, "e1g1"),
+            new(Pc.WK, "e1c1"),
+            new(Pc.BK, "e8g8"),
+            new(Pc.BK, "e8c8"),
+            new(Pc.WP, "d5e6"),
+            new(Pc.BP, "d4e3"),
+            new(Pc.WQ, "d2f4")
         ];
 
         List<string> PositionsAfter =
@@ -88,15 +88,15 @@ public class ZobristTests
         ];
         List<Move> moves =
         [
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1f2"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8e7"),
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1g1"),
-            new(Piece.MakePiece(PieceType.King, Colour.White), "e1c1"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8g8"),
-            new(Piece.MakePiece(PieceType.King, Colour.Black), "e8c8"),
-            new(Piece.MakePiece(PieceType.Pawn, Colour.White), "d5e6"),
-            new(Piece.MakePiece(PieceType.Pawn, Colour.Black), "d4e3"),
-            new Move(Piece.MakePiece(PieceType.Queen, Colour.White), "d2f4")
+            new(Pc.WK, "e1f2"),
+            new(Pc.BK, "e8e7"),
+            new(Pc.WK, "e1g1"),
+            new(Pc.WK, "e1c1"),
+            new(Pc.BK, "e8g8"),
+            new(Pc.BK, "e8c8"),
+            new(Pc.WP, "d5e6"),
+            new(Pc.BP, "d4e3"),
+            new (Pc.WQ, "d2f4")
         ];
         
 

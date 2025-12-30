@@ -5,7 +5,7 @@ using FenString = string;
 public struct FenDetails
 {
     public string PositionFen;
-    public Colour ColourToMove;
+    public bool WhiteToMove;
     public string CastlingString;
     public int? EnPassantSquare;
     public int HalfMove;
@@ -25,7 +25,7 @@ public static class Fen
         var halfMoveTokenLocation = fen.IndexOf(' ', enPassantSquareTokenLocation) + 1;
         var fullMoveTokenLocation = fen.IndexOf(' ', halfMoveTokenLocation) + 1;
 
-        details.ColourToMove = fen[colourToMoveTokenLocation] == 'w' ? Colour.White : Colour.Black;
+        details.WhiteToMove = fen[colourToMoveTokenLocation] == 'w';
 
         var castlingString = fen[castlingRightsTokenLocation..(enPassantSquareTokenLocation - 1)];
         details.CastlingString = castlingString;

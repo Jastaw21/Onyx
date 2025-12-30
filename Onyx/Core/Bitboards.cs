@@ -8,26 +8,21 @@ public class Bitboards
     public Bitboards()
     {
         _boards = new ulong[12];
-        foreach (var colourIndex in _boards)
-        {
-           _boards[colourIndex] = 0ul;
-        }
+        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
     }
 
     public Bitboards(string fenString)
     {
         _boards = new ulong[12];
-        foreach (var colourIndex in _boards)
-        {
-            _boards[colourIndex] = 0ul;
-        }
+        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
         LoadFen(fenString);
     }
 
     public void LoadFen(string fenString)
     {
-        _boards = new ulong[_colourCount * _pieceTypeCount];
-       
+        // reset the boards
+        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
+        
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
 
@@ -36,24 +31,25 @@ public class Bitboards
         while (currentIndex < fenString.Length)
         {
             // next line indicator
-            if (fenString[currentIndex] == '/')
+            var pieceChar = fenString[currentIndex];
+            if (pieceChar == '/')
             {
                 rankIndex--; // move to the next rank down
                 fileIndex = 0; // and back to the start
             }
 
             // empty cells indicator
-            else if (Char.IsAsciiDigit(fenString[currentIndex]))
-                fileIndex += fenString[currentIndex] - '0';
+            else if (Char.IsAsciiDigit(pieceChar))
+                fileIndex += pieceChar - '0';
 
             // break at space, as the rest is all castling/en passant stuff, not relevant to us
-            else if (fenString[currentIndex] == ' ')
+            else if (pieceChar == ' ')
                 break;
 
             // this is a piece, so set it and move the file on
             else
             {
-                var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
+                var piece = Fen.GetPieceFromChar(pieceChar);
                 SetOn(piece, RankAndFile.SquareIndex(rankIndex, fileIndex));
                 fileIndex++;
             }
@@ -62,15 +58,13 @@ public class Bitboards
         }
     }
 
-    private ulong[] _boards;   
-    private int _pieceTypeCount;
-    private int _colourCount;
+    private ulong[] _boards;
     public ulong[] Boards => _boards;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(sbyte piece)
     {
-        return _boards[Pc.Index(piece)];
+        return _boards[Pc.BitboardIndex(piece)];
     }
 
     public ulong OccupancyByColour(bool forBlack)
@@ -86,7 +80,7 @@ public class Bitboards
 
     public void SetByPiece(sbyte piece, ulong boardByPiece)
     {
-        _boards[Pc.Index(piece)] = boardByPiece;       
+        _boards[Pc.BitboardIndex(piece)] = boardByPiece;       
     }
 
     public void SetAllOff(int square)
@@ -101,12 +95,12 @@ public class Bitboards
 
     public void SetOff(sbyte piece, int square)
     {
-        _boards[Pc.Index(piece)] &= ~(1ul << square);        
+        _boards[Pc.BitboardIndex(piece)] &= ~(1ul << square);        
     }
 
     public void SetOn(sbyte piece, int square)
     {
-        _boards[Pc.Index(piece)] |= 1ul << square;        
+        _boards[Pc.BitboardIndex(piece)] |= 1ul << square;        
     }
 
     public bool SquareOccupied(int squareToTest)

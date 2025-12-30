@@ -33,7 +33,7 @@ public class Zobrist
     {
         var fenDetails = Fen.FromString(fen);
         HashValue = 0;
-        if (fenDetails.ColourToMove == Colour.White)
+        if (fenDetails.WhiteToMove)
             HashValue ^= _whiteToMove;
 
         var rank = 7;

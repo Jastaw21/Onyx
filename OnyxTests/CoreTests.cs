@@ -226,14 +226,9 @@ public class CoreTests
     public void MoveInitPromotionInferred()
     {
         var testMove = new Move(Pc.MakePiece(Pc.Pawn, true), "g7g8q");
-        Assert.That(testMove.PromotedPiece, Is.EqualTo(Pc.MakePiece(Pc.Queen, false)));
+        Assert.That(testMove.PromotedPiece, Is.EqualTo(Pc.MakePiece(Pc.Queen, true)));
     }
 
-    [Test]
-    public void PieceToString()
-    {
-        Assert.That(Pc.MakePiece(Pc.King, false).ToString(), Is.EqualTo("White King"));
-    }
 
     [Test]
     public void MoveToString()

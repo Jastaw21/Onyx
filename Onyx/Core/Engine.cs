@@ -147,7 +147,7 @@ public class Engine
     public (Move bestMove, int score, SearchStatistics stats) CalcAndDispatchTimedSearch(int depth,
         TimeControl timeControl)
     {
-        var relevantTimeControl = Board.TurnToMove == Colour.White ? timeControl.Wtime : timeControl.Btime;
+        var relevantTimeControl = Board.WhiteToMove  ? timeControl.Wtime : timeControl.Btime;
 
         if (relevantTimeControl is null)
         {
