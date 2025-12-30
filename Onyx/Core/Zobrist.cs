@@ -68,7 +68,7 @@ public class Zobrist
         }
     }
 
-    public void ApplyMove(Move move, Piece? capturedPiece = null, Square? capturedOnSquare = null)
+    public void ApplyMove(Move move, Piece? capturedPiece = null, int? capturedOnSquare = null)
     {
         var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
         var movedPieceArray = GetArrayFromChar(movedPieceChar);
@@ -84,7 +84,7 @@ public class Zobrist
         {
             var capturedPieceChar = Fen.GetCharFromPiece(capturedPiece.Value);
             var capturedPieceArray = GetArrayFromChar(capturedPieceChar);
-            var capturedPieceRand = capturedPieceArray[capturedOnSquare.Value.SquareIndex];
+            var capturedPieceRand = capturedPieceArray[capturedOnSquare.Value];
             HashValue ^= capturedPieceRand;
         }
 

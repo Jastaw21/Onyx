@@ -115,18 +115,18 @@ public class Board
 
         var opponentColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
         Piece? capturedPiece;
-        Square? capturedSquare;
+        int? capturedSquare;
 
         if (move.IsEnPassant)
         {
             capturedPiece = opponentColour == Colour.Black ? Piece.BP : Piece.WP;
             var captureRank = opponentColour == Colour.White ? 3 : 4;
-            capturedSquare = new Square(captureRank, RankAndFileHelpers.FileIndex(move.To));
+            capturedSquare = RankAndFileHelpers.SquareIndex(captureRank, RankAndFileHelpers.FileIndex(move.To));
         }
         else
         {
             capturedPiece = Bitboards.PieceAtSquare(move.To);
-            capturedSquare = new Square(move.To);
+            capturedSquare = move.To;
         }
 
         if (fullApplyMove)
@@ -149,7 +149,7 @@ public class Board
         // get rid of the captured piece
         if (capturedPiece.HasValue)
         {
-            Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value.SquareIndex);
+            Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
             move.PostMoveFlag |= PostMoveFlags.Capture;
         }
 
@@ -212,7 +212,7 @@ public class Board
     {
         //ApplyMoveFlags(move: ref move);
 
-        Square? capturedOn = null;
+        int? capturedOn = null;
 
         var previousState = _boardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
@@ -225,7 +225,7 @@ public class Board
             if (!move.IsEnPassant)
             {
                 Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
-                capturedOn = new Square(move.To);
+                capturedOn = (move.To);
             }
         }
 
@@ -252,9 +252,9 @@ public class Board
         {
             var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
             var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
-            capturedOn = new Square(pawnHomeRank, RankAndFileHelpers.FileIndex(move.To));
+            capturedOn = RankAndFileHelpers.SquareIndex(pawnHomeRank, RankAndFileHelpers.FileIndex(move.To));
             Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
-                capturedOn.Value.SquareIndex);
+                capturedOn.Value);
         }
 
         if (fullUndoMove)
