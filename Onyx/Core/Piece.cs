@@ -16,10 +16,34 @@ public enum Colour
     Black = 1
 }
 
-public readonly struct Piece(PieceType type, Colour colour)
+public static class Types
 {
-    public readonly Colour Colour = colour;
-    public readonly PieceType Type = type;
+    public static int Pawn = 1<< 0;
+    public static int Knight = 1<< 1;
+    public static int Bishop = 1<< 2;
+    public static int Rook = 1<< 3;
+    public static int King = 1<< 4;
+    public static int Queen = 1<< 5;
+    public static int IsBlack = 1 << 6;
+}
+
+
+
+public struct Piece
+{
+    public Piece(PieceType type, Colour colour)
+    {
+        data = colour == Colour.Black ? (sbyte)(1 << 6) : (sbyte)0;
+        Type = type;
+    }
+    public Piece(int piece, bool isBlack)
+    {
+        data = isBlack ? (sbyte)(1 << 6) : (sbyte)0;
+        data |= (sbyte)piece;
+    }
+    private sbyte data = 0;
+    public Colour Colour => (Colour)(data >>6);
+    public readonly PieceType Type;
 
     public override string ToString()
     {

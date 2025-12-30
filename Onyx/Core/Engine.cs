@@ -197,8 +197,6 @@ public class Engine
         _currentSearchId++;
 
         var searchResult = ExecuteSearch(depth, false);
-
-
         _statistics.RunTime = _timerManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
         return (searchResult.bestMove, searchResult.score);
@@ -226,7 +224,7 @@ public class Engine
                 return (false, default, 0);
 
             var score = -result.Value;
-
+            
             if (score > bestScore)
             {
                 bestScore = score;
@@ -321,10 +319,9 @@ public class Engine
             break;
         }
 
-
+        // No legal moves were found in the loop -- need to make sure we've cleared the nonsense Int.MaxValue score.
         var endGameScore = 0;
         var endGameScoreModified = false;
-        // No legal moves were found in the loop -- need to make sure we've cleared the nonsense Int.MaxValue score.
         if (legalMoveCount == 0)
         {
             endGameScoreModified = true;
@@ -385,7 +382,6 @@ public class Engine
                         bestMove = entry.Value.bestMove;
                         return true;
                     }
-
                     break;
             }
         }
