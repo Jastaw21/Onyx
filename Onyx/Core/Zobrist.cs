@@ -68,7 +68,7 @@ public class Zobrist
         }
     }
 
-    public void ApplyMove(Move move, Piece? capturedPiece = null, int? capturedOnSquare = null)
+    public void ApplyMove(Move move, sbyte? capturedPiece = null, int? capturedOnSquare = null)
     {
         var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
         var movedPieceArray = GetArrayFromChar(movedPieceChar);
@@ -102,20 +102,18 @@ public class Zobrist
 
         if (move.IsCastling)
         {
-            var affectedRook = move.PieceMoved.Colour == Colour.White
-                ? Piece.WR
-                : Piece.BR;
+            var affectedRook = Pc.IsWhite(move.PieceMoved) ? Pc.WR : Pc.BR;
 
             var rookChar = Fen.GetCharFromPiece(affectedRook);
             var rookArray = GetArrayFromChar(rookChar);
 
-            var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
-            var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
+            var toFileIndex = RankAndFile.FileIndex(move.To);
+            var toRankIndex = RankAndFile.RankIndex(move.To);
 
             var rookNewFile = toFileIndex == 2 ? 3 : 5;
             var rookOldFile = toFileIndex == 2 ? 0 : 7;
-            var rookFrom = RankAndFileHelpers.SquareIndex(toRankIndex, rookOldFile);
-            var rookTo = RankAndFileHelpers.SquareIndex(toRankIndex, rookNewFile);
+            var rookFrom = RankAndFile.SquareIndex(toRankIndex, rookOldFile);
+            var rookTo = RankAndFile.SquareIndex(toRankIndex, rookNewFile);
 
             var rookFromRand = rookArray[rookFrom];
             var rookToRand = rookArray[rookTo];

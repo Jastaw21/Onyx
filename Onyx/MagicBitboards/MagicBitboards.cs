@@ -90,23 +90,23 @@ public static class MagicBitboards
     private static readonly ulong[] _kingAttacks = new ulong[64];
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static ulong GetMovesByPiece(Piece piece, int square, ulong boardState)
+    public static ulong GetMovesByPiece(sbyte piece, int square, ulong boardState)
     {
-        var type = piece.Type;       
+        var type = Pc.PieceType(piece);       
         
         switch (type)
         {
-            case PieceType.Queen:
+            case Pc.Queen:
                 return GetDiagAttacks(square, boardState) | GetStraightAttacks(square, boardState);
-            case PieceType.Rook:
+            case Pc.Rook:
                 return GetStraightAttacks(square, boardState);
-            case PieceType.Bishop:
+            case Pc.Bishop:
                 return GetDiagAttacks(square, boardState);
-            case PieceType.Pawn:
-                return GetPawnMoves(piece.Colour, square, boardState);
-            case PieceType.Knight:
+            case Pc.Pawn:
+                return GetPawnMoves(Pc.IsWhite(piece), square, boardState);
+            case Pc.Knight:
                 return _knightAttacks[square];
-            case PieceType.King:               
+            case Pc.King:               
                 return _kingAttacks[square];
             default:
                 throw new ArgumentOutOfRangeException();
@@ -140,11 +140,11 @@ public static class MagicBitboards
         var movesFromHere = 0ul;
         foreach (var knightMove in BoardConstants.KnightMoves)
         {
-            var newRank = RankAndFileHelpers.RankIndex(square) + knightMove[0];
-            var newFile = RankAndFileHelpers.FileIndex(square) + knightMove[1];
+            var newRank = RankAndFile.RankIndex(square) + knightMove[0];
+            var newFile = RankAndFile.FileIndex(square) + knightMove[1];
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
-            var newSquare = RankAndFileHelpers.SquareIndex(newRank, newFile);
+            var newSquare = RankAndFile.SquareIndex(newRank, newFile);
             movesFromHere |= 1ul << newSquare;
         }
 
@@ -156,35 +156,35 @@ public static class MagicBitboards
         var movesFromHere = 0ul;
         foreach (var kingMove in BoardConstants.KingMoves)
         {
-            var newRank = RankAndFileHelpers.RankIndex(square)  + kingMove[0];
-            var newFile = RankAndFileHelpers.FileIndex(square) + kingMove[1];
+            var newRank = RankAndFile.RankIndex(square)  + kingMove[0];
+            var newFile = RankAndFile.FileIndex(square) + kingMove[1];
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
-            var newSquare = RankAndFileHelpers.SquareIndex(newRank, newFile);
+            var newSquare = RankAndFile.SquareIndex(newRank, newFile);
             movesFromHere |= 1ul << newSquare;
         }
 
         _kingAttacks[square] = movesFromHere;
     }
 
-    private static ulong GetPawnMoves(Colour colour, int square, ulong boardState)
+    private static ulong GetPawnMoves(bool isWhite, int square, ulong boardState)
     {
         var result = 0ul;
 
-        result |= GetPawnPushes(colour, square, boardState);
+        result |= GetPawnPushes(isWhite, square, boardState);
        
 
         // can go right
-        var FileIndex = RankAndFileHelpers.FileIndex(square);
+        var FileIndex = RankAndFile.FileIndex(square);
         if (FileIndex < 7)
         {
-            var rightIndex = colour == Colour.White ? 9 : -7;
+            var rightIndex = isWhite ? 9 : -7;
             result |= 1ul << square + rightIndex;
         }
 
         if (FileIndex > 0)
         {
-            var leftIndex = colour == Colour.White ? 7 : -9;
+            var leftIndex = isWhite ? 7 : -9;
             result |= 1ul << square + leftIndex;
         }
 
@@ -193,17 +193,17 @@ public static class MagicBitboards
 
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    public static ulong GetPawnPushes(Colour colour, int square, ulong boardState)
+    public static ulong GetPawnPushes(bool isWhite, int square, ulong boardState)
     {
-        var rankIndex = RankAndFileHelpers.RankIndex(square);
+        var rankIndex = RankAndFile.RankIndex(square);
         if (rankIndex is 7 or 0)
             return 0ul;
 
        
-        var squareOffset = colour == Colour.White ? 8 : -8;
+        var squareOffset = isWhite ? 8 : -8;
 
-        var isWhiteDoublePush = colour == Colour.White && rankIndex == 1;
-        var isBlackDoublePush = colour == Colour.Black && rankIndex == 6;
+        var isWhiteDoublePush = isWhite && rankIndex == 1;
+        var isBlackDoublePush = !isWhite && rankIndex == 6;
 
 
         // add the single push
@@ -217,9 +217,9 @@ public static class MagicBitboards
         if (!isBlackDoublePush && !isWhiteDoublePush) return result;
 
 
-        switch (colour)
+        switch (isWhite)
         {
-            case Colour.White:
+            case true:
                 // if there's anything on the immediate next rank, can't do a double push
                 if (((1ul << square + 8) & boardState) > 0)
                     break;
@@ -229,7 +229,7 @@ public static class MagicBitboards
 
                 result |= 1ul << square + 16;
                 break;
-            case Colour.Black:
+            case false:
                 // if there's anything on the immediate next rank, can't do a double push
                 if (((1ul << square - 8) & boardState) > 0)
                     break;

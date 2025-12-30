@@ -25,67 +25,53 @@ public static class Evaluator
     }
     public static int Evaluate(Board board)
     {
-        var materialScore = MaterialScore(board);
-        var psScore = PieceSquareScore(board);
+        var materialandPsScore = MaterialAndPsScore(board);
+       
         //var mobilityScore = MobilityScore(board);
         var bishopPairScore = BishopPairScore(board);
-        return materialScore + psScore + bishopPairScore; //+ mobilityScore;
+        return materialandPsScore + bishopPairScore; //+ mobilityScore;
     }
 
-    private static int MaterialScore(Board board)
+    private static int MaterialAndPsScore(Board board)
     {
         var whiteScore = 0;
         var blackScore = 0;
-        foreach (var piece in Piece.ByColour(Colour.White))
+        foreach (var piece in Pc._whitePieces)
         {
-            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
+            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece];
+            
+            var placements = board.Bitboards.OccupancyByPiece(piece);
+            while (placements > 0)
+            {
+                var bottomSetBit = ulong.TrailingZeroCount(placements);
+                var scores = getArray(piece);
+                whiteScore += scores[bottomSetBit];
+                placements &= placements - 1;
+            }
         }
 
-        foreach (var piece in Piece.ByColour(Colour.Black))
+        foreach (var piece in Pc._blackPieces)
         {
-            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece.Type];
+            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[piece];
+            
+            var placements = board.Bitboards.OccupancyByPiece(piece);
+            while (placements > 0)
+            {
+                var bottomSetBit = ulong.TrailingZeroCount(placements);
+                var scores = getArray(piece);
+                blackScore += scores[bottomSetBit];
+                placements &= placements - 1;
+            }
         }
 
         var score = whiteScore - blackScore;
         return board.TurnToMove == Colour.White ? score : -score;
     }
 
-    private static int PieceSquareScore(Board board)
-    {
-        var whiteScore = 0;
-        var blackScore = 0;
-        foreach (var piece in Piece.ByColour(Colour.White))
-        {
-            var placements = board.Bitboards.OccupancyByPiece(piece);
-            while (placements > 0)
-            {
-                var bottomSetBit = ulong.TrailingZeroCount(placements);
-                var scores = getArray(piece.Type);
-                whiteScore += scores[bottomSetBit];
-                placements &= placements - 1;
-            }
-        }
-
-        foreach (var piece in Piece.ByColour(Colour.Black))
-        {
-            var placements = board.Bitboards.OccupancyByPiece(piece);
-            while (placements > 0)
-            {
-                var bottomSetBit = ulong.TrailingZeroCount(placements);
-                var scores = getArray(piece.Type);
-                blackScore += scores[63 - bottomSetBit];
-                placements &= placements - 1;
-            }
-        }
-
-        var score = (whiteScore - blackScore) / 10;
-        return board.TurnToMove == Colour.White ? score : -score;
-    }
-
     private static int BishopPairScore(Board board)
     {
-        var whiteBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Piece.WB));
-        var blackBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Piece.BB));
+        var whiteBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Pc.WB));
+        var blackBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Pc.BB));
 
         var whiteScore = whiteBishops >= 2 ? 50 : 0;
         var blackScore = blackBishops >= 2 ? 50 : 0;
@@ -105,15 +91,8 @@ public static class Evaluator
     //     return board.TurnToMove == Colour.White ? score : -score;
     // }
 
-    private static readonly Dictionary<PieceType, int> PieceValues = new()
-    {
-        { PieceType.Pawn, 100 },
-        { PieceType.Knight, 300 },
-        { PieceType.Bishop, 320 },
-        { PieceType.Rook, 500 },
-        { PieceType.Queen, 900 },
-        { PieceType.King, 0 }
-    };
+    // pawn, knight, bishop, rook, king, queen
+    private static readonly int[] PieceValues = [100, 300, 320, 500, 0, 900];
 
     private static readonly int[] PawnScores =
     [
@@ -197,15 +176,16 @@ public static class Evaluator
         0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
-    private static int[] getArray(PieceType type)
+    private static int[] getArray(sbyte piece)
     {
+        var type = Pc.PieceType(piece);
         return type switch
         {
-            PieceType.Pawn => PawnScores,
-            PieceType.Knight => KnightScores,
-            PieceType.Bishop => BishopScores,
-            PieceType.Queen => QueenScores,
-            PieceType.Rook => RookScores,
+            Pc.Pawn => PawnScores,
+            Pc.Knight => KnightScores,
+            Pc.Bishop => BishopScores,
+            Pc.Queen => QueenScores,
+            Pc.Rook => RookScores,
             _ => ZeroScores
         };
     }

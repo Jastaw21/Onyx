@@ -25,20 +25,20 @@ public static class MaskGenerator
     {
         var result = 0ul;
 
-        var rank = RankAndFileHelpers.RankIndex(square);
-        var file = RankAndFileHelpers.FileIndex(square);
+        var rank = RankAndFile.RankIndex(square);
+        var file = RankAndFile.FileIndex(square);
 
         // ignore the borders
         for (var r = 1; r < 7; r++)
         {
             if (r != rank)
-                result |= 1ul << RankAndFileHelpers.SquareIndex(r, file);
+                result |= 1ul << RankAndFile.SquareIndex(r, file);
         }
 
         for (var f = 1; f < 7; f++)
         {
             if (f != file)
-                result |= 1ul << RankAndFileHelpers.SquareIndex(rank, f);
+                result |= 1ul << RankAndFile.SquareIndex(rank, f);
         }
 
         return result;
@@ -48,8 +48,8 @@ public static class MaskGenerator
     {
         var result = 0ul;
 
-        var rank = RankAndFileHelpers.RankIndex(square);
-        var file = RankAndFileHelpers.FileIndex(square);
+        var rank = RankAndFile.RankIndex(square);
+        var file = RankAndFile.FileIndex(square);
 
         foreach (var direction in MoveDir.All())
         {
@@ -58,7 +58,7 @@ public static class MaskGenerator
 
             while (targetRank is > 0 and < 7 && targetFile is > 0 and < 7)
             {
-                result |= 1ul << RankAndFileHelpers.SquareIndex(targetRank, targetFile);
+                result |= 1ul << RankAndFile.SquareIndex(targetRank, targetFile);
 
                 targetFile += direction.DeltaFile;
                 targetRank += direction.DeltaRank;
@@ -95,40 +95,40 @@ public static class MaskGenerator
     public static ulong GetStraightAttacks(int square, ulong occupancies)
     {
         var result = 0ul;
-        var rank = RankAndFileHelpers.RankIndex(square);
-        var file = RankAndFileHelpers.FileIndex(square);
+        var rank = RankAndFile.RankIndex(square);
+        var file = RankAndFile.FileIndex(square);
 
         // move up in the files from current place
         for (var f = file + 1; f < 8; f++)
         {
-            result |= 1ul << RankAndFileHelpers.SquareIndex(rank, f);
+            result |= 1ul << RankAndFile.SquareIndex(rank, f);
 
-            if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(rank, f)) > 0)
+            if ((occupancies & 1ul << RankAndFile.SquareIndex(rank, f)) > 0)
                 break;
         }
 
         // move down in the files
         for (var f = file - 1; f >= 0; f--)
         {
-            result |= 1ul << RankAndFileHelpers.SquareIndex(rank, f);
+            result |= 1ul << RankAndFile.SquareIndex(rank, f);
 
-            if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(rank, f)) > 0)
+            if ((occupancies & 1ul << RankAndFile.SquareIndex(rank, f)) > 0)
                 break;
         }
 
         for (var r = rank + 1; r < 8; r++)
         {
-            result |= 1ul << RankAndFileHelpers.SquareIndex(r, file);
+            result |= 1ul << RankAndFile.SquareIndex(r, file);
 
-            if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(r, file)) > 0)
+            if ((occupancies & 1ul << RankAndFile.SquareIndex(r, file)) > 0)
                 break;
         }
 
         for (var r = rank - 1; r >= 0; r--)
         {
-            result |= 1ul << RankAndFileHelpers.SquareIndex(r, file);
+            result |= 1ul << RankAndFile.SquareIndex(r, file);
 
-            if ((occupancies & 1ul << RankAndFileHelpers.SquareIndex(r, file)) > 0)
+            if ((occupancies & 1ul << RankAndFile.SquareIndex(r, file)) > 0)
                 break;
         }
 
@@ -138,8 +138,8 @@ public static class MaskGenerator
     public static ulong GetDiagonalAttacks(int square, ulong occupancy)
     {
         var result = 0ul;
-        var rank = RankAndFileHelpers.RankIndex(square);
-        var file = RankAndFileHelpers.FileIndex(square);
+        var rank = RankAndFile.RankIndex(square);
+        var file = RankAndFile.FileIndex(square);
 
         foreach (var direction in MoveDir.All())
         {
@@ -148,8 +148,8 @@ public static class MaskGenerator
 
             while (r >=0 && r < 8 && f >= 0 && f < 8 )
             {
-                result |= 1ul << RankAndFileHelpers.SquareIndex(r, f);
-                if ((occupancy & 1ul << RankAndFileHelpers.SquareIndex(r, f)) >0)
+                result |= 1ul << RankAndFile.SquareIndex(r, f);
+                if ((occupancy & 1ul << RankAndFile.SquareIndex(r, f)) >0)
                     break;
 
                 r += direction.DeltaRank;

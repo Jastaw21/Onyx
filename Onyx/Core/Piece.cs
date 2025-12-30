@@ -16,45 +16,52 @@ public enum Colour
     Black = 1
 }
 
-public static class Types
+public static class Pc
 {
-    public static int Pawn = 1<< 0;
-    public static int Knight = 1<< 1;
-    public static int Bishop = 1<< 2;
-    public static int Rook = 1<< 3;
-    public static int King = 1<< 4;
-    public static int Queen = 1<< 5;
-    public static int IsBlack = 1 << 6;
+    // first 0th-3rd bits encode the type, 4th the colour
+    public const int Pawn = 1;
+    public const int Knight = 2;
+    public const int Bishop = 3;
+    public const int Rook = 4;
+    public const int King = 5;
+    public const int Queen = 6;
+    public const int IsBlack_ = 1 << 4;
 
-    public static sbyte MakePiece(int piece, bool isBlack) => (sbyte)(piece | (isBlack ? IsBlack : 0));
+    public static sbyte MakePiece(int piece, bool isBlack) => (sbyte)(piece | (isBlack ? IsBlack_ : 0));
     
-    public static int PieceType(sbyte piece) => piece & 0x3f;
-    public static bool IsWhite(sbyte piece) => (piece & IsBlack) == 0;
+    public static int PieceType(sbyte piece) => piece & 0xf;
+    public static bool IsWhite(sbyte piece) => (piece & IsBlack_) == 0;
+    public static bool IsBlack(sbyte piece) => !IsWhite(piece);
 
-    public static sbyte WP = (sbyte)Pawn;
-    public static sbyte WN = (sbyte)Knight;
-    public static sbyte WB = (sbyte)Bishop;
-    public static sbyte WR = (sbyte)Rook;
-    public static sbyte WK = (sbyte)King;
-    public static sbyte WQ = (sbyte)Queen;
+    public static sbyte WP = Pawn;
+    public static sbyte WN = Knight;
+    public static sbyte WB = Bishop;
+    public static sbyte WR = Rook;
+    public static sbyte WK = King;
+    public static sbyte WQ = Queen;
     
-    public static sbyte BP = (sbyte)((sbyte)Pawn | (sbyte)IsBlack);
-    public static sbyte BN = (sbyte)((sbyte)Knight | (sbyte)IsBlack);
-    public static sbyte BB = (sbyte)((sbyte)Bishop | (sbyte)IsBlack);
-    public static sbyte BR = (sbyte)((sbyte)Rook | (sbyte)IsBlack);
-    public static sbyte BK = (sbyte)((sbyte)King | (sbyte)IsBlack);
-    public static sbyte BQ = (sbyte)((sbyte)Queen | (sbyte)IsBlack);
+    public static sbyte BP = Pawn | IsBlack_;
+    public static sbyte BN = Knight | IsBlack_;
+    public static sbyte BB = Bishop | IsBlack_;
+    public static sbyte BR = Rook | IsBlack_;
+    public static sbyte BK = King | IsBlack_;
+    public static sbyte BQ = Queen | IsBlack_;
+
+    public static int Index(sbyte piece)
+    {
+        return (piece & IsBlack_) >0 ? PieceType(piece)  << 4 : PieceType(piece);
+    }
     
     public readonly static sbyte[] AllPieces =
     [
         WP, WB, WK, WQ, WN, WR,
         BP, BB, BK, BQ, BN, BR
     ];
-    private static sbyte[] _whitePieces =
+    public static sbyte[] _whitePieces =
     [
         WP, WB, WK, WQ, WN, WR
     ];
-    private static sbyte[] _blackPieces =
+    public static sbyte[] _blackPieces =
     [
         BP, BB, BK, BQ, BN, BR
     ];
@@ -63,73 +70,3 @@ public static class Types
     private static sbyte[] _blackPromotionTypes = [BB, BQ, BR, BN];
 }
 
-public struct Piece
-{
-    public Piece(PieceType type, Colour colour)
-    {
-        data = colour == Colour.Black ? (sbyte)(1 << 6) : (sbyte)0;
-        Type = type;
-    }
-    public Piece(int piece, bool isBlack)
-    {
-        data = isBlack ? (sbyte)(1 << 6) : (sbyte)0;
-        data |= (sbyte)piece;
-    }
-    private sbyte data = 0;
-    public Colour Colour => (Colour)(data >>6);
-    public readonly PieceType Type;
-
-    public override string ToString()
-    {
-        return $"{Colour} {Type}";
-    }
-
-    public static Piece[] All()
-    {
-        return AllPieces;
-    }
-
-    public readonly static Piece[] AllPieces =
-    [
-        WP, WB, WK, WQ, WN, WR,
-        BP, BB, BK, BQ, BN, BR
-    ];
-    private static Piece[] _whitePieces =
-    [
-        WP, WB, WK, WQ, WN, WR
-    ];
-    private static Piece[] _blackPieces =
-    [
-        BP, BB, BK, BQ, BN, BR
-    ];
-    private static Piece[] _whitePromotionTypes = [WB, WQ, WR, WN];
-    private static Piece[] _blackPromotionTypes = [BB, BQ, BR, BN];
-
-    public static Piece[] PromotionTypes(Colour colour)
-    {
-        return colour == Colour.White ? _whitePromotionTypes : _blackPromotionTypes;
-    }
-
-    public static Piece MakePiece(PieceType piece, Colour colour)
-    {
-        return new Piece(piece, colour);
-    }
-
-    public static Piece WP => new(PieceType.Pawn, Colour.White);
-    public static Piece BP => new(PieceType.Pawn, Colour.Black);
-    public static Piece WR => new(PieceType.Rook, Colour.White);
-    public static Piece BR => new(PieceType.Rook, Colour.Black);
-    public static Piece WN => new(PieceType.Knight, Colour.White);
-    public static Piece BN => new(PieceType.Knight, Colour.Black);
-    public static Piece WQ => new(PieceType.Queen, Colour.White);
-    public static Piece BQ => new(PieceType.Queen, Colour.Black);
-    public static Piece WK => new(PieceType.King, Colour.White);
-    public static Piece BK => new(PieceType.King, Colour.Black);
-    public static Piece WB => new(PieceType.Bishop, Colour.White);
-    public static Piece BB => new(PieceType.Bishop, Colour.Black);
-
-    public static Piece[] ByColour(Colour colour)
-    {
-        return colour == Colour.White ? _whitePieces : _blackPieces;
-    }
-}

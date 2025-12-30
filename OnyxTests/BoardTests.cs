@@ -36,8 +36,8 @@ public class ApplyMove
 
         var move = new Move(
             Piece.MakePiece(PieceType.Pawn, Colour.White),
-            RankAndFileHelpers.SquareIndex("a2"),
-            RankAndFileHelpers.SquareIndex("a4")
+            RankAndFile.SquareIndex("a2"),
+            RankAndFile.SquareIndex("a4")
         );
 
         board.ApplyMove(move);

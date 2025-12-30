@@ -11,29 +11,27 @@ public class CoreTests
         var board = new Bitboards();
 
         ulong testValue = 0;
-        foreach (var colour in Enum.GetValues<Colour>())
-        foreach (var type in Enum.GetValues<PieceType>())
+        foreach (var piece in Pc.AllPieces)
         {
-            board.SetByPiece(new Piece(type, colour), testValue);
+            board.SetByPiece(piece, testValue);
             testValue++;
         }
 
         testValue = 0;
 
-        foreach (var colour in Enum.GetValues<Colour>())
-        foreach (var type in Enum.GetValues<PieceType>())
+        foreach (var piece in Pc.AllPieces)
         {
-            Assert.That(board.OccupancyByPiece(new Piece(type, colour)), Is.EqualTo(testValue));
+            Assert.That(board.OccupancyByPiece(piece), Is.EqualTo(testValue));
 
             testValue++;
         }
 
         var board2 = new Bitboards();
-        board2.SetByPiece(new Piece(PieceType.Bishop, Colour.Black), 123ul);
+        board2.SetByPiece(Pc.MakePiece(Pc.Bishop,true), 123ul);
         Assert.Multiple(() =>
         {
-            Assert.That(board2.OccupancyByPiece(new Piece(PieceType.Bishop, Colour.Black)), Is.EqualTo(123ul));
-            Assert.That(board2.OccupancyByPiece(new Piece(PieceType.Bishop, Colour.White)), Is.EqualTo(0ul));
+            Assert.That(board2.OccupancyByPiece(Pc.MakePiece(Pc.Bishop,true)), Is.EqualTo(123ul));
+            Assert.That(board2.OccupancyByPiece(Pc.MakePiece(Pc.Bishop,false)), Is.EqualTo(0ul));
         });
     }
 
@@ -41,27 +39,26 @@ public class CoreTests
     public void BoardOccupiedTest()
     {
         var board = new Bitboards();
-        board.SetByPiece(new Piece(PieceType.Pawn, colour: Colour.White), 1ul);
+        board.SetByPiece(Pc.MakePiece(Pc.Pawn, false), 1ul);
 
         for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             if (squareIndex == 0)
-                Assert.That(board.SquareOccupied( (squareIndex)), Is.True);
+                Assert.That(board.SquareOccupied( squareIndex), Is.True);
             else
-                Assert.That(board.SquareOccupied( (squareIndex)), Is.False);
+                Assert.That(board.SquareOccupied( squareIndex), Is.False);
         }
 
         var allOnBoard = new Bitboards();
-        foreach (var colour in Enum.GetValues<Colour>())
-        foreach (var type in Enum.GetValues<PieceType>())
+        foreach (var piece in Pc.AllPieces)
         {
             // fill all with on bits
-            allOnBoard.SetByPiece(new Piece(type, colour), 0xffffffffffffffff);
+            allOnBoard.SetByPiece(piece, 0xffffffffffffffff);
         }
 
         for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
-            Assert.That(allOnBoard.SquareOccupied( (squareIndex)), Is.True);
+            Assert.That(allOnBoard.SquareOccupied( squareIndex), Is.True);
         }
     }
 
@@ -71,26 +68,25 @@ public class CoreTests
         var board = new Bitboards();
 
         // set all on
-        foreach (var colour in Enum.GetValues<Colour>())
-        foreach (var type in Enum.GetValues<PieceType>())
+        foreach (var piece in Pc.AllPieces)
         {
             // fill all with on bits
-            board.SetByPiece(new Piece(type, colour), 0xffffffffffffffff);
+            board.SetByPiece(piece, 0xffffffffffffffff);
         }
 
 
-        board.SetAllOff( (0));
+        board.SetAllOff( 0);
 
         for (var rank = 0; rank < 8; rank++)
         for (var file = 0; file < 8; file++)
         {
             if (rank == 0 && file == 0)
             {
-                Assert.That(board.SquareOccupied( RankAndFileHelpers.SquareIndex(rank, file)), Is.False);
+                Assert.That(board.SquareOccupied( RankAndFile.SquareIndex(rank, file)), Is.False);
             }
             else
             {
-                Assert.That(board.SquareOccupied( RankAndFileHelpers.SquareIndex(rank, file)), Is.True);
+                Assert.That(board.SquareOccupied( RankAndFile.SquareIndex(rank, file)), Is.True);
             }
         }
     }
@@ -101,22 +97,22 @@ public class CoreTests
         var board = new Bitboards();
 
         // put a pawn on a1
-        board.SetOn(new Piece(PieceType.Pawn, Colour.White),  (0));
+        board.SetOn(Pc.MakePiece(Pc.Pawn, false),  0);
 
         // should be occupied
-        Assert.That(board.SquareOccupied( (0)), Is.True);
+        Assert.That(board.SquareOccupied( 0), Is.True);
 
         // all others should not be
         for (var i = 1; i < 64; i++)
         {
-            Assert.That(board.SquareOccupied( (i)), Is.False);
+            Assert.That(board.SquareOccupied( i), Is.False);
         }
     }
 
     [Test]
     public void MoveUCI()
     {
-        var fullMove = new Move(new Piece(PieceType.Bishop, Colour.White), RankAndFileHelpers.SquareIndex(0, 0), RankAndFileHelpers.SquareIndex(7, 7));
+        var fullMove = new Move(Pc.MakePiece(Pc.Bishop, false), RankAndFile.SquareIndex(0, 0), RankAndFile.SquareIndex(7, 7));
         Assert.That(fullMove.Notation, Is.EqualTo("a1h8"));
     }
 
@@ -126,43 +122,43 @@ public class CoreTests
         var board = new Bitboards(Fen.DefaultFen);
         Assert.Multiple(() =>
         {
-            Assert.That(board.SquareOccupied( (0)), Is.True);
+            Assert.That(board.SquareOccupied( 0), Is.True);
 
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Pawn, Colour.White)), Is.EqualTo(0xff00));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Rook, Colour.White)), Is.EqualTo(0x81));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Knight, Colour.White)), Is.EqualTo(0x42));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Bishop, Colour.White)), Is.EqualTo(0x24));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.King, Colour.White)), Is.EqualTo(0x10));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Queen, Colour.White)), Is.EqualTo(0x8));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Pawn, false)), Is.EqualTo(0xff00));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Rook, false)), Is.EqualTo(0x81));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Knight, false)), Is.EqualTo(0x42));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Bishop, false)), Is.EqualTo(0x24));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.King, false)), Is.EqualTo(0x10));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Queen, false)), Is.EqualTo(0x8));
 
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Pawn, Colour.Black)), Is.EqualTo(0xff000000000000));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Rook, Colour.Black)), Is.EqualTo(0x8100000000000000));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Bishop, Colour.Black)), Is.EqualTo(0x2400000000000000));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Knight, Colour.Black)), Is.EqualTo(0x4200000000000000));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.King, Colour.Black)), Is.EqualTo(0x1000000000000000));
-            Assert.That(board.OccupancyByPiece(new Piece(PieceType.Queen, Colour.Black)), Is.EqualTo(0x800000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Pawn, true)), Is.EqualTo(0xff000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Rook, true)), Is.EqualTo(0x8100000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Bishop, true)), Is.EqualTo(0x2400000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Knight, true)), Is.EqualTo(0x4200000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.King, true)), Is.EqualTo(0x1000000000000000));
+            Assert.That(board.OccupancyByPiece(Pc.MakePiece(Pc.Queen, true)), Is.EqualTo(0x800000000000000));
         });
     }
 
     [Test]
     public void PieceHelpersAll()
     {
-        var result = Piece.All();
+        var result = Pc.AllPieces;
         Assert.That(result.Count, Is.EqualTo(12));
 
-        Assert.That(result, Contains.Item(new Piece(PieceType.Pawn, Colour.White)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Rook, Colour.White)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Bishop, Colour.White)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.King, Colour.White)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Queen, Colour.White)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Knight, Colour.White)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Pawn, false)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Rook, false)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Bishop, false)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.King, false)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Queen, false)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Knight, false)));
 
-        Assert.That(result, Contains.Item(new Piece(PieceType.Pawn, Colour.Black)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Rook, Colour.Black)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Bishop, Colour.Black)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.King, Colour.Black)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Queen, Colour.Black)));
-        Assert.That(result, Contains.Item(new Piece(PieceType.Knight, Colour.Black)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Pawn, true)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Rook, true)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Bishop, true)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.King, true)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Queen, true)));
+        Assert.That(result, Contains.Item(Pc.MakePiece(Pc.Knight, true)));
     }
 
     [Test]
@@ -172,9 +168,9 @@ public class CoreTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(1, 0)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.White)));
-            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(6, 7)), Is.EqualTo(new Piece(PieceType.Pawn, Colour.Black)));
-            Assert.That(board.PieceAtSquare(RankAndFileHelpers.SquareIndex(3, 3)).HasValue, Is.False);
+            Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(1, 0)), Is.EqualTo(Pc.MakePiece(Pc.Pawn, false)));
+            Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(6, 7)), Is.EqualTo(Pc.MakePiece(Pc.Pawn, true)));
+            Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(3, 3)).HasValue, Is.False);
         });
     }
 
@@ -183,19 +179,19 @@ public class CoreTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Pawn, Colour.White)), Is.EqualTo('P'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Rook, Colour.White)), Is.EqualTo('R'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Queen, Colour.White)), Is.EqualTo('Q'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.King, Colour.White)), Is.EqualTo('K'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Knight, Colour.White)), Is.EqualTo('N'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Bishop, Colour.White)), Is.EqualTo('B'));
+            Assert.That(Fen.GetCharFromPiece( Pc.MakePiece(Pc.Pawn, false)), Is.EqualTo('P'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Rook, false)), Is.EqualTo('R'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Queen, false)), Is.EqualTo('Q'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.King, false)), Is.EqualTo('K'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Knight, false)), Is.EqualTo('N'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Bishop, false)), Is.EqualTo('B'));
 
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Pawn, Colour.Black)), Is.EqualTo('p'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Rook, Colour.Black)), Is.EqualTo('r'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Queen, Colour.Black)), Is.EqualTo('q'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.King, Colour.Black)), Is.EqualTo('k'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Knight, Colour.Black)), Is.EqualTo('n'));
-            Assert.That(Fen.GetCharFromPiece(new Piece(PieceType.Bishop, Colour.Black)), Is.EqualTo('b'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Pawn, true)), Is.EqualTo('p'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Rook, true)), Is.EqualTo('r'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Queen, true)), Is.EqualTo('q'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.King, true)), Is.EqualTo('k'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Knight, true)), Is.EqualTo('n'));
+            Assert.That(Fen.GetCharFromPiece(Pc.MakePiece(Pc.Bishop, true)), Is.EqualTo('b'));
         });
     }
 
@@ -213,15 +209,15 @@ public class CoreTests
     [Test]
     public void MoveFromNotation()
     {
-        var move = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "a2a4");
+        var move = new Move(Pc.MakePiece(Pc.Pawn, false), "a2a4");
         Assert.Multiple(() =>
             {
-                Assert.That(move.PieceMoved, Is.EqualTo(Piece.MakePiece(PieceType.Pawn, Colour.White)));
-                Assert.That(RankAndFileHelpers.FileIndex(move.From), Is.EqualTo(0));
-                Assert.That(RankAndFileHelpers.RankIndex(move.From), Is.EqualTo(1));
+                Assert.That(move.PieceMoved, Is.EqualTo(Pc.MakePiece(Pc.Pawn, false)));
+                Assert.That(RankAndFile.FileIndex(move.From), Is.EqualTo(0));
+                Assert.That(RankAndFile.RankIndex(move.From), Is.EqualTo(1));
 
-                Assert.That(RankAndFileHelpers.FileIndex(move.To), Is.EqualTo(0));
-                Assert.That(RankAndFileHelpers.RankIndex(move.To), Is.EqualTo(3));
+                Assert.That(RankAndFile.FileIndex(move.To), Is.EqualTo(0));
+                Assert.That(RankAndFile.RankIndex(move.To), Is.EqualTo(3));
             }
         );
     }
@@ -229,24 +225,24 @@ public class CoreTests
     [Test]
     public void MoveInitPromotionInferred()
     {
-        var testMove = new Move(Piece.MakePiece(PieceType.Pawn, Colour.White), "g7g8q");
-        Assert.That(testMove.PromotedPiece is { Type: PieceType.Queen, Colour: Colour.White });
+        var testMove = new Move(Pc.MakePiece(Pc.Pawn, true), "g7g8q");
+        Assert.That(testMove.PromotedPiece, Is.EqualTo(Pc.MakePiece(Pc.Queen, false)));
     }
 
     [Test]
     public void PieceToString()
     {
-        Assert.That(Piece.MakePiece(PieceType.King, Colour.White).ToString(), Is.EqualTo("White King"));
+        Assert.That(Pc.MakePiece(Pc.King, false).ToString(), Is.EqualTo("White King"));
     }
 
     [Test]
     public void MoveToString()
     {
-        var move = new Move(Piece.BB, "a1b2");
+        var move = new Move(Pc.BB, "a1b2");
         Assert.That(move.ToString(), Is.EqualTo("a1b2"));
 
-        var promotionMove = new Move(Piece.WP, "a7a8");
-        promotionMove.PromotedPiece = Piece.WQ;
+        var promotionMove = new Move(Pc.WP, "a7a8");
+        promotionMove.PromotedPiece = Pc.WQ;
         Assert.That(promotionMove.ToString(), Is.EqualTo("a7a8Q"));
     }
 }
@@ -258,32 +254,32 @@ class HelperTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(RankAndFileHelpers.FileIndex(0), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.FileIndex(1), Is.EqualTo(1));
-            Assert.That(RankAndFileHelpers.FileIndex(2), Is.EqualTo(2));
-            Assert.That(RankAndFileHelpers.FileIndex(3), Is.EqualTo(3));
-            Assert.That(RankAndFileHelpers.FileIndex(4), Is.EqualTo(4));
-            Assert.That(RankAndFileHelpers.FileIndex(5), Is.EqualTo(5));
-            Assert.That(RankAndFileHelpers.FileIndex(6), Is.EqualTo(6));
-            Assert.That(RankAndFileHelpers.FileIndex(7), Is.EqualTo(7));
+            Assert.That(RankAndFile.FileIndex(0), Is.EqualTo(0));
+            Assert.That(RankAndFile.FileIndex(1), Is.EqualTo(1));
+            Assert.That(RankAndFile.FileIndex(2), Is.EqualTo(2));
+            Assert.That(RankAndFile.FileIndex(3), Is.EqualTo(3));
+            Assert.That(RankAndFile.FileIndex(4), Is.EqualTo(4));
+            Assert.That(RankAndFile.FileIndex(5), Is.EqualTo(5));
+            Assert.That(RankAndFile.FileIndex(6), Is.EqualTo(6));
+            Assert.That(RankAndFile.FileIndex(7), Is.EqualTo(7));
         });
         Assert.Multiple(() =>
         {
-            Assert.That(RankAndFileHelpers.RankIndex(0), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.RankIndex(8), Is.EqualTo(1));
-            Assert.That(RankAndFileHelpers.RankIndex(16), Is.EqualTo(2));
-            Assert.That(RankAndFileHelpers.RankIndex(24), Is.EqualTo(3));
-            Assert.That(RankAndFileHelpers.RankIndex(32), Is.EqualTo(4));
-            Assert.That(RankAndFileHelpers.RankIndex(40), Is.EqualTo(5));
-            Assert.That(RankAndFileHelpers.RankIndex(48), Is.EqualTo(6));
-            Assert.That(RankAndFileHelpers.RankIndex(56), Is.EqualTo(7));
+            Assert.That(RankAndFile.RankIndex(0), Is.EqualTo(0));
+            Assert.That(RankAndFile.RankIndex(8), Is.EqualTo(1));
+            Assert.That(RankAndFile.RankIndex(16), Is.EqualTo(2));
+            Assert.That(RankAndFile.RankIndex(24), Is.EqualTo(3));
+            Assert.That(RankAndFile.RankIndex(32), Is.EqualTo(4));
+            Assert.That(RankAndFile.RankIndex(40), Is.EqualTo(5));
+            Assert.That(RankAndFile.RankIndex(48), Is.EqualTo(6));
+            Assert.That(RankAndFile.RankIndex(56), Is.EqualTo(7));
         });
         Assert.Multiple(() =>
         {
-            Assert.That(RankAndFileHelpers.SquareIndex(0, 0), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.SquareIndex(1, 0), Is.EqualTo(8));
-            Assert.That(RankAndFileHelpers.SquareIndex(1, 7), Is.EqualTo(15));
-            Assert.That(RankAndFileHelpers.SquareIndex(2, 1), Is.EqualTo(17));
+            Assert.That(RankAndFile.SquareIndex(0, 0), Is.EqualTo(0));
+            Assert.That(RankAndFile.SquareIndex(1, 0), Is.EqualTo(8));
+            Assert.That(RankAndFile.SquareIndex(1, 7), Is.EqualTo(15));
+            Assert.That(RankAndFile.SquareIndex(2, 1), Is.EqualTo(17));
         });
     }
 
@@ -292,38 +288,38 @@ class HelperTests
     [Test]
     public void RayBetween()
     {
-        var a1 = RankAndFileHelpers.SquareIndex("a1");
-        var h8 = RankAndFileHelpers.SquareIndex("h8");
-        var c3 = RankAndFileHelpers.SquareIndex("c3");
-        var d1 = RankAndFileHelpers.SquareIndex("d1");
-        var h1 = RankAndFileHelpers.SquareIndex("h1");
-        var a8 = RankAndFileHelpers.SquareIndex("a8");
+        var a1 = RankAndFile.SquareIndex("a1");
+        var h8 = RankAndFile.SquareIndex("h8");
+        var c3 = RankAndFile.SquareIndex("c3");
+        var d1 = RankAndFile.SquareIndex("d1");
+        var h1 = RankAndFile.SquareIndex("h1");
+        var a8 = RankAndFile.SquareIndex("a8");
         Assert.Multiple(() =>
         {
             // easy diagonal
-            Assert.That(RankAndFileHelpers.GetRayBetween(a1, h8), Is.EqualTo(0x8040201008040201));
-            Assert.That(RankAndFileHelpers.GetRayBetween(h8, a1), Is.EqualTo(0x8040201008040201));
-            Assert.That(RankAndFileHelpers.GetRayBetween(a1, c3), Is.EqualTo(0x40201));
-            Assert.That(RankAndFileHelpers.GetRayBetween(c3, a1), Is.EqualTo(0x40201));
+            Assert.That(RankAndFile.GetRayBetween(a1, h8), Is.EqualTo(0x8040201008040201));
+            Assert.That(RankAndFile.GetRayBetween(h8, a1), Is.EqualTo(0x8040201008040201));
+            Assert.That(RankAndFile.GetRayBetween(a1, c3), Is.EqualTo(0x40201));
+            Assert.That(RankAndFile.GetRayBetween(c3, a1), Is.EqualTo(0x40201));
             
             // backwards diagonal
-            Assert.That(RankAndFileHelpers.GetRayBetween(h8, c3), Is.EqualTo(0x8040201008040000));
+            Assert.That(RankAndFile.GetRayBetween(h8, c3), Is.EqualTo(0x8040201008040000));
             
             // not on a line
-            Assert.That(RankAndFileHelpers.GetRayBetween(d1, c3), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.GetRayBetween(c3, d1), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.GetRayBetween(d1, h8), Is.EqualTo(0));
-            Assert.That(RankAndFileHelpers.GetRayBetween(h8, d1), Is.EqualTo(0));
+            Assert.That(RankAndFile.GetRayBetween(d1, c3), Is.EqualTo(0));
+            Assert.That(RankAndFile.GetRayBetween(c3, d1), Is.EqualTo(0));
+            Assert.That(RankAndFile.GetRayBetween(d1, h8), Is.EqualTo(0));
+            Assert.That(RankAndFile.GetRayBetween(h8, d1), Is.EqualTo(0));
             
             // backwards
-            Assert.That(RankAndFileHelpers.GetRayBetween(a8, h1), Is.EqualTo(0x102040810204080));
-            Assert.That(RankAndFileHelpers.GetRayBetween(h1, a8), Is.EqualTo(0x102040810204080));
+            Assert.That(RankAndFile.GetRayBetween(a8, h1), Is.EqualTo(0x102040810204080));
+            Assert.That(RankAndFile.GetRayBetween(h1, a8), Is.EqualTo(0x102040810204080));
             
             // straight line
-            Assert.That(RankAndFileHelpers.GetRayBetween(a1, a8), Is.EqualTo(0x101010101010101));
-            Assert.That(RankAndFileHelpers.GetRayBetween(a8, a1), Is.EqualTo(0x101010101010101));
-            Assert.That(RankAndFileHelpers.GetRayBetween(a1, h1), Is.EqualTo(0xff));
-            Assert.That(RankAndFileHelpers.GetRayBetween(h1, a1), Is.EqualTo(0xff));
+            Assert.That(RankAndFile.GetRayBetween(a1, a8), Is.EqualTo(0x101010101010101));
+            Assert.That(RankAndFile.GetRayBetween(a8, a1), Is.EqualTo(0x101010101010101));
+            Assert.That(RankAndFile.GetRayBetween(a1, h1), Is.EqualTo(0xff));
+            Assert.That(RankAndFile.GetRayBetween(h1, a1), Is.EqualTo(0xff));
         });
 
     }

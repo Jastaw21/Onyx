@@ -7,31 +7,20 @@ public class Bitboards
 {
     public Bitboards()
     {
-        _pieceTypeCount = Enum.GetValues<PieceType>().Length;
-        _colourCount = Enum.GetValues<Colour>().Length;
-
-        _boards = new ulong[_colourCount * _pieceTypeCount];
-
-        for (var colourIndex = 0; colourIndex < _colourCount; colourIndex++)
-        for (var pieceTypeIndex = 0; pieceTypeIndex < _pieceTypeCount; pieceTypeIndex++)
+        _boards = new ulong[12];
+        foreach (var colourIndex in _boards)
         {
-            _boards[colourIndex * _pieceTypeCount + pieceTypeIndex] = 0ul;
+           _boards[colourIndex] = 0ul;
         }
     }
 
     public Bitboards(string fenString)
     {
-        _pieceTypeCount = Enum.GetValues<PieceType>().Length;
-        _colourCount = Enum.GetValues<Colour>().Length;
-
-        _boards = new ulong[_colourCount * _pieceTypeCount];
-
-        for (var colourIndex = 0; colourIndex < _colourCount; colourIndex++)
-        for (var pieceTypeIndex = 0; pieceTypeIndex < _pieceTypeCount; pieceTypeIndex++)
+        _boards = new ulong[12];
+        foreach (var colourIndex in _boards)
         {
-            _boards[colourIndex * _pieceTypeCount + pieceTypeIndex] = 0ul;
+            _boards[colourIndex] = 0ul;
         }
-
         LoadFen(fenString);
     }
 
@@ -65,7 +54,7 @@ public class Bitboards
             else
             {
                 var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
-                SetOn(piece, RankAndFileHelpers.SquareIndex(rankIndex, fileIndex));
+                SetOn(piece, RankAndFile.SquareIndex(rankIndex, fileIndex));
                 fileIndex++;
             }
 
@@ -79,16 +68,15 @@ public class Bitboards
     public ulong[] Boards => _boards;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ulong OccupancyByPiece(Piece piece)
+    public ulong OccupancyByPiece(sbyte piece)
     {
-        int t = (int)piece.Type;
-        int colourOffset = piece.Colour == Colour.White ? 0 : 6;
-        return _boards[t + colourOffset];
+        return _boards[Pc.Index(piece)];
     }
 
-    public ulong OccupancyByColour(Colour colour)
+    public ulong OccupancyByColour(bool forBlack)
     {
-        return Piece.ByColour(colour).Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
+        var pieces = forBlack ? Pc._blackPieces : Pc._whitePieces;
+        return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
     }
 
     public ulong Occupancy()
@@ -96,12 +84,9 @@ public class Bitboards
         return Boards.Aggregate(0ul, (current, board) => current | board);
     }
 
-    public void SetByPiece(Piece piece, ulong boardByPiece)
+    public void SetByPiece(sbyte piece, ulong boardByPiece)
     {
-        var col = (int)piece.Colour;
-        var type = (int)piece.Type;
-        var index = col * _pieceTypeCount + type;        
-        _boards[index] = boardByPiece;       
+        _boards[Pc.Index(piece)] = boardByPiece;       
     }
 
     public void SetAllOff(int square)
@@ -114,28 +99,14 @@ public class Bitboards
 
     }
 
-    public void SetOff(Piece piece, int square)
+    public void SetOff(sbyte piece, int square)
     {
-        var index = Index(piece);
-        var mask = ~(1ul << square);
-        _boards[index] &= mask;        
+        _boards[Pc.Index(piece)] &= ~(1ul << square);        
     }
 
-    public void SetOn(Piece piece, int square)
+    public void SetOn(sbyte piece, int square)
     {
-        var index = Index(piece);
-
-        var value = 1ul << square;
-
-        _boards[index] |= value;        
-    }
-
-    private int Index(Piece piece)
-    {
-        var col = (int)piece.Colour;
-        var type = (int)piece.Type;
-        var index = col * _pieceTypeCount + type;
-        return index;
+        _boards[Pc.Index(piece)] |= 1ul << square;        
     }
 
     public bool SquareOccupied(int squareToTest)
@@ -143,10 +114,10 @@ public class Bitboards
         return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest)) > 0);
     }
 
-    public Piece? PieceAtSquare(int squareToTest)
+    public sbyte? PieceAtSquare(int squareToTest)
     {    
         ulong mask = 1UL << squareToTest;
-        var pieces = Piece.AllPieces;
+        var pieces = Pc.AllPieces;
         foreach (var piece in pieces)
         {
             var board = OccupancyByPiece(piece);            
@@ -167,7 +138,7 @@ public class Bitboards
 
             for (var fileIndex = 0; fileIndex <= 7; fileIndex++)
             {
-                var pieceHere = PieceAtSquare(RankAndFileHelpers.SquareIndex(rankIndex, fileIndex));
+                var pieceHere = PieceAtSquare(RankAndFile.SquareIndex(rankIndex, fileIndex));
 
                 if (pieceHere.HasValue)
                 {

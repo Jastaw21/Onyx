@@ -17,7 +17,7 @@ public static class Fen
     public static FenDetails FromString(string fen)
     {
         var details = new FenDetails();
-        
+
         var colourToMoveTokenLocation = fen.IndexOf(' ') + 1;
         details.PositionFen = fen[0..(colourToMoveTokenLocation - 1)];
         var castlingRightsTokenLocation = fen.IndexOf(' ', colourToMoveTokenLocation) + 1;
@@ -33,7 +33,7 @@ public static class Fen
         var enPassantString = fen[enPassantSquareTokenLocation..(halfMoveTokenLocation - 1)];
         if (enPassantString.Length == 2)
         {
-            details.EnPassantSquare = RankAndFileHelpers.SquareIndex(enPassantString);
+            details.EnPassantSquare = RankAndFile.SquareIndex(enPassantString);
         }
         else
         {
@@ -55,39 +55,39 @@ public static class Fen
     public const FenString Pos4Fen = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
     public const FenString Pos5Fen = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 
-    public static Piece GetPieceFromChar(char pieceChar)
+    public static sbyte GetPieceFromChar(char pieceChar)
     {
         return pieceChar switch
         {
-            'K' => new Piece(PieceType.King, Colour.White),
-            'B' => new Piece(PieceType.Bishop, Colour.White),
-            'R' => new Piece(PieceType.Rook, Colour.White),
-            'N' => new Piece(PieceType.Knight, Colour.White),
-            'P' => new Piece(PieceType.Pawn, Colour.White),
-            'Q' => new Piece(PieceType.Queen, Colour.White),
-            'k' => new Piece(PieceType.King, Colour.Black),
-            'b' => new Piece(PieceType.Bishop, Colour.Black),
-            'r' => new Piece(PieceType.Rook, Colour.Black),
-            'n' => new Piece(PieceType.Knight, Colour.Black),
-            'p' => new Piece(PieceType.Pawn, Colour.Black),
-            'q' => new Piece(PieceType.Queen, Colour.Black),
+            'K' => Pc.WK,
+            'B' => Pc.WB,
+            'R' => Pc.WR,
+            'N' => Pc.WN,
+            'P' => Pc.WP,
+            'Q' => Pc.WQ,
+            'k' => Pc.BK,
+            'b' => Pc.BB,
+            'r' => Pc.BR,
+            'n' => Pc.BN,
+            'p' => Pc.BP,
+            'q' => Pc.BQ,
             _ => throw new ArgumentException()
         };
     }
 
-    public static char GetCharFromPiece(Piece piece)
+    public static char GetCharFromPiece(sbyte piece)
     {
-        var lowerVersion = piece.Type switch
+        var lowerVersion = Pc.PieceType(piece) switch
         {
-            PieceType.King => 'k',
-            PieceType.Queen => 'q',
-            PieceType.Bishop => 'b',
-            PieceType.Rook => 'r',
-            PieceType.Knight => 'n',
-            PieceType.Pawn => 'p',
+            Pc.King => 'k',
+            Pc.Queen => 'q',
+            Pc.Bishop => 'b',
+            Pc.Rook => 'r',
+            Pc.Knight => 'n',
+            Pc.Pawn => 'p',
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        return piece.Colour == Colour.Black ? lowerVersion : char.ToUpper(lowerVersion);
+        return Pc.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;
     }
 }

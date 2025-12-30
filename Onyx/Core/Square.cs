@@ -2,7 +2,7 @@
 
 
 
-public static class RankAndFileHelpers
+public static class RankAndFile
 {
     public static int SquareIndex(string notation)
     {

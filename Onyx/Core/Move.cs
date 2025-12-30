@@ -14,7 +14,7 @@ public static class MoveFlags
 
 public struct Move
 {
-    public Move(Piece pieceMoved, int from, int to)
+    public Move(sbyte pieceMoved, int from, int to)
     {
         PieceMoved = pieceMoved;
         Data |= (uint)from << 6;
@@ -22,44 +22,42 @@ public struct Move
     }
 
 
-    public Move(Piece pieceMoved, string notation)
+    public Move(sbyte pieceMoved, string notation)
     {
         PieceMoved = pieceMoved;
         var fromSquare = notation[..2];
         var toSquare = notation.Length == 4 ? notation[^2..] : notation[2..4];
-        var fromIndex = RankAndFileHelpers.SquareIndex(fromSquare);
-        var toIndex = RankAndFileHelpers.SquareIndex(toSquare);
+        var fromIndex = RankAndFile.SquareIndex(fromSquare);
+        var toIndex = RankAndFile.SquareIndex(toSquare);
         if (notation.Length == 5)
         {
             PromotedPiece = char.ToLower(notation[4]) switch
             {
-                'q' => Piece.MakePiece(PieceType.Queen, pieceMoved.Colour),
-                'b' => Piece.MakePiece(PieceType.Bishop, pieceMoved.Colour),
-                'n' => Piece.MakePiece(PieceType.Knight, pieceMoved.Colour),
-                'r' => Piece.MakePiece(PieceType.Rook, pieceMoved.Colour),
+                'q' => Pc.MakePiece(Pc.Queen, !Pc.IsWhite(PieceMoved)),
+                'b' => Pc.MakePiece(Pc.Bishop, !Pc.IsWhite(PieceMoved)),
+                'n' => Pc.MakePiece(Pc.Knight, !Pc.IsWhite(PieceMoved)),
+                'r' => Pc.MakePiece(Pc.Rook, !Pc.IsWhite(PieceMoved)),
                 _ => PromotedPiece
             };
         }
-
-
         Data |= (uint)fromIndex << 6;
         Data |= (uint)toIndex;
     }
 
-    public Piece PieceMoved { get; }
+    public sbyte PieceMoved { get; }
 
     public int To => (int)(Data & MoveFlags.ToSquareBits);
     public int From => (int)((Data & MoveFlags.FromSquareBits) >> 6);
 
-    public Piece? PromotedPiece = null;
+    public sbyte? PromotedPiece = null;
     public uint Data { get; set; } = 0;
 
     public string Notation
     {
         get
         {
-            var fromNotation = RankAndFileHelpers.Notation(From);
-            var toNotation = RankAndFileHelpers.Notation(To);
+            var fromNotation = RankAndFile.Notation(From);
+            var toNotation = RankAndFile.Notation(To);
             var isPromotion = PromotedPiece.HasValue;
             if (isPromotion)
                 return $"{fromNotation}{toNotation}{Fen.GetCharFromPiece(PromotedPiece!.Value)}";

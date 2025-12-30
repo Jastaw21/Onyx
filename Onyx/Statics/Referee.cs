@@ -40,7 +40,7 @@ public static class Referee
         int squareMoveTo)
     {
         // 1. Get the ray between the piece and the king.
-        var rayBetween = RankAndFileHelpers.GetRayBetween(pinnedPieceSquare, kingSquare);
+        var rayBetween = RankAndFile.GetRayBetween(pinnedPieceSquare, kingSquare);
         if (rayBetween == 0) return false;
 
         // 2. See if there is an attacker behind the piece on this ray.
@@ -60,7 +60,7 @@ public static class Referee
             // If the piece is on a diagonal ray and there's a diagonal attacker...
             // it can ONLY move if the destination is also on the ray between the king and that attacker.
             int attackerSquare = (int)ulong.TrailingZeroCount(diagAttackers);
-            var pinRay = RankAndFileHelpers.GetRayBetween(kingSquare, attackerSquare);
+            var pinRay = RankAndFile.GetRayBetween(kingSquare, attackerSquare);
             return (pinRay & (1ul << squareMoveTo)) == 0;
         }
 
@@ -75,7 +75,7 @@ public static class Referee
         if (straightAttackers != 0)
         {
             int attackerSquare = (int)ulong.TrailingZeroCount(straightAttackers);
-            var pinRay = RankAndFileHelpers.GetRayBetween(kingSquare, attackerSquare);
+            var pinRay = RankAndFile.GetRayBetween(kingSquare, attackerSquare);
             return (pinRay & (1ul << squareMoveTo)) == 0;
         }
 
@@ -158,7 +158,7 @@ public static class Referee
         var attackingPiece = byColour == Colour.White ? Piece.WP : Piece.BP;
         var pawnsBB = board.Bitboards.OccupancyByPiece(attackingPiece);
 
-        var fileIndex = RankAndFileHelpers.FileIndex(square);
+        var fileIndex = RankAndFile.FileIndex(square);
         if (fileIndex > 0)
         {
             int targetIndex = byColour == Colour.White ? square - 9 : square + 7;

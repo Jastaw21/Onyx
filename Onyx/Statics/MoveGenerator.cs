@@ -71,7 +71,7 @@ public static class MoveGenerator
 
     private static void GeneratePawnMoves(Piece piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
-        var rankIndex = RankAndFileHelpers.RankIndex(square);
+        var rankIndex = RankAndFile.RankIndex(square);
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
         if ((piece.Colour == Colour.White && rankIndex == 6) ||
             (piece.Colour == Colour.Black && rankIndex == 1))
@@ -90,11 +90,11 @@ public static class MoveGenerator
 
         // the board has a viable en passant square, and we're on an appropriate file
         if (board.EnPassantSquare.HasValue &&
-            Math.Abs(RankAndFileHelpers.FileIndex(board.EnPassantSquare.Value) - RankAndFileHelpers.FileIndex(square)) == 1)
+            Math.Abs(RankAndFile.FileIndex(board.EnPassantSquare.Value) - RankAndFile.FileIndex(square)) == 1)
         {
             var relevantAttackRank = piece.Colour == Colour.Black ? 2 : 5;
             var pawnHomeRank = piece.Colour == Colour.Black ? 3 : 4;
-            if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFileHelpers.RankIndex(board.EnPassantSquare.Value))
+            if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare.Value))
                 normalAttacks |= 1ul << board.EnPassantSquare.Value;
         }
 
@@ -113,7 +113,7 @@ public static class MoveGenerator
     {
         if (piece.Type != PieceType.Pawn)
             return;
-        var rankIndex = RankAndFileHelpers.RankIndex(square);
+        var rankIndex = RankAndFile.RankIndex(square);
         if ((piece.Colour == Colour.White && rankIndex != 6) ||
             (piece.Colour == Colour.Black && rankIndex != 1))
             return;
@@ -132,7 +132,7 @@ public static class MoveGenerator
             }
         }
 
-        var fileIndex = RankAndFileHelpers.FileIndex(square);
+        var fileIndex = RankAndFile.FileIndex(square);
         // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
         if (fileIndex < 7)
         {
