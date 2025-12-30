@@ -121,12 +121,12 @@ public class Board
         {
             capturedPiece = opponentColour == Colour.Black ? Piece.BP : Piece.WP;
             var captureRank = opponentColour == Colour.White ? 3 : 4;
-            capturedSquare = new Square(captureRank, move.To.FileIndex);
+            capturedSquare = new Square(captureRank, RankAndFileHelpers.FileIndex(move.To));
         }
         else
         {
-            capturedPiece = Bitboards.PieceAtSquare(move.To.SquareIndex);
-            capturedSquare = move.To;
+            capturedPiece = Bitboards.PieceAtSquare(move.To);
+            capturedSquare = new Square(move.To);
         }
 
         if (fullApplyMove)
@@ -149,10 +149,9 @@ public class Board
         // get rid of the captured piece
         if (capturedPiece.HasValue)
         {
-            Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
+            Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value.SquareIndex);
             move.PostMoveFlag |= PostMoveFlags.Capture;
         }
-
 
         // action the promotion
         if (move is { IsPromotion: true, PromotedPiece: not null })
@@ -162,31 +161,35 @@ public class Board
             Bitboards.SetOff(move.PieceMoved, move.To);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
         }
-
-
+        var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
+        var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
+        var fromRankIndex = RankAndFileHelpers.RankIndex(move.From);
+        var fromFileIndex = RankAndFileHelpers.FileIndex(move.From);
+        
         // handle castling
         if (move.IsCastling)
         {
             var affectedRook = move.PieceMoved.Colour == Colour.White
                 ? Piece.WR
                 : Piece.BR;
-
-            var rookNewFile = move.To.FileIndex == 2 ? 3 : 5;
-            var rookOldFile = move.To.FileIndex == 2 ? 0 : 7;
+            
+            
+            var rookNewFile = toFileIndex == 2 ? 3 : 5;
+            var rookOldFile = toFileIndex == 2 ? 0 : 7;
 
             MovePiece(affectedRook,
-                new Square(move.To.RankIndex, rookOldFile),
-                new Square(move.To.RankIndex, rookNewFile));
+                RankAndFileHelpers.SquareIndex(toRankIndex, rookOldFile),
+                RankAndFileHelpers.SquareIndex(toRankIndex, rookNewFile));
         }
 
         // king moving always sacrifices the castling rights
         UpdateCastlingRights(move);
 
         // set en passant target square
-        if (move.PieceMoved.Type == PieceType.Pawn && Math.Abs(move.From.RankIndex - move.To.RankIndex) == 2)
+        if (move.PieceMoved.Type == PieceType.Pawn && Math.Abs(fromRankIndex - toRankIndex) == 2)
         {
             var targetRank = move.PieceMoved.Colour == Colour.White ? 2 : 5;
-            EnPassantSquare = new Square(targetRank, move.From.FileIndex);
+            EnPassantSquare = new Square(targetRank, fromFileIndex);
         }
         else
         {
@@ -222,7 +225,7 @@ public class Board
             if (!move.IsEnPassant)
             {
                 Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
-                capturedOn = move.To;
+                capturedOn = new Square(move.To);
             }
         }
 
@@ -236,11 +239,12 @@ public class Board
 
         if (move.IsCastling)
         {
-            var rank = move.To.RankIndex;
-            var rookHomeFile = move.To.FileIndex > 4 ? 7 : 0;
-            var rookNewFile = move.To.FileIndex == 2 ? 3 : 5;
-            Bitboards.SetOn(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookHomeFile));
-            Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), new Square(rank, rookNewFile));
+            var rank = RankAndFileHelpers.RankIndex(move.To);
+            var file = RankAndFileHelpers.FileIndex(move.To);
+            var rookHomeFile = file > 4 ? 7 : 0;
+            var rookNewFile = file == 2 ? 3 : 5;
+            Bitboards.SetOn(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), RankAndFileHelpers.SquareIndex(rank, rookHomeFile));
+            Bitboards.SetOff(Piece.MakePiece(PieceType.Rook, move.PieceMoved.Colour), RankAndFileHelpers.SquareIndex(rank, rookNewFile));
         }
 
 
@@ -248,9 +252,9 @@ public class Board
         {
             var pawnHomeRank = move.PieceMoved.Colour == Colour.Black ? 3 : 4;
             var capturedColour = move.PieceMoved.Colour == Colour.White ? Colour.Black : Colour.White;
-            capturedOn = new Square(pawnHomeRank, move.To.FileIndex);
+            capturedOn = new Square(pawnHomeRank, RankAndFileHelpers.FileIndex(move.To));
             Bitboards.SetOn(Piece.MakePiece(PieceType.Pawn, capturedColour),
-                capturedOn.Value);
+                capturedOn.Value.SquareIndex);
         }
 
         if (fullUndoMove)
@@ -262,20 +266,25 @@ public class Board
 
     public void ApplyMoveFlags(ref Move move)
     {
+        var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
+        var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
+        RankAndFileHelpers.RankIndex(move.From);
+        var fromFileIndex = RankAndFileHelpers.FileIndex(move.From);
+        
         if (move.PieceMoved.Type == PieceType.Pawn &&
-            ((move.PieceMoved.Colour == Colour.White && move.To.RankIndex == 7) ||
-             (move.PieceMoved.Colour == Colour.Black && move.To.RankIndex == 0)))
+            ((move.PieceMoved.Colour == Colour.White && toRankIndex == 7) ||
+             (move.PieceMoved.Colour == Colour.Black && toRankIndex == 0)))
         {
             move.PreMoveFlag |= PreMoveFlags.Promotion;
         }
 
-        if (move.PieceMoved.Type == PieceType.King && Math.Abs(move.From.FileIndex - move.To.FileIndex) > 1)
+        if (move.PieceMoved.Type == PieceType.King && Math.Abs(fromFileIndex - toFileIndex) > 1)
         {
             move.PreMoveFlag |= PreMoveFlags.Castle;
         }
 
-        if (move.PieceMoved.Type == PieceType.Pawn && (move.From.FileIndex - move.To.FileIndex) != 0 &&
-            !Bitboards.PieceAtSquare(move.To.SquareIndex).HasValue)
+        if (move.PieceMoved.Type == PieceType.Pawn && fromFileIndex - toFileIndex != 0 &&
+            !Bitboards.PieceAtSquare(move.To).HasValue)
             move.PreMoveFlag |= PreMoveFlags.EnPassant;
     }
 
@@ -285,13 +294,13 @@ public class Board
         {
             if (move.PieceMoved.Colour == Colour.White)
             {
-                CastlingRights &= ~(BoardConstants.WhiteKingsideCastlingFlag);
-                CastlingRights &= ~(BoardConstants.WhiteQueensideCastlingFlag);
+                CastlingRights &= ~BoardConstants.WhiteKingsideCastlingFlag;
+                CastlingRights &= ~BoardConstants.WhiteQueensideCastlingFlag;
             }
             else
             {
-                CastlingRights &= ~(BoardConstants.BlackKingsideCastlingFlag);
-                CastlingRights &= ~(BoardConstants.BlackQueensideCastlingFlag);
+                CastlingRights &= ~BoardConstants.BlackKingsideCastlingFlag;
+                CastlingRights &= ~BoardConstants.BlackQueensideCastlingFlag;
             }
         }
 
@@ -299,21 +308,21 @@ public class Board
 
         if (move.PieceMoved.Colour == Colour.White)
         {
-            if (move.From.SquareIndex == BoardConstants.A1)
+            if (move.From == BoardConstants.A1)
                 CastlingRights &= ~BoardConstants.WhiteQueensideCastlingFlag;
-            if (move.From.SquareIndex == BoardConstants.H1)
+            if (move.From == BoardConstants.H1)
                 CastlingRights &= ~BoardConstants.WhiteKingsideCastlingFlag;
         }
         else
         {
-            if (move.From.SquareIndex == BoardConstants.A8)
+            if (move.From == BoardConstants.A8)
                 CastlingRights &= ~BoardConstants.BlackQueensideCastlingFlag;
-            if (move.From.SquareIndex == BoardConstants.H8)
+            if (move.From == BoardConstants.H8)
                 CastlingRights &= ~BoardConstants.BlackKingsideCastlingFlag;
         }
     }
 
-    private void MovePiece(Piece piece, Square from, Square to)
+    private void MovePiece(Piece piece, int from, int to)
     {
         Bitboards.SetOff(piece, from);
         Bitboards.SetOn(piece, to);

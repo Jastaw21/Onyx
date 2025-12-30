@@ -103,9 +103,9 @@ public class CoreTests
         for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
             if (squareIndex == 0)
-                Assert.That(board.SquareOccupied(new Square(squareIndex)), Is.True);
+                Assert.That(board.SquareOccupied( (squareIndex)), Is.True);
             else
-                Assert.That(board.SquareOccupied(new Square(squareIndex)), Is.False);
+                Assert.That(board.SquareOccupied( (squareIndex)), Is.False);
         }
 
         var allOnBoard = new Bitboards();
@@ -118,7 +118,7 @@ public class CoreTests
 
         for (var squareIndex = 0; squareIndex < 64; squareIndex++)
         {
-            Assert.That(allOnBoard.SquareOccupied(new Square(squareIndex)), Is.True);
+            Assert.That(allOnBoard.SquareOccupied( (squareIndex)), Is.True);
         }
     }
 
@@ -136,18 +136,18 @@ public class CoreTests
         }
 
 
-        board.SetAllOff(new Square(0));
+        board.SetAllOff( (0));
 
         for (var rank = 0; rank < 8; rank++)
         for (var file = 0; file < 8; file++)
         {
             if (rank == 0 && file == 0)
             {
-                Assert.That(board.SquareOccupied(new Square(rank, file)), Is.False);
+                Assert.That(board.SquareOccupied( RankAndFileHelpers.SquareIndex(rank, file)), Is.False);
             }
             else
             {
-                Assert.That(board.SquareOccupied(new Square(rank, file)), Is.True);
+                Assert.That(board.SquareOccupied( RankAndFileHelpers.SquareIndex(rank, file)), Is.True);
             }
         }
     }
@@ -158,15 +158,15 @@ public class CoreTests
         var board = new Bitboards();
 
         // put a pawn on a1
-        board.SetOn(new Piece(PieceType.Pawn, Colour.White), new Square(0));
+        board.SetOn(new Piece(PieceType.Pawn, Colour.White),  (0));
 
         // should be occupied
-        Assert.That(board.SquareOccupied(new Square(0)), Is.True);
+        Assert.That(board.SquareOccupied( (0)), Is.True);
 
         // all others should not be
         for (var i = 1; i < 64; i++)
         {
-            Assert.That(board.SquareOccupied(new Square(i)), Is.False);
+            Assert.That(board.SquareOccupied( (i)), Is.False);
         }
     }
 
@@ -183,7 +183,7 @@ public class CoreTests
         var board = new Bitboards(Fen.DefaultFen);
         Assert.Multiple(() =>
         {
-            Assert.That(board.SquareOccupied(new Square(0)), Is.True);
+            Assert.That(board.SquareOccupied( (0)), Is.True);
 
             Assert.That(board.OccupancyByPiece(new Piece(PieceType.Pawn, Colour.White)), Is.EqualTo(0xff00));
             Assert.That(board.OccupancyByPiece(new Piece(PieceType.Rook, Colour.White)), Is.EqualTo(0x81));
@@ -283,11 +283,11 @@ public class CoreTests
         Assert.Multiple(() =>
             {
                 Assert.That(move.PieceMoved, Is.EqualTo(Piece.MakePiece(PieceType.Pawn, Colour.White)));
-                Assert.That(move.From.FileIndex, Is.EqualTo(0));
-                Assert.That(move.From.RankIndex, Is.EqualTo(1));
+                Assert.That(RankAndFileHelpers.FileIndex(move.From), Is.EqualTo(0));
+                Assert.That(RankAndFileHelpers.RankIndex(move.From), Is.EqualTo(1));
 
-                Assert.That(move.To.FileIndex, Is.EqualTo(0));
-                Assert.That(move.To.RankIndex, Is.EqualTo(3));
+                Assert.That(RankAndFileHelpers.FileIndex(move.To), Is.EqualTo(0));
+                Assert.That(RankAndFileHelpers.RankIndex(move.To), Is.EqualTo(3));
             }
         );
     }

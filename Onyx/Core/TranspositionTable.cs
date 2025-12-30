@@ -25,7 +25,7 @@ public class TranspositionTable
     public TranspositionTable(int sizeInMb = 512)
     {
         var entrySize = System.Runtime.InteropServices.Marshal.SizeOf<TranspositionTableEntry>();
-        var numberOfEntries = (sizeInMb * 1024 * 1024) / entrySize;
+        var numberOfEntries = sizeInMb * 1024 * 1024 / entrySize;
         _entries = new TranspositionTableEntry[numberOfEntries];
     }
 

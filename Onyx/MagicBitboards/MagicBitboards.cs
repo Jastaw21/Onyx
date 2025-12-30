@@ -146,7 +146,7 @@ public static class MagicBitboards
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
             var newSquare = new Square(newRank, newFile);
-            movesFromHere |= (1ul << newSquare.SquareIndex);
+            movesFromHere |= 1ul << newSquare.SquareIndex;
         }
 
         _knightAttacks[square.SquareIndex] = movesFromHere;
@@ -162,7 +162,7 @@ public static class MagicBitboards
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
             var newSquare = new Square(newRank, newFile);
-            movesFromHere |= (1ul << newSquare.SquareIndex);
+            movesFromHere |= 1ul << newSquare.SquareIndex;
         }
 
         _kingAttacks[square.SquareIndex] = movesFromHere;
@@ -179,13 +179,13 @@ public static class MagicBitboards
         var FileIndex = RankAndFileHelpers.FileIndex(square);
         if (FileIndex < 7)
         {
-            var rightIndex = (colour == Colour.White) ? 9 : -7;
+            var rightIndex = colour == Colour.White ? 9 : -7;
             result |= 1ul << square + rightIndex;
         }
 
         if (FileIndex > 0)
         {
-            var leftIndex = (colour == Colour.White) ? 7 : -9;
+            var leftIndex = colour == Colour.White ? 7 : -9;
             result |= 1ul << square + leftIndex;
         }
 
@@ -201,7 +201,7 @@ public static class MagicBitboards
             return 0ul;
 
        
-        var squareOffset = (colour == Colour.White) ? 8 : -8;
+        var squareOffset = colour == Colour.White ? 8 : -8;
 
         var isWhiteDoublePush = colour == Colour.White && rankIndex == 1;
         var isBlackDoublePush = colour == Colour.Black && rankIndex == 6;

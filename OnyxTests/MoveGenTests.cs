@@ -41,7 +41,7 @@ public class MoveGenTests
         foreach (var move in movesToTest)
         {
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard, moveBuffer, ref count);
+            MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
             Assert.That(movesByPieceBySquare, Does.Not.Contain(move));
         }
@@ -71,7 +71,7 @@ public class MoveGenTests
         foreach (var move in illegalMoves)
         {
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard, moveBuffer, ref count);
+            MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
             Assert.That(movesByPieceBySquare, Does.Not.Contain(move));
         }
@@ -79,7 +79,7 @@ public class MoveGenTests
         foreach (var move in legalMoves)
         {
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, testBoard, moveBuffer, ref count);
+            MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
             Assert.That(movesByPieceBySquare, Does.Contain(move));
         }
@@ -111,7 +111,7 @@ public class MoveGenTests
             var pos = new Board(startingPositions[scen]);
             var move = moves[scen];
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, pos, moveBuffer, ref count);
+            MoveGenerator.GetMoves(move.PieceMoved, move.From, pos, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
             Assert.That(movesByPieceBySquare, Does.Contain(move));
         }
@@ -143,7 +143,7 @@ public class MoveGenTests
             var pos = new Board(startingPositions[scen]);
             var move = moves[scen];
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From.SquareIndex, pos, moveBuffer, ref count);
+            MoveGenerator.GetMoves(move.PieceMoved, move.From, pos, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
             Assert.That(movesByPieceBySquare, Does.Not.Contain(move));
         }

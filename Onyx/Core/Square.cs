@@ -33,6 +33,19 @@ public readonly struct Square
 
 public static class RankAndFileHelpers
 {
+    public static int SquareIndex(string notation)
+    {
+        var file = notation[0] - 'a';
+        var rank = notation[1] - '1';
+        return SquareIndex(rank, file);
+    }
+
+    public static string Notation(int square)
+    {
+        var rankIndex = RankIndex(square);
+        var fileIndex = FileIndex(square);
+        return $"{(char)('a' + fileIndex)}{(char)('1' + rankIndex)}";
+    }
     public static int RankIndex(int square)
     {
         return square / 8;

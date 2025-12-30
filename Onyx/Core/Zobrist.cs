@@ -72,8 +72,8 @@ public class Zobrist
     {
         var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
         var movedPieceArray = GetArrayFromChar(movedPieceChar);
-        var movedPieceToRand = movedPieceArray[move.To.SquareIndex];
-        var movedPieceFromRand = movedPieceArray[move.From.SquareIndex];
+        var movedPieceToRand = movedPieceArray[move.To];
+        var movedPieceFromRand = movedPieceArray[move.From];
 
         // move the moving piece, turning its from square off, and to square on
         HashValue ^= movedPieceFromRand;
@@ -96,7 +96,7 @@ public class Zobrist
 
             var promotedPieceChar = Fen.GetCharFromPiece(move.PromotedPiece.Value);
             var promotedPieceArray = GetArrayFromChar(promotedPieceChar);
-            var promotedPieceRand = promotedPieceArray[move.To.SquareIndex];
+            var promotedPieceRand = promotedPieceArray[move.To];
             HashValue ^= promotedPieceRand;
         }
 
@@ -109,13 +109,16 @@ public class Zobrist
             var rookChar = Fen.GetCharFromPiece(affectedRook);
             var rookArray = GetArrayFromChar(rookChar);
 
-            var rookNewFile = move.To.FileIndex == 2 ? 3 : 5;
-            var rookOldFile = move.To.FileIndex == 2 ? 0 : 7;
-            var rookFrom = new Square(move.To.RankIndex, rookOldFile);
-            var rookTo = new Square(move.To.RankIndex, rookNewFile);
+            var toFileIndex = RankAndFileHelpers.FileIndex(move.To);
+            var toRankIndex = RankAndFileHelpers.RankIndex(move.To);
 
-            var rookFromRand = rookArray[rookFrom.SquareIndex];
-            var rookToRand = rookArray[rookTo.SquareIndex];
+            var rookNewFile = toFileIndex == 2 ? 3 : 5;
+            var rookOldFile = toFileIndex == 2 ? 0 : 7;
+            var rookFrom = RankAndFileHelpers.SquareIndex(toRankIndex, rookOldFile);
+            var rookTo = RankAndFileHelpers.SquareIndex(toRankIndex, rookNewFile);
+
+            var rookFromRand = rookArray[rookFrom];
+            var rookToRand = rookArray[rookTo];
 
             HashValue ^= rookFromRand;
             HashValue ^= rookToRand;

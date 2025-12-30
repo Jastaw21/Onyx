@@ -30,11 +30,13 @@ public class EngineTests
         var engine = new Engine();
         engine.SetPosition(fen);
 
-        var directResult = engine.DepthSearch(1);
+       
 
         for (int i = 2; i < 7; i++)
         {
-            var timedSearch = engine.TimedSearch(i, 1000);
+            var timedSearch = engine.TimedSearch(i, 2000);
+            var depthReached = timedSearch.stats.Depth;
+            var directResult = engine.DepthSearch(depthReached);
             var match = timedSearch.bestMove.Notation == directResult.bestMove.Notation;
             var passString = match ? "passes" : $"fails with {timedSearch.bestMove}";
             TestContext.Out.WriteLine($"Depth {i} {passString}");

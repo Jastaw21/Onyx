@@ -33,11 +33,11 @@ public class Tokeniser
     {
         TokenType type;
         if (builtToken == "uci")
-            type = (TokenType.Uci);
+            type = TokenType.Uci;
         else if (builtToken == "go")
-            type = (TokenType.Go);
+            type = TokenType.Go;
         else if (builtToken == "depth")
-            type = (TokenType.Depth);
+            type = TokenType.Depth;
         else if (builtToken == "perft")
             type = TokenType.Perft;
         else if (builtToken == "fen")
@@ -70,7 +70,7 @@ public class Tokeniser
             type = TokenType.Divide;
         
         else if (int.TryParse(builtToken, out _))
-            type = (TokenType.IntLiteral);
+            type = TokenType.IntLiteral;
 
         else
         {

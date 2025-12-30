@@ -20,8 +20,8 @@ public static class Referee
             // Should not happen in a valid game, but for safety in tests
             if (kingSquare == 64) return FullLegalityCheck(move, position);
             
-            return !IsPinnedToKing(move.From.SquareIndex, kingSquare, pieceMovedColour,
-                position, move.To.SquareIndex);
+            return !IsPinnedToKing(move.From, kingSquare, pieceMovedColour,
+                position, move.To);
         }
 
         // in check
@@ -156,7 +156,6 @@ public static class Referee
 
         // check pawn attacks
         var attackingPiece = byColour == Colour.White ? Piece.WP : Piece.BP;
-        var pawnColour = byColour == Colour.White ? Colour.Black : Colour.White;
         var pawnsBB = board.Bitboards.OccupancyByPiece(attackingPiece);
 
         var fileIndex = RankAndFileHelpers.FileIndex(square);

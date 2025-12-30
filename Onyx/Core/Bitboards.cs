@@ -65,7 +65,7 @@ public class Bitboards
             else
             {
                 var piece = Fen.GetPieceFromChar(fenString[currentIndex]);
-                SetOn(piece, new Square(rankIndex, fileIndex));
+                SetOn(piece, RankAndFileHelpers.SquareIndex(rankIndex, fileIndex));
                 fileIndex++;
             }
 
@@ -104,9 +104,9 @@ public class Bitboards
         _boards[index] = boardByPiece;       
     }
 
-    public void SetAllOff(Square square)
+    public void SetAllOff(int square)
     {
-        var index = (1ul << square.SquareIndex);
+        var index = 1ul << square;
         for (var i = 0; i < _boards.Length; i++)
         {
             _boards[i] &= ~index;
@@ -114,18 +114,18 @@ public class Bitboards
 
     }
 
-    public void SetOff(Piece piece, Square square)
+    public void SetOff(Piece piece, int square)
     {
         var index = Index(piece);
-        var mask = ~(1ul << square.SquareIndex);
+        var mask = ~(1ul << square);
         _boards[index] &= mask;        
     }
 
-    public void SetOn(Piece piece, Square square)
+    public void SetOn(Piece piece, int square)
     {
         var index = Index(piece);
 
-        var value = 1ul << square.SquareIndex;
+        var value = 1ul << square;
 
         _boards[index] |= value;        
     }
@@ -138,9 +138,9 @@ public class Bitboards
         return index;
     }
 
-    public bool SquareOccupied(Square squareToTest)
+    public bool SquareOccupied(int squareToTest)
     {       
-        return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest.SquareIndex)) > 0);
+        return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest)) > 0);
     }
 
     public Piece? PieceAtSquare(int squareToTest)
