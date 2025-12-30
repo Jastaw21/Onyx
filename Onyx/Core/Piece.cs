@@ -25,9 +25,43 @@ public static class Types
     public static int King = 1<< 4;
     public static int Queen = 1<< 5;
     public static int IsBlack = 1 << 6;
+
+    public static sbyte MakePiece(int piece, bool isBlack) => (sbyte)(piece | (isBlack ? IsBlack : 0));
+    
+    public static int PieceType(sbyte piece) => piece & 0x3f;
+    public static bool IsWhite(sbyte piece) => (piece & IsBlack) == 0;
+
+    public static sbyte WP = (sbyte)Pawn;
+    public static sbyte WN = (sbyte)Knight;
+    public static sbyte WB = (sbyte)Bishop;
+    public static sbyte WR = (sbyte)Rook;
+    public static sbyte WK = (sbyte)King;
+    public static sbyte WQ = (sbyte)Queen;
+    
+    public static sbyte BP = (sbyte)((sbyte)Pawn | (sbyte)IsBlack);
+    public static sbyte BN = (sbyte)((sbyte)Knight | (sbyte)IsBlack);
+    public static sbyte BB = (sbyte)((sbyte)Bishop | (sbyte)IsBlack);
+    public static sbyte BR = (sbyte)((sbyte)Rook | (sbyte)IsBlack);
+    public static sbyte BK = (sbyte)((sbyte)King | (sbyte)IsBlack);
+    public static sbyte BQ = (sbyte)((sbyte)Queen | (sbyte)IsBlack);
+    
+    public readonly static sbyte[] AllPieces =
+    [
+        WP, WB, WK, WQ, WN, WR,
+        BP, BB, BK, BQ, BN, BR
+    ];
+    private static sbyte[] _whitePieces =
+    [
+        WP, WB, WK, WQ, WN, WR
+    ];
+    private static sbyte[] _blackPieces =
+    [
+        BP, BB, BK, BQ, BN, BR
+    ];
+    
+    private static sbyte[] _whitePromotionTypes = [WB, WQ, WR, WN];
+    private static sbyte[] _blackPromotionTypes = [BB, BQ, BR, BN];
 }
-
-
 
 public struct Piece
 {
