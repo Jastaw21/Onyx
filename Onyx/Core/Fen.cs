@@ -59,35 +59,35 @@ public static class Fen
     {
         return pieceChar switch
         {
-            'K' => Pc.WK,
-            'B' => Pc.WB,
-            'R' => Pc.WR,
-            'N' => Pc.WN,
-            'P' => Pc.WP,
-            'Q' => Pc.WQ,
-            'k' => Pc.BK,
-            'b' => Pc.BB,
-            'r' => Pc.BR,
-            'n' => Pc.BN,
-            'p' => Pc.BP,
-            'q' => Pc.BQ,
+            'K' => Piece.WK,
+            'B' => Piece.WB,
+            'R' => Piece.WR,
+            'N' => Piece.WN,
+            'P' => Piece.WP,
+            'Q' => Piece.WQ,
+            'k' => Piece.BK,
+            'b' => Piece.BB,
+            'r' => Piece.BR,
+            'n' => Piece.BN,
+            'p' => Piece.BP,
+            'q' => Piece.BQ,
             _ => throw new ArgumentException()
         };
     }
 
     public static char GetCharFromPiece(sbyte piece)
     {
-        var lowerVersion = Pc.PieceType(piece) switch
+        var lowerVersion = Piece.PieceType(piece) switch
         {
-            Pc.King => 'k',
-            Pc.Queen => 'q',
-            Pc.Bishop => 'b',
-            Pc.Rook => 'r',
-            Pc.Knight => 'n',
-            Pc.Pawn => 'p',
+            Piece.King => 'k',
+            Piece.Queen => 'q',
+            Piece.Bishop => 'b',
+            Piece.Rook => 'r',
+            Piece.Knight => 'n',
+            Piece.Pawn => 'p',
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        return Pc.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;
+        return Piece.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;
     }
 }

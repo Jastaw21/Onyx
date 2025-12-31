@@ -29,7 +29,7 @@ public static class MoveGenerator
 
     public static int GetMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
-        if (Pc.PieceType(piece) != Pc.Pawn)
+        if (Piece.PieceType(piece) != Piece.Pawn)
         {
             GenerateBasicMoves(piece, square, board, moveBuffer, ref count);
             GenerateCastlingMoves(piece, square, board, moveBuffer, ref count);
@@ -61,7 +61,7 @@ public static class MoveGenerator
     public static int GetMoves(bool forWhite, Board board, Span<Move> moveBuffer)
     {
         int moveCount = 0;
-        var pieces = forWhite ? Pc._whitePieces : Pc._blackPieces;
+        var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
         foreach (var piece in pieces)
         {
             GetMoves(piece, board, moveBuffer, ref moveCount);
@@ -73,7 +73,7 @@ public static class MoveGenerator
     private static void GeneratePawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         var rankIndex = RankAndFile.RankIndex(square);
-        var isWhite = Pc.IsWhite(piece);
+        var isWhite = Piece.IsWhite(piece);
         // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
         if ((isWhite && rankIndex == 6) || (!isWhite && rankIndex == 1))
             return;
@@ -112,8 +112,8 @@ public static class MoveGenerator
     private static void GeneratePawnPromotionMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer,
         ref int count)
     {
-        var isWhite = Pc.IsWhite(piece);
-        if (Pc.PieceType(piece) != Pc.Pawn)
+        var isWhite = Piece.IsWhite(piece);
+        if (Piece.PieceType(piece) != Piece.Pawn)
             return;
 
         var rankIndex = RankAndFile.RankIndex(square);
@@ -122,7 +122,7 @@ public static class MoveGenerator
             return;
 
         var offset = isWhite ? 8 : -8;
-        var promotionPieces = isWhite ? Pc._whitePromotionTypes : Pc._blackPromotionTypes;
+        var promotionPieces = isWhite ? Piece._whitePromotionTypes : Piece._blackPromotionTypes;
         foreach (var promotionType in promotionPieces)
         {
             var targetSquare = square + offset;
@@ -143,8 +143,8 @@ public static class MoveGenerator
             var targetSquare = square + offset + 1;
             var pieceAtTarget = board.Bitboards.PieceAtSquare(targetSquare);
             if (pieceAtTarget.HasValue // needs to be a piece there 
-                && Pc.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
-                && Pc.PieceType(pieceAtTarget.Value) != Pc.King) // and not a king
+                && Piece.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
+                && Piece.PieceType(pieceAtTarget.Value) != Piece.King) // and not a king
             {
                 foreach (var promotionType in promotionPieces)
                 {
@@ -159,8 +159,8 @@ public static class MoveGenerator
             var targetSquare = square + offset - 1;
             var pieceAtTarget = board.Bitboards.PieceAtSquare(targetSquare);
             if (pieceAtTarget.HasValue // needs to be a piece there 
-                && Pc.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
-                && Pc.PieceType(pieceAtTarget.Value) != Pc.King) // and not a king
+                && Piece.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
+                && Piece.PieceType(pieceAtTarget.Value) != Piece.King) // and not a king
             {
                 foreach (var promotionType in promotionPieces)
                 {
@@ -173,10 +173,10 @@ public static class MoveGenerator
     private static void GenerateCastlingMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer,
         ref int count)
     {
-        if (Pc.PieceType(piece) != Pc.King || board.CastlingRights == 0)
+        if (Piece.PieceType(piece) != Piece.King || board.CastlingRights == 0)
             return;
 
-        var isWhite = Pc.IsWhite(piece);
+        var isWhite = Piece.IsWhite(piece);
         var expectedSquare = isWhite ? BoardConstants.E1 : BoardConstants.E8;
 
         if (square != expectedSquare)
@@ -190,8 +190,8 @@ public static class MoveGenerator
         // Try kingside
         var pieceAtTargetSquare = board.Bitboards.PieceAtSquare(kingSideRookSquare);
         if (pieceAtTargetSquare.HasValue
-            && Pc.PieceType(pieceAtTargetSquare.Value) == Pc.Rook
-            && Pc.IsWhite(pieceAtTargetSquare.Value) == isWhite)
+            && Piece.PieceType(pieceAtTargetSquare.Value) == Piece.Rook
+            && Piece.IsWhite(pieceAtTargetSquare.Value) == isWhite)
             TryCastling(
                 board,
                 piece,
@@ -208,8 +208,8 @@ public static class MoveGenerator
         // Try queenside
         pieceAtTargetSquare = board.Bitboards.PieceAtSquare(queenSideRookSquare);
         if (pieceAtTargetSquare.HasValue
-            && Pc.PieceType(pieceAtTargetSquare.Value) == Pc.Rook
-            && Pc.IsWhite(pieceAtTargetSquare.Value) == isWhite)
+            && Piece.PieceType(pieceAtTargetSquare.Value) == Piece.Rook
+            && Piece.IsWhite(pieceAtTargetSquare.Value) == isWhite)
             TryCastling(
                 board,
                 piece,
@@ -279,7 +279,7 @@ public static class MoveGenerator
     private static ulong GetMovesUlong(sbyte piece, int square, Board board)
     {
         var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
-        var movingSideOccupancy = board.Bitboards.OccupancyByColour(Pc.IsBlack(piece));
+        var movingSideOccupancy = board.Bitboards.OccupancyByColour(Piece.IsBlack(piece));
         result &= ~movingSideOccupancy;
         return result;
     }

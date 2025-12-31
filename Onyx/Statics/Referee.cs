@@ -6,15 +6,15 @@ public static class Referee
 {
     public static bool MoveIsLegal(Move move, Board position)
     {
-        var isWhite = Pc.IsWhite(move.PieceMoved);
-        var type = Pc.PieceType(move.PieceMoved);
-        if (type == Pc.King)
+        var isWhite = Piece.IsWhite(move.PieceMoved);
+        var type = Piece.PieceType(move.PieceMoved);
+        if (type == Piece.King)
             return FullLegalityCheck(move, position);
 
         // if the board isn't in check, can just check for pinned pieces
         if (!IsInCheck(position.WhiteToMove , position))
         {
-            var relevantKing = isWhite ? Pc.WK : Pc.BK;
+            var relevantKing = isWhite ? Piece.WK : Piece.BK;
             var kingBoard = position.Bitboards.OccupancyByPiece(relevantKing);
             var kingSquare = (int)ulong.TrailingZeroCount(kingBoard);
             
@@ -31,7 +31,7 @@ public static class Referee
     private static bool FullLegalityCheck(Move move, Board position)
     {
         position.ApplyMove(move, false);
-        var result = IsInCheck(Pc.IsWhite(move.PieceMoved), position);
+        var result = IsInCheck(Piece.IsWhite(move.PieceMoved), position);
         position.UndoMove(move, false);
         return !result;
     }
@@ -48,9 +48,9 @@ public static class Referee
 
         // Check Diagonals
         var diagAttacks =
-            MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WB, kingSquare, occupancyWithoutPinnedPiece);
-        var relevantBishop = kingIsWhite ? Pc.BB : Pc.WB;
-        var relevantQueen = kingIsWhite ? Pc.BQ : Pc.WQ;
+            MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, kingSquare, occupancyWithoutPinnedPiece);
+        var relevantBishop = kingIsWhite ? Piece.BB : Piece.WB;
+        var relevantQueen = kingIsWhite ? Piece.BQ : Piece.WQ;
         var diagAttackers =
             (position.Bitboards.OccupancyByPiece(relevantQueen) | position.Bitboards.OccupancyByPiece(relevantBishop)) &
             diagAttacks;
@@ -66,8 +66,8 @@ public static class Referee
 
         // Check Straights
         var straightAttacks =
-            MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WR, kingSquare, occupancyWithoutPinnedPiece);
-        var relevantRook = kingIsWhite ? Pc.BR : Pc.WR;
+            MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WR, kingSquare, occupancyWithoutPinnedPiece);
+        var relevantRook = kingIsWhite ? Piece.BR : Piece.WR;
         var straightAttackers =
             (position.Bitboards.OccupancyByPiece(relevantQueen) | position.Bitboards.OccupancyByPiece(relevantRook)) &
             straightAttacks;
@@ -84,7 +84,7 @@ public static class Referee
 
     public static bool IsInCheck(bool isWhite, Board position)
     {
-        var relevantKing = Pc.MakePiece(Pc.King, isWhite);
+        var relevantKing = Piece.MakePiece(Piece.King, isWhite);
         var kingBitBoard = position.Bitboards.OccupancyByPiece(relevantKing);
         
         var square = ulong.TrailingZeroCount(kingBitBoard);
@@ -127,12 +127,12 @@ public static class Referee
 
 
         // what squares could a bishop attack from where the king currently is?
-        var diagAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WB, square, occupancy);
+        var diagAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, square, occupancy);
 
         // look at the piece types (queen and bishop) that could launch these attacks
         // pre calc the attackers to save makePieceCalls
-        var relevantBishop = byWhite ? Pc.WB : Pc.BB;
-        var relevantQueen = byWhite ? Pc.WQ : Pc.BQ;
+        var relevantBishop = byWhite ? Piece.WB : Piece.BB;
+        var relevantQueen = byWhite ? Piece.WQ : Piece.BQ;
 
         // check the pieces one by one to save some cycles if one does match
         if ((diagAttacks & board.Bitboards.OccupancyByPiece(relevantBishop)) > 0)
@@ -143,21 +143,21 @@ public static class Referee
             return true;
 
         // pre calc the attackers to save makePieceCalls
-        var relevantRook = byWhite ? Pc.WR : Pc.BR;
-        var straightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WR, square, occupancy);
+        var relevantRook = byWhite ? Piece.WR : Piece.BR;
+        var straightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WR, square, occupancy);
         if ((straightAttacks & queenOccupancy) > 0)
             return true;
         var rookOccupancy = board.Bitboards.OccupancyByPiece(relevantRook);
         if ((straightAttacks & rookOccupancy) > 0)
             return true;
 
-        var knightPiece = byWhite ? Pc.WN : Pc.BN;
-        var knightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WN, square, occupancy);
+        var knightPiece = byWhite ? Piece.WN : Piece.BN;
+        var knightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WN, square, occupancy);
         if ((knightAttacks & board.Bitboards.OccupancyByPiece(knightPiece)) > 0)
             return true;
 
         // check pawn attacks
-        var attackingPiece = byWhite ? Pc.WP : Pc.BP;
+        var attackingPiece = byWhite ? Piece.WP : Piece.BP;
         var pawnsBB = board.Bitboards.OccupancyByPiece(attackingPiece);
 
         var fileIndex = RankAndFile.FileIndex(square);
@@ -179,8 +179,8 @@ public static class Referee
             }
         }
 
-        var relevantKing = byWhite ? Pc.WK : Pc.BK;
-        var kingAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Pc.WK, square, occupancy);
+        var relevantKing = byWhite ? Piece.WK : Piece.BK;
+        var kingAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WK, square, occupancy);
         if ((kingAttacks & board.Bitboards.OccupancyByPiece(relevantKing)) > 0)
             return true;
 

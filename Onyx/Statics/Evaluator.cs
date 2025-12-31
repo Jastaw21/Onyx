@@ -5,7 +5,7 @@ namespace Onyx.Statics;
 
 public static class Evaluator
 {
-    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove)
+    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Board board)
     {
         moves.Sort((move, move1) =>
         {
@@ -14,9 +14,9 @@ public static class Evaluator
 
             if (transpositionTableMove.HasValue)
             {
-                if (move.Notation == transpositionTableMove.Value.Notation)
+                if (move.Data == transpositionTableMove.Value.Data)
                     return int.MaxValue;
-                if (move1.Notation == transpositionTableMove.Value.Notation)
+                if (move.Data == transpositionTableMove.Value.Data)
                     return int.MinValue;
             }
 
@@ -36,9 +36,9 @@ public static class Evaluator
     {
         var whiteScore = 0;
         var blackScore = 0;
-        foreach (var piece in Pc._whitePieces)
+        foreach (var piece in Piece._whitePieces)
         {
-            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Pc.PieceTypeIndex(piece)];
+            whiteScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Piece.PieceTypeIndex(piece)];
             
             var placements = board.Bitboards.OccupancyByPiece(piece);
             while (placements > 0)
@@ -50,9 +50,9 @@ public static class Evaluator
             }
         }
 
-        foreach (var piece in Pc._blackPieces)
+        foreach (var piece in Piece._blackPieces)
         {
-            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Pc.PieceTypeIndex(piece)];
+            blackScore += (int)ulong.PopCount(board.Bitboards.OccupancyByPiece(piece)) * PieceValues[Piece.PieceTypeIndex(piece)];
             
             var placements = board.Bitboards.OccupancyByPiece(piece);
             while (placements > 0)
@@ -70,8 +70,8 @@ public static class Evaluator
 
     private static int BishopPairScore(Board board)
     {
-        var whiteBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Pc.WB));
-        var blackBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Pc.BB));
+        var whiteBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Piece.WB));
+        var blackBishops = ulong.PopCount(board.Bitboards.OccupancyByPiece(Piece.BB));
 
         var whiteScore = whiteBishops >= 2 ? 50 : 0;
         var blackScore = blackBishops >= 2 ? 50 : 0;
@@ -178,14 +178,14 @@ public static class Evaluator
 
     private static int[] getArray(sbyte piece)
     {
-        var type = Pc.PieceType(piece);
+        var type = Piece.PieceType(piece);
         return type switch
         {
-            Pc.Pawn => PawnScores,
-            Pc.Knight => KnightScores,
-            Pc.Bishop => BishopScores,
-            Pc.Queen => QueenScores,
-            Pc.Rook => RookScores,
+            Piece.Pawn => PawnScores,
+            Piece.Knight => KnightScores,
+            Piece.Bishop => BishopScores,
+            Piece.Queen => QueenScores,
+            Piece.Rook => RookScores,
             _ => ZeroScores
         };
     }

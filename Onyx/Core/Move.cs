@@ -33,10 +33,10 @@ public struct Move
         {
             PromotedPiece = char.ToLower(notation[4]) switch
             {
-                'q' => Pc.MakePiece(Pc.Queen, Pc.IsWhite(PieceMoved)),
-                'b' => Pc.MakePiece(Pc.Bishop, Pc.IsWhite(PieceMoved)),
-                'n' => Pc.MakePiece(Pc.Knight, Pc.IsWhite(PieceMoved)),
-                'r' => Pc.MakePiece(Pc.Rook, Pc.IsWhite(PieceMoved)),
+                'q' => Piece.MakePiece(Piece.Queen, Piece.IsWhite(PieceMoved)),
+                'b' => Piece.MakePiece(Piece.Bishop, Piece.IsWhite(PieceMoved)),
+                'n' => Piece.MakePiece(Piece.Knight, Piece.IsWhite(PieceMoved)),
+                'r' => Piece.MakePiece(Piece.Rook, Piece.IsWhite(PieceMoved)),
                 _ => PromotedPiece
             };
         }

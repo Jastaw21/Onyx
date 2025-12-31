@@ -1,6 +1,6 @@
 ﻿namespace Onyx.Core;
 
-public static class Pc
+public static class Piece
 {
     // first 0th-3rd bits encode the type, 4th the colour
     public const int Pawn = 1;

@@ -86,9 +86,9 @@ public class RefereeTests
     public void CantMoveIntoCheck()
     {
         var board = new Board("qrn1bnrb/pppp1ppp/N7/3k4/4p3/5B2/PPPPPPPP/QR1K1NRB b - - 0 1");
-        var exposeKingMove = new Move(Pc.BP, "e4e3");
-        var normalKingMove = new Move(Pc.BK, "d5d6");
-        var moveIntoCheck = new Move(Pc.BK, "d5c5");
+        var exposeKingMove = new Move(Piece.BP, "e4e3");
+        var normalKingMove = new Move(Piece.BK, "d5d6");
+        var moveIntoCheck = new Move(Piece.BK, "d5c5");
         Assert.Multiple(() =>
         {
             Assert.That(Referee.MoveIsLegal(exposeKingMove, board), Is.False);
@@ -118,7 +118,7 @@ public class RefereeTests
     {
         var fen = "rnbq1k1r/pp1Pbppp/2p4B/8/2B5/8/PPP1NnPP/RN1QK2R b KQ - 2 8";
         var board = new Board(fen);
-        var move = new Move(Pc.BP, "g7h6");
+        var move = new Move(Piece.BP, "g7h6");
         Assert.That(Referee.MoveIsLegal(move, board), Is.True);
     }
 }

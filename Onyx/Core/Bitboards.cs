@@ -64,12 +64,12 @@ public class Bitboards
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(sbyte piece)
     {
-        return _boards[Pc.BitboardIndex(piece)];
+        return _boards[Piece.BitboardIndex(piece)];
     }
 
     public ulong OccupancyByColour(bool forBlack)
     {
-        var pieces = forBlack ? Pc._blackPieces : Pc._whitePieces;
+        var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
         return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
     }
 
@@ -80,7 +80,7 @@ public class Bitboards
 
     public void SetByPiece(sbyte piece, ulong boardByPiece)
     {
-        _boards[Pc.BitboardIndex(piece)] = boardByPiece;       
+        _boards[Piece.BitboardIndex(piece)] = boardByPiece;       
     }
 
     public void SetAllOff(int square)
@@ -95,12 +95,12 @@ public class Bitboards
 
     public void SetOff(sbyte piece, int square)
     {
-        _boards[Pc.BitboardIndex(piece)] &= ~(1ul << square);        
+        _boards[Piece.BitboardIndex(piece)] &= ~(1ul << square);        
     }
 
     public void SetOn(sbyte piece, int square)
     {
-        _boards[Pc.BitboardIndex(piece)] |= 1ul << square;        
+        _boards[Piece.BitboardIndex(piece)] |= 1ul << square;        
     }
 
     public bool SquareOccupied(int squareToTest)
@@ -111,7 +111,7 @@ public class Bitboards
     public sbyte? PieceAtSquare(int squareToTest)
     {    
         ulong mask = 1UL << squareToTest;
-        var pieces = Pc.AllPieces;
+        var pieces = Piece.AllPieces;
         foreach (var piece in pieces)
         {
             var board = OccupancyByPiece(piece);            

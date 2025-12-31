@@ -102,7 +102,7 @@ public class Zobrist
 
         if (move.IsCastling)
         {
-            var affectedRook = Pc.IsWhite(move.PieceMoved) ? Pc.WR : Pc.BR;
+            var affectedRook = Piece.IsWhite(move.PieceMoved) ? Piece.WR : Piece.BR;
 
             var rookChar = Fen.GetCharFromPiece(affectedRook);
             var rookArray = GetArrayFromChar(rookChar);

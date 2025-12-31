@@ -92,21 +92,21 @@ public static class MagicBitboards
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetMovesByPiece(sbyte piece, int square, ulong boardState)
     {
-        var type = Pc.PieceType(piece);       
+        var type = Piece.PieceType(piece);       
         
         switch (type)
         {
-            case Pc.Queen:
+            case Piece.Queen:
                 return GetDiagAttacks(square, boardState) | GetStraightAttacks(square, boardState);
-            case Pc.Rook:
+            case Piece.Rook:
                 return GetStraightAttacks(square, boardState);
-            case Pc.Bishop:
+            case Piece.Bishop:
                 return GetDiagAttacks(square, boardState);
-            case Pc.Pawn:
-                return GetPawnMoves(Pc.IsWhite(piece), square, boardState);
-            case Pc.Knight:
+            case Piece.Pawn:
+                return GetPawnMoves(Piece.IsWhite(piece), square, boardState);
+            case Piece.Knight:
                 return _knightAttacks[square];
-            case Pc.King:               
+            case Piece.King:               
                 return _kingAttacks[square];
             default:
                 throw new ArgumentOutOfRangeException();
