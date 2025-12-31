@@ -26,6 +26,7 @@ public enum TokenType
     IsReady,
     Movestogo,
     Quit,
+    Stop,
     Divide,
     
     DebugBoard

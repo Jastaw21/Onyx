@@ -5,7 +5,10 @@ namespace Onyx.UCI;
 
 public class UciInterface
 {
-    private readonly Engine _player = new Engine();
+    private readonly Engine _player = new();
+    private Thread _engineThread;
+    private CancellationTokenSource _searchCTS;
+
 
     public Engine Player => _player;
 
@@ -51,6 +54,9 @@ public class UciInterface
             case DebugCommand:
                 Console.WriteLine(_player.Board.GetFen());
                 break;
+            case StopCommand:
+                StopSearch();
+                break;
         }
 
         Console.Out.Flush();
@@ -64,6 +70,8 @@ public class UciInterface
 
     private void HandleGo(GoCommand command)
     {
+        StopSearch();
+        _searchCTS = new CancellationTokenSource();
         var depth = command.Depth ?? 5; // Default to 5 if not specified
         if (command.IsPerft)
         {
@@ -84,14 +92,36 @@ public class UciInterface
         }
         else
         {
-            var move = _player.CalcAndDispatchTimedSearch(depth, command.TimeControl);
-            var result = $"bestmove {move.bestMove}";
-            Logger.Log(LogType.UCISent, result);
-            var infoString = GetInf(move.stats);
-            Logger.Log(LogType.UCISent, infoString);
-            Console.WriteLine($"bestmove {move.bestMove}");
-            Console.WriteLine(infoString);
+            _engineThread = new Thread(() =>
+            {
+                try
+                {
+                    var move = _player.CalcAndDispatchTimedSearch(depth, command.TimeControl, _searchCTS.Token);
+                    
+                    var result = $"bestmove {move.bestMove}";
+                    var infoString = GetInf(move.stats);
+                    
+                    Console.WriteLine($"bestmove {move.bestMove}");
+                    Console.WriteLine(infoString);
+                    
+                    Logger.Log(LogType.UCISent, result);
+                    Logger.Log(LogType.UCISent, infoString);
+                }
+
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("search cancelled");
+                }
+            });
+            
+            _engineThread.Start();
         }
+    }
+
+    private void StopSearch()
+    {
+        _searchCTS?.Cancel();
+        _engineThread?.Join(1000);
     }
 
     private string GetInf(SearchStatistics stats)

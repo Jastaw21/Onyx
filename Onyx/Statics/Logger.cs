@@ -43,3 +43,4 @@ public static class Logger
         File.AppendAllText(logFile, logEntry + Environment.NewLine);
     }
 }
+

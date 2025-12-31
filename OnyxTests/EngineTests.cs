@@ -78,7 +78,7 @@ public class EngineTests
         var fen = "6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1";
         var engine = new Engine();
         engine.SetPosition(fen);
-        engine.CalcAndDispatchTimedSearch(3, new TimeControl());
+        engine.CalcAndDispatchTimedSearch(3, new TimeControl(),new CancellationToken(false));
         Assert.That(engine.Position, Is.EqualTo(fen));
     }
 
@@ -86,7 +86,7 @@ public class EngineTests
     public void MoveResetExtension()
     {
         var board = new Board("5k2/4pp1p/p5pN/1p1q4/4b3/P1Q4P/1PP3P1/7K w - - 0 1");
-        var move = new Move(Pc.WQ, "c3h8");
+        var move = new Move(Piece.WQ, "c3h8");
         var fenPre = board.GetFen();
         board.ApplyMove(move);
         var result = Referee.IsCheckmate(board);

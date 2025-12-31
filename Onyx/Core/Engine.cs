@@ -41,11 +41,12 @@ public readonly struct SearchResult
     public static SearchResult Abort => new(false, 0);
 }
 
-internal class TimerManager
+public class TimerManager
 {
     private Stopwatch _stopwatch = null!;
     private bool _started;
     private long _milliseconds;
+    public bool instantStopFlag = false;
 
     public void Start(long milliseconds_)
     {
@@ -73,6 +74,7 @@ internal class TimerManager
     {
         get
         {
+            if (instantStopFlag) return true;
             if (!_started)
                 return false;
             return _stopwatch.ElapsedMilliseconds > _milliseconds;
@@ -82,21 +84,29 @@ internal class TimerManager
 
 public class Engine
 {
-    public Board Board;
-    public TranspositionTable TranspositionTable { get; private set; }
-    public string Position => Board.GetFen();
-
-    private SearchStatistics _statistics;
-    private int _currentSearchId;
-    private TimerManager _timerManager = new();
     public string Version { get; } = "0.5.0";
 
+    // data members
+    public Board Board;
+    public TranspositionTable TranspositionTable { get; private set; }
+    public TimerManager _timerManager = new();
+    private const int MateScore = 30000;
+    private CancellationToken ct; // for threading
+
+    // search members
+    private SearchStatistics _statistics;
+    private int _currentSearchId;
+
+    public string Position => Board.GetFen();
+
+    // constructor
     public Engine()
     {
         Board = new Board();
         TranspositionTable = new TranspositionTable();
     }
 
+    // UCI Interface methods
     public void SetPosition(string fen)
     {
         Board = new Board(fen);
@@ -112,6 +122,14 @@ public class Engine
         PerftSearcher.PerftDivide(Board, depth);
     }
 
+    public void Reset()
+    {
+        _statistics = new SearchStatistics();
+        Board = new Board();
+        _timerManager = new TimerManager();
+    }
+
+    // public search methods
     public (Move bestMove, int score, SearchStatistics stats) TimedSearch(int depth, long timeMS)
     {
         _timerManager.Start(timeMS);
@@ -129,6 +147,10 @@ public class Engine
                 _statistics.RunTime = _timerManager.Elapsed;
                 return (bestMove, bestScore, _statistics);
             }
+            
+            // error thrown
+            if (ct.IsCancellationRequested)
+                return (bestMove, bestScore, _statistics);
 
             var searchResult = ExecuteSearch(i, true);
             if (!searchResult.completed) continue;
@@ -145,9 +167,10 @@ public class Engine
     }
 
     public (Move bestMove, int score, SearchStatistics stats) CalcAndDispatchTimedSearch(int depth,
-        TimeControl timeControl)
+        TimeControl timeControl, CancellationToken cancellationToken)
     {
-        var relevantTimeControl = Board.WhiteToMove  ? timeControl.Wtime : timeControl.Btime;
+        ct = cancellationToken;
+        var relevantTimeControl = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
 
         if (relevantTimeControl is null)
         {
@@ -161,6 +184,22 @@ public class Engine
         return (searchResult.bestMove, searchResult.score, _statistics);
     }
 
+    public (Move bestMove, int score) DepthSearch(int depth)
+    {
+        _timerManager.Start();
+        _statistics = new SearchStatistics
+        {
+            Depth = depth
+        };
+        _currentSearchId++;
+
+        var searchResult = ExecuteSearch(depth, false);
+        _statistics.RunTime = _timerManager.Elapsed;
+        Logger.Log(LogType.EngineLog, _statistics);
+        return (searchResult.bestMove, searchResult.score);
+    }
+
+    // timed saerch methods
     private int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
     {
         var xMovesRemaining = MovesRemaining(Board, timeControl);
@@ -187,21 +226,7 @@ public class Engine
         return Math.Max(remainingTimeForTurnToMove - Math.Max(remainingTimeForTurnToMove / 20, 100), 0);
     }
 
-    public (Move bestMove, int score) DepthSearch(int depth)
-    {
-        _timerManager.Start();
-        _statistics = new SearchStatistics
-        {
-            Depth = depth
-        };
-        _currentSearchId++;
-
-        var searchResult = ExecuteSearch(depth, false);
-        _statistics.RunTime = _timerManager.Elapsed;
-        Logger.Log(LogType.EngineLog, _statistics);
-        return (searchResult.bestMove, searchResult.score);
-    }
-
+    
     private (bool completed, Move bestMove, int score)
         ExecuteSearch(int depth, bool timed)
     {
@@ -224,7 +249,7 @@ public class Engine
                 return (false, default, 0);
 
             var score = -result.Value;
-            
+
             if (score > bestScore)
             {
                 bestScore = score;
@@ -237,14 +262,13 @@ public class Engine
         return (true, bestMove, bestScore);
     }
 
-    private SearchResult AlphaBeta(int depth,
-        int alpha,
-        int beta,
-        Board board,
-        bool timed, int ply)
+    private SearchResult AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply)
     {
-        if (timed && _timerManager.ShouldStop)
-            return SearchResult.Abort;
+        if ((_statistics.Nodes & 2047) == 0)
+        {
+            if ((timed && _timerManager.ShouldStop) || ct.IsCancellationRequested )
+                return SearchResult.Abort;
+        }
 
         _statistics.Nodes++;
 
@@ -267,7 +291,6 @@ public class Engine
                 return new SearchResult(true, -(MateScore - ply));
             }
 
-            ;
             return new SearchResult(true, Evaluator.Evaluate(board));
         }
 
@@ -286,7 +309,7 @@ public class Engine
             }
         }
 
-        Evaluator.SortMoves(moves, ttMove);
+        Evaluator.SortMoves(moves, ttMove, board);
 
         Move bestMove = default;
         var legalMoveCount = 0;
@@ -382,6 +405,7 @@ public class Engine
                         bestMove = entry.Value.bestMove;
                         return true;
                     }
+
                     break;
             }
         }
@@ -389,14 +413,5 @@ public class Engine
         searchResult = default;
         bestMove = default;
         return false;
-    }
-
-    private const int MateScore = 30000;
-
-    public void Reset()
-    {
-        _statistics = new SearchStatistics();
-        Board = new Board();
-        _timerManager = new TimerManager();
     }
 }

@@ -43,6 +43,8 @@ public class UciParser
                 case TokenType.Quit:
                     Environment.Exit(0);
                     break;
+                case TokenType.Stop:
+                    return new StopCommand();
                 case TokenType.DebugBoard:
                     return new DebugCommand();
                 default:
