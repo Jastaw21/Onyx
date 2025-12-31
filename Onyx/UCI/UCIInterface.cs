@@ -8,8 +8,7 @@ public class UciInterface
     private readonly Engine _player = new();
     private Thread _engineThread;
     private CancellationTokenSource _searchCTS;
-
-
+    
     public Engine Player => _player;
 
     public void HandleCommand(string commandString)
@@ -22,7 +21,6 @@ public class UciInterface
             Console.WriteLine($"Unknown command {commandString}");
             return;
         }
-
         DispatchCommand(command);
     }
 
@@ -31,7 +29,7 @@ public class UciInterface
         switch (command)
         {
             case UciCommand:
-                List<string> lines = [$"id name Onyx {_player.Version}", "id author JackWeddell", "uciok"];
+                List<string> lines = [$"id name Onyx {Engine.Version}", "id author JackWeddell", "uciok"];
                 foreach (var line in lines)
                 {
                     Logger.Log(LogType.UCISent, line);
@@ -72,18 +70,20 @@ public class UciInterface
     {
         StopSearch();
         _searchCTS = new CancellationTokenSource();
-        var depth = command.Depth ?? 5; // Default to 5 if not specified
-        if (command.IsPerft)
+        var depth = command.Depth ?? null; // Default to 5 if not specified
+        if (command.IsPerft && depth != null)
         {
             if (command.IsPerftDivide)
             {
-                _player.PerftDivide(depth);
+                _player.PerftDivide(depth.Value);
             }
             else
             {
                 for (var i = 1; i <= depth; i++)
                 {
+                    
                     var perftResult = _player.Perft(i);
+              
                     var result = $"Depth {i} :  {perftResult}";
                     Logger.Log(LogType.UCISent, result);
                     Console.WriteLine($"Depth {i} :  {perftResult}");
@@ -102,7 +102,7 @@ public class UciInterface
                         MaxDepth = depth,
                         TimeControl = command.TimeControl
                     });
-                    
+                   
                     var result = $"bestmove {move.BestMove}";
                     var infoString = GetInf(move.Statistics);
                     
@@ -119,6 +119,7 @@ public class UciInterface
                 }
             });
             
+           
             _engineThread.Start();
         }
     }

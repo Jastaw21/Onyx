@@ -9,7 +9,7 @@ public static class Program
     public static void Main()
     {
         var engine = new UciInterface();
-
+       
         var command = string.Empty;
         while (command != "quit")
         {

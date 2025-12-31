@@ -5,27 +5,20 @@ namespace Onyx.Core;
 
 public class Engine
 {
-    public string Version { get; } = "0.5.0";
+    public static string Version => "0.6.0";
 
     // data members
-    public Board Board;
-    public TranspositionTable TranspositionTable { get; private set; }
-    public TimerManager _timerManager = new();
+    public Board Board = new();
+    private TranspositionTable TranspositionTable { get; } = new();
+    private TimerManager TimerManager { get; set; } = new();
     private const int MateScore = 30000;
-    private CancellationToken ct; // for threading
+    private CancellationToken _ct; // for threading
 
     // search members
     private SearchStatistics _statistics;
     private int _currentSearchId;
 
     public string Position => Board.GetFen();
-
-
-    public Engine()
-    {
-        Board = new Board();
-        TranspositionTable = new TranspositionTable();
-    }
 
     // UCI Interface methods
     public void SetPosition(string fen)
@@ -47,14 +40,14 @@ public class Engine
     {
         _statistics = new SearchStatistics();
         Board = new Board();
-        _timerManager = new TimerManager();
+        TimerManager = new TimerManager();
     }
 
     public SearchResults Search(SearchParameters searchParameters)
     {
         _statistics = new SearchStatistics();
         _currentSearchId++;
-        ct = searchParameters.CancellationToken;
+        _ct = searchParameters.CancellationToken;
 
         long timeLimit = long.MaxValue;
         var isTimed = false;
@@ -63,45 +56,45 @@ public class Engine
             timeLimit = searchParameters.TimeLimit.Value;
             isTimed = true;
         }
-        
+
         else if (searchParameters.TimeControl.HasValue)
         {
             timeLimit = TimeBudgetPerMove(searchParameters.TimeControl.Value);
             isTimed = true;
         }
 
-        _timerManager.Start(timeLimit);
+        TimerManager.Start(timeLimit);
         int depthLimit = searchParameters.MaxDepth ?? 100;
         return IterativeDeepeningSearch(depthLimit, isTimed);
     }
 
-    public SearchResults IterativeDeepeningSearch(int depthLimit, bool isTimed)
+    private SearchResults IterativeDeepeningSearch(int depthLimit, bool isTimed)
     {
         Move bestMove = default;
         var bestScore = 0;
 
-        for (var i = 1; i <= depthLimit; i++)
+        for (var depth = 1; depth <= depthLimit; depth++)
         {
             // time out
-            if (isTimed && _timerManager.ShouldStop)
+            if (isTimed && TimerManager.ShouldStop)
             {
-                _statistics.RunTime = _timerManager.Elapsed;
+                _statistics.RunTime = TimerManager.Elapsed;
                 return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
             }
 
-            // error thrown
-            if (ct.IsCancellationRequested)
+            // stop flag thrown from gui, return best so far
+            if (_ct.IsCancellationRequested)
                 return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
 
-            var searchResult = ExecuteSearch(i, isTimed);
+            var searchResult = ExecuteSearch(depth, isTimed);
             if (!searchResult.completed) continue;
 
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
-            _statistics.Depth = i;
+            _statistics.Depth = depth;
         }
 
-        _statistics.RunTime = _timerManager.Elapsed;
+        _statistics.RunTime = TimerManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
 
         return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
@@ -111,23 +104,29 @@ public class Engine
     // timed saerch methods
     private int TimeBudgetPerMove(TimeControl timeControl)
     {
-        var xMovesRemaining = MovesRemaining(Board, timeControl);
-        var relevantTimeControl = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-        var timeBudgetPerMove = CalculateRemainingTime(relevantTimeControl.Value);
+        var time = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
+        var increment = Board.WhiteToMove ? timeControl.Winc : timeControl.Binc;
 
-        var baseTime = timeBudgetPerMove / xMovesRemaining;
-        var maxTime = timeBudgetPerMove / 3;
+        var safeInc = increment ?? 0;
 
-        return Math.Clamp(baseTime, 100, maxTime);
+        int movesToGo = timeControl.movesToGo ?? MovesRemaining(Board);
+
+        var baseTime = time / movesToGo + safeInc * 0.8;
+
+        // use max of 20% remaining time
+        var safeMax = time * 0.2;
+        int finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
+        
+        return Math.Max(finalBudget, 50); 
     }
 
-    private static int MovesRemaining(Board board, TimeControl tc)
+    private static int MovesRemaining(Board board)
     {
         var ply = board.FullMoves * 2;
 
-        if (ply < 40) return 30; // opening
-        if (ply < 80) return 20; // middlegame
-        return 12; // endgame
+        if (ply < 20) return 40; // opening
+        if (ply < 60) return 30; // middlegame
+        return 20; // endgame
     }
 
     private int CalculateRemainingTime(int remainingTimeForTurnToMove)
@@ -176,7 +175,7 @@ public class Engine
     {
         if ((_statistics.Nodes & 2047) == 0)
         {
-            if ((timed && _timerManager.ShouldStop) || ct.IsCancellationRequested)
+            if ((timed && TimerManager.ShouldStop) || _ct.IsCancellationRequested)
                 return SearchFlag.Abort;
         }
 
