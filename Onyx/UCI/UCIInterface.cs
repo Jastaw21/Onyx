@@ -96,12 +96,17 @@ public class UciInterface
             {
                 try
                 {
-                    var move = _player.CalcAndDispatchTimedSearch(depth, command.TimeControl, _searchCTS.Token);
+                    var move = _player.Search(new SearchParameters
+                    {
+                        CancellationToken =  _searchCTS.Token, 
+                        MaxDepth = depth,
+                        TimeControl = command.TimeControl
+                    });
                     
-                    var result = $"bestmove {move.bestMove}";
-                    var infoString = GetInf(move.stats);
+                    var result = $"bestmove {move.BestMove}";
+                    var infoString = GetInf(move.Statistics);
                     
-                    Console.WriteLine($"bestmove {move.bestMove}");
+                    Console.WriteLine($"bestmove {move.BestMove}");
                     Console.WriteLine(infoString);
                     
                     Logger.Log(LogType.UCISent, result);

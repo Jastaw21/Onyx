@@ -59,11 +59,12 @@ public class UciParser
     private Command? ParseGoCommand()
     {
         var command = new GoCommand();
-
+        TimeControl tc = new TimeControl();
         while (Peek().Type != TokenType.Eof)
         {
             var token = Peek();
-
+            
+            
             switch (token.Type)
             {
                 case TokenType.Depth:
@@ -87,35 +88,38 @@ public class UciParser
                 case TokenType.Wtime:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        command.TimeControl.Wtime = int.Parse(Consume().Value);
+                        tc.Wtime = int.Parse(Consume().Value);
                     break;
 
                 case TokenType.Btime:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        command.TimeControl.Btime = int.Parse(Consume().Value);
+                        tc.Btime = int.Parse(Consume().Value);
                     break;
 
                 case TokenType.Winc:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        command.TimeControl.Winc = int.Parse(Consume().Value);
+                        tc.Winc = int.Parse(Consume().Value);
                     break;
 
                 case TokenType.Binc:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        command.TimeControl.Binc = int.Parse(Consume().Value);
+                        tc.Binc = int.Parse(Consume().Value);
                     break;
 
                 case TokenType.Movestogo:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        command.TimeControl.movesToGo = int.Parse(Consume().Value);
+                        tc.movesToGo = int.Parse(Consume().Value);
                     break;
             }
         }
 
+        if (tc.Wtime > 0 && tc.Btime > 0)
+            command.TimeControl = tc;
+        else command.TimeControl = null;
         return command;
     }
 

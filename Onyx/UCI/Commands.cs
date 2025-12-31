@@ -19,7 +19,7 @@ public record GoCommand : Command
 {
     public bool IsPerft;
     public int? Depth;
-    public TimeControl TimeControl;
+    public TimeControl? TimeControl;
     public bool IsPerftDivide;
 }
 

@@ -1,4 +1,7 @@
 ﻿using Onyx.Statics;
+using Onyx.UCI;
+
+namespace Onyx.Core;
 
 public struct SearchStatistics : ILoggable
 {
@@ -22,16 +25,18 @@ public struct SearchStatistics : ILoggable
     }
 }
 
-public readonly struct SearchResult
+
+public struct SearchParameters
 {
-    public bool Completed { get; }
-    public int Value { get; }
+    public int? MaxDepth;
+    public long? TimeLimit;
+    public TimeControl? TimeControl;
+    public CancellationToken CancellationToken;
+}
 
-    public SearchResult(bool completed, int value)
-    {
-        Completed = completed;
-        Value = value;
-    }
-
-    public static SearchResult Abort => new(false, 0);
+public struct SearchResults
+{
+    public Move BestMove;
+    public int Score;
+    public SearchStatistics Statistics;
 }

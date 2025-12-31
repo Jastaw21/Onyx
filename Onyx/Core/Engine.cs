@@ -20,7 +20,7 @@ public class Engine
 
     public string Position => Board.GetFen();
 
-    // constructor
+
     public Engine()
     {
         Board = new Board();
@@ -50,30 +50,50 @@ public class Engine
         _timerManager = new TimerManager();
     }
 
-    // public search methods
-    public (Move bestMove, int score, SearchStatistics stats) TimedSearch(int depth, long timeMS)
+    public SearchResults Search(SearchParameters searchParameters)
     {
-        _timerManager.Start(timeMS);
         _statistics = new SearchStatistics();
         _currentSearchId++;
+        ct = searchParameters.CancellationToken;
 
+        long timeLimit = long.MaxValue;
+        var isTimed = false;
+        if (searchParameters.TimeLimit.HasValue)
+        {
+            timeLimit = searchParameters.TimeLimit.Value;
+            isTimed = true;
+        }
+        
+        else if (searchParameters.TimeControl.HasValue)
+        {
+            timeLimit = TimeBudgetPerMove(searchParameters.TimeControl.Value);
+            isTimed = true;
+        }
+
+        _timerManager.Start(timeLimit);
+        int depthLimit = searchParameters.MaxDepth ?? 100;
+        return IterativeDeepeningSearch(depthLimit, isTimed);
+    }
+
+    public SearchResults IterativeDeepeningSearch(int depthLimit, bool isTimed)
+    {
         Move bestMove = default;
         var bestScore = 0;
 
-        for (var i = 1; i <= depth; i++)
+        for (var i = 1; i <= depthLimit; i++)
         {
             // time out
-            if (_timerManager.ShouldStop)
+            if (isTimed && _timerManager.ShouldStop)
             {
                 _statistics.RunTime = _timerManager.Elapsed;
-                return (bestMove, bestScore, _statistics);
+                return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
             }
 
             // error thrown
             if (ct.IsCancellationRequested)
-                return (bestMove, bestScore, _statistics);
+                return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
 
-            var searchResult = ExecuteSearch(i, true);
+            var searchResult = ExecuteSearch(i, isTimed);
             if (!searchResult.completed) continue;
 
             bestMove = searchResult.bestMove;
@@ -82,48 +102,17 @@ public class Engine
         }
 
         _statistics.RunTime = _timerManager.Elapsed;
-
         Logger.Log(LogType.EngineLog, _statistics);
-        return (bestMove, bestScore, _statistics);
+
+        return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
     }
 
-    public (Move bestMove, int score, SearchStatistics stats) CalcAndDispatchTimedSearch(int depth,
-        TimeControl timeControl, CancellationToken cancellationToken)
-    {
-        ct = cancellationToken;
-        var relevantTimeControl = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-
-        if (relevantTimeControl is null)
-        {
-            var result = DepthSearch(depth);
-            _statistics.Depth = depth;
-            return (result.bestMove, result.score, _statistics);
-        }
-
-        var timeBudgetPerMove = TimeBudgetPerMove(timeControl, relevantTimeControl);
-        var searchResult = TimedSearch(20, timeBudgetPerMove);
-        return (searchResult.bestMove, searchResult.score, _statistics);
-    }
-
-    public (Move bestMove, int score) DepthSearch(int depth)
-    {
-        _timerManager.Start();
-        _statistics = new SearchStatistics
-        {
-            Depth = depth
-        };
-        _currentSearchId++;
-
-        var searchResult = ExecuteSearch(depth, false);
-        _statistics.RunTime = _timerManager.Elapsed;
-        Logger.Log(LogType.EngineLog, _statistics);
-        return (searchResult.bestMove, searchResult.score);
-    }
 
     // timed saerch methods
-    private int TimeBudgetPerMove(TimeControl timeControl, int? relevantTimeControl)
+    private int TimeBudgetPerMove(TimeControl timeControl)
     {
         var xMovesRemaining = MovesRemaining(Board, timeControl);
+        var relevantTimeControl = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
         var timeBudgetPerMove = CalculateRemainingTime(relevantTimeControl.Value);
 
         var baseTime = timeBudgetPerMove / xMovesRemaining;
@@ -183,12 +172,12 @@ public class Engine
         return (true, bestMove, bestScore);
     }
 
-    private SearchResult AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply)
+    private SearchFlag AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply)
     {
         if ((_statistics.Nodes & 2047) == 0)
         {
             if ((timed && _timerManager.ShouldStop) || ct.IsCancellationRequested)
-                return SearchResult.Abort;
+                return SearchFlag.Abort;
         }
 
         _statistics.Nodes++;
@@ -200,8 +189,8 @@ public class Engine
         if (moveCount == 0)
         {
             return Referee.IsCheckmate(board)
-                ? new SearchResult(true, -(MateScore - ply))
-                : new SearchResult(true, 0); // stalemate
+                ? new SearchFlag(true, -(MateScore - ply))
+                : new SearchFlag(true, 0); // stalemate
         }
 
         // leaf node
@@ -209,10 +198,10 @@ public class Engine
         {
             if (Referee.IsCheckmate(board))
             {
-                return new SearchResult(true, -(MateScore - ply));
+                return new SearchFlag(true, -(MateScore - ply));
             }
 
-            return new SearchResult(true, Evaluator.Evaluate(board));
+            return new SearchFlag(true, Evaluator.Evaluate(board));
         }
 
         var alphaOrig = alpha;
@@ -244,7 +233,7 @@ public class Engine
             board.UndoMove(move);
 
             if (!child.Completed)
-                return SearchResult.Abort;
+                return SearchFlag.Abort;
 
             var eval = -child.Value;
 
@@ -290,10 +279,10 @@ public class Engine
         _statistics.TtStores++;
 
 
-        return new SearchResult(true, bestValue);
+        return new SearchFlag(true, bestValue);
     }
 
-    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchResult searchResult, out Move bestMove)
+    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchFlag searchFlag, out Move bestMove)
     {
         var entry = TranspositionTable.Retrieve(hash);
 
@@ -303,7 +292,7 @@ public class Engine
             {
                 case BoundFlag.Exact:
                     _statistics.TtHits++;
-                    searchResult = new SearchResult(true, entry.Value.Eval);
+                    searchFlag = new SearchFlag(true, entry.Value.Eval);
                     bestMove = entry.Value.bestMove;
                     return true;
 
@@ -311,7 +300,7 @@ public class Engine
                     if (entry.Value.Eval <= alpha)
                     {
                         _statistics.TtHits++;
-                        searchResult = new SearchResult(true, entry.Value.Eval);
+                        searchFlag = new SearchFlag(true, entry.Value.Eval);
                         bestMove = entry.Value.bestMove;
                         return true;
                     }
@@ -322,7 +311,7 @@ public class Engine
                     if (entry.Value.Eval >= beta)
                     {
                         _statistics.TtHits++;
-                        searchResult = new SearchResult(true, entry.Value.Eval);
+                        searchFlag = new SearchFlag(true, entry.Value.Eval);
                         bestMove = entry.Value.bestMove;
                         return true;
                     }
@@ -331,8 +320,22 @@ public class Engine
             }
         }
 
-        searchResult = default;
+        searchFlag = default;
         bestMove = default;
         return false;
+    }
+
+    internal readonly struct SearchFlag
+    {
+        public bool Completed { get; }
+        public int Value { get; }
+
+        public SearchFlag(bool completed, int value)
+        {
+            Completed = completed;
+            Value = value;
+        }
+
+        public static SearchFlag Abort => new(false, 0);
     }
 }
