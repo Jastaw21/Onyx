@@ -1,86 +1,7 @@
-﻿using System.Diagnostics;
-using Onyx.Statics;
+﻿using Onyx.Statics;
 using Onyx.UCI;
 
-
 namespace Onyx.Core;
-
-public struct SearchStatistics : ILoggable
-{
-    public int Nodes;
-    public int TtHits;
-    public int TtStores;
-    public int BetaCutoffs;
-    public long RunTime;
-    public int Depth;
-
-    public string Get()
-    {
-        return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
-    }
-
-    public override string ToString()
-    {
-        return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}";
-    }
-}
-
-public readonly struct SearchResult
-{
-    public bool Completed { get; }
-    public int Value { get; }
-
-    public SearchResult(bool completed, int value)
-    {
-        Completed = completed;
-        Value = value;
-    }
-
-    public static SearchResult Abort => new(false, 0);
-}
-
-public class TimerManager
-{
-    private Stopwatch _stopwatch = null!;
-    private bool _started;
-    private long _milliseconds;
-    public bool instantStopFlag = false;
-
-    public void Start(long milliseconds_)
-    {
-        _stopwatch = Stopwatch.StartNew();
-        _milliseconds = milliseconds_;
-        _started = true;
-    }
-
-    public void Start()
-    {
-        _stopwatch = Stopwatch.StartNew();
-        _started = true;
-    }
-
-    public void Reset()
-    {
-        _stopwatch.Reset();
-        _started = false;
-        _milliseconds = 0;
-    }
-
-    public long Elapsed => _stopwatch.ElapsedMilliseconds;
-
-    public bool ShouldStop
-    {
-        get
-        {
-            if (instantStopFlag) return true;
-            if (!_started)
-                return false;
-            return _stopwatch.ElapsedMilliseconds > _milliseconds;
-        }
-    }
-}
 
 public class Engine
 {
@@ -147,7 +68,7 @@ public class Engine
                 _statistics.RunTime = _timerManager.Elapsed;
                 return (bestMove, bestScore, _statistics);
             }
-            
+
             // error thrown
             if (ct.IsCancellationRequested)
                 return (bestMove, bestScore, _statistics);
@@ -226,7 +147,7 @@ public class Engine
         return Math.Max(remainingTimeForTurnToMove - Math.Max(remainingTimeForTurnToMove / 20, 100), 0);
     }
 
-    
+
     private (bool completed, Move bestMove, int score)
         ExecuteSearch(int depth, bool timed)
     {
@@ -266,7 +187,7 @@ public class Engine
     {
         if ((_statistics.Nodes & 2047) == 0)
         {
-            if ((timed && _timerManager.ShouldStop) || ct.IsCancellationRequested )
+            if ((timed && _timerManager.ShouldStop) || ct.IsCancellationRequested)
                 return SearchResult.Abort;
         }
 
