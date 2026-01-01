@@ -121,4 +121,33 @@ public class RefereeTests
         var move = new Move(Piece.BP, "g7h6");
         Assert.That(Referee.MoveIsLegal(move, board), Is.True);
     }
+
+    [Test]
+    public void ThreefoldRepetition()
+    {
+        var whiteMove = new Move(Piece.WN, "b1c3");
+        var blackMove = new Move(Piece.BN, "b8c6");
+        
+        var reverseWhiteMove = new Move(Piece.WN, "c3b1");
+        var reverseBlackMove = new Move(Piece.BN, "c6b8");
+
+        var board = new Board();
+        // start in the state (1), apply and reverse once (2) and a second time (3)
+        
+        // apply once
+        ApplyMovesInSequence();
+        Assert.That(Referee.IsThreeFoldRepetition(board), Is.False);
+        
+        // apply twice
+        ApplyMovesInSequence();
+        Assert.That(Referee.IsThreeFoldRepetition(board), Is.True);
+
+        void ApplyMovesInSequence()
+        {
+            board.ApplyMove(whiteMove);
+            board.ApplyMove(blackMove);
+            board.ApplyMove(reverseWhiteMove);
+            board.ApplyMove(reverseBlackMove);
+        }
+    }
 }

@@ -187,4 +187,18 @@ public static class Referee
 
         return false;
     }
+
+    public static bool IsThreeFoldRepetition(Board board)
+    {
+        if (board.BoardStateHistory.Count <6) return false;
+        
+        var recentStates = board.BoardStateHistory.TakeLast(5);
+        var currentHash = board.BoardStateHistory.Last().Hash;
+        var boardStates = recentStates.ToList();
+        
+        if (boardStates.ElementAt(0).Hash == currentHash) return true;
+        if (boardStates.ElementAt(2).Hash == currentHash) return true;
+        
+        return false;
+    }
 }

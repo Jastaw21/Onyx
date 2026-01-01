@@ -36,7 +36,7 @@ public static class BoardConstants
         [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
 }
 
-internal class BoardState
+public class BoardState
 {
     public sbyte? CapturedPiece;
     public int? EnPassantSquare;
@@ -44,6 +44,7 @@ internal class BoardState
     public uint LastMoveFlags;
     public int HalfMove;
     public int FullMove;
+    public ulong Hash;
 }
 
 public class Board
@@ -62,10 +63,10 @@ public class Board
     public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
-    private readonly Stack<BoardState> _boardStateHistory;
+    public Stack<BoardState> BoardStateHistory { get; }
 
-    public sbyte LastCapture => _boardStateHistory.Count > 0 && _boardStateHistory.Last().CapturedPiece.HasValue
-        ? _boardStateHistory.Last().CapturedPiece.Value
+    public sbyte LastCapture => BoardStateHistory.Count > 0 && BoardStateHistory.Last().CapturedPiece.HasValue
+        ? BoardStateHistory.Last().CapturedPiece.Value
         : (sbyte)0;
 
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -73,7 +74,13 @@ public class Board
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         Zobrist = new Zobrist(fen);
-        _boardStateHistory = new Stack<BoardState>();
+        BoardStateHistory = new Stack<BoardState>();
+        var startingState = new BoardState
+        {
+            Hash = Zobrist.HashValue, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
+            HalfMove = HalfMoves, FullMove = FullMoves
+        };
+        BoardStateHistory.Push(startingState);
     }
 
     public string GetFen()
@@ -143,11 +150,11 @@ public class Board
             CastlingRights = CastlingRights,
             LastMoveFlags = move.Data,
             FullMove = FullMoves,
-            HalfMove = HalfMoves
+            HalfMove = HalfMoves,
+            Hash = Zobrist.HashValue
         };
-        _boardStateHistory.Push(state);
+        BoardStateHistory.Push(state);
 
-       
 
         // get rid of the captured piece
         if (capturedPiece.HasValue)
@@ -217,13 +224,13 @@ public class Board
         int? capturedOn = null;
         var movePieceMoved = move.PieceMoved;
 
-        var previousState = _boardStateHistory.Pop();
+        var previousState = BoardStateHistory.Pop();
         EnPassantSquare = previousState.EnPassantSquare;
         CastlingRights = previousState.CastlingRights;
         HalfMoves = previousState.HalfMove;
         FullMoves = previousState.FullMove;
         move.Data = previousState.LastMoveFlags;
-        
+
         if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
             Bitboards.SetOff(move.PromotedPiece.Value, move.To);

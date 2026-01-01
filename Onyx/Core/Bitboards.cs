@@ -9,6 +9,7 @@ public class Bitboards
     {
         Boards = new ulong[12];
         _allPieces = 0;
+        _whitePieces = 0;
         for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
     }
 
@@ -16,6 +17,7 @@ public class Bitboards
     {
         Boards = new ulong[12];
         _allPieces = 0;
+        _whitePieces = 0;
         for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         LoadFen(fenString);
     }
@@ -24,7 +26,9 @@ public class Bitboards
     {
         // reset the boards
         for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
-        
+        _whitePieces = 0;
+        _allPieces = 0;
+
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
 
@@ -61,6 +65,7 @@ public class Bitboards
     }
 
     private ulong _allPieces;
+    private ulong _whitePieces;
     public ulong[] Boards { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,8 +75,12 @@ public class Bitboards
     }
     public ulong OccupancyByColour(bool forBlack)
     {
-        var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
-        return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
+        if (!forBlack)
+            return _whitePieces;
+
+        return _allPieces & ~_whitePieces;
+        //var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
+        //return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
     }
 
     public ulong Occupancy()
@@ -83,24 +92,31 @@ public class Bitboards
     {
         Boards[Piece.BitboardIndex(piece)] = boardByPiece;
         _allPieces = 0;
-        for (int i = 0; i < 12; i++) _allPieces |= Boards[i];
+        _whitePieces = 0;
+        for (int i = 0; i < 12; i++)
+        {
+            if (Piece.IsWhite(Piece.AllPieces[i]))
+                _whitePieces |= Boards[i];
+            _allPieces |= Boards[i];
+        }
     }
 
     public void SetAllOff(int square)
     {
         var index = 1ul << square;
         _allPieces &= ~index;
+        _whitePieces &= ~index;
         for (var i = 0; i < Boards.Length; i++)
         {
             Boards[i] &= ~index;
-        }      
+        }
     }
 
     public void SetOff(sbyte piece, int square)
     {
         var bit = 1ul << square;
         var index = Piece.BitboardIndex(piece);
-        
+
         if ((Boards[index] & bit) != 0)
         {
             Boards[index] &= ~bit;
@@ -116,7 +132,11 @@ public class Bitboards
                 }
             }
             if (!stillOccupied)
+            {
                 _allPieces &= ~bit;
+                if (Piece.IsWhite(piece))
+                    _whitePieces &= ~bit;
+            }
         }
     }
 
@@ -125,21 +145,23 @@ public class Bitboards
         var index = 1ul << square;
         Boards[Piece.BitboardIndex(piece)] |= index;
         _allPieces |= index;
+        if (Piece.IsWhite(piece))
+            _whitePieces |= index;
     }
 
     public bool SquareOccupied(int squareToTest)
-    {    
+    {
         return (_allPieces & (1ul << squareToTest)) > 0;
     }
 
     public sbyte? PieceAtSquare(int squareToTest)
-    {    
+    {
         ulong mask = 1UL << squareToTest;
         if ((_allPieces & (1ul << squareToTest)) == 0) return null;
         var pieces = Piece.AllPieces;
         foreach (var piece in pieces)
         {
-            var board = OccupancyByPiece(piece);            
+            var board = OccupancyByPiece(piece);
             if ((board & mask) != 0)
                 return piece;
         }

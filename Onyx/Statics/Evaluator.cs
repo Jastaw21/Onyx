@@ -26,15 +26,19 @@ public static class Evaluator
     }
     public static int Evaluate(Board board)
     {
-        var materialandPsScore = MaterialAndPsScore(board);
-       
-        //var mobilityScore = MobilityScore(board);
+        if (Referee.IsThreeFoldRepetition(board)) return 0;
+        
+        var materialandPsScore = MaterialAndPsScore(board);       
+        var mobilityScore = MobilityScore(board);
         var bishopPairScore = BishopPairScore(board);
-        return materialandPsScore + bishopPairScore; //+ mobilityScore;
+
+        var score = materialandPsScore + bishopPairScore+ mobilityScore;
+        return board.WhiteToMove ? score : -score;
     }
 
     private static int MaterialAndPsScore(Board board)
     {
+        // run material and psq evaluation together to avoid double looping
         var whiteScore = 0;
         var blackScore = 0;
         foreach (var piece in Piece._whitePieces)
@@ -64,9 +68,8 @@ public static class Evaluator
                 placements &= placements - 1;
             }
         }
-
-        var score = whiteScore - blackScore;
-        return board.WhiteToMove ? score : -score;
+      
+        return whiteScore - blackScore;
     }
 
     private static int BishopPairScore(Board board)
@@ -76,21 +79,34 @@ public static class Evaluator
 
         var whiteScore = whiteBishops >= 2 ? 50 : 0;
         var blackScore = blackBishops >= 2 ? 50 : 0;
-        var score = whiteScore - blackScore;
-        return board.WhiteToMove  ? score : -score;
+      
+        return whiteScore - blackScore;
     }
 
-    // private static int MobilityScore(Board board)
-    // {
-    //     var boardTurnToMove = board.TurnToMove;
-    //     board.TurnToMove = Colour.White;
-    //     var whiteMoves = MoveGenerator.GetLegalMoves(board).Count;
-    //     board.TurnToMove = Colour.Black;
-    //     var blackMoves = MoveGenerator.GetLegalMoves(board).Count;
-    //     board.TurnToMove = boardTurnToMove;
-    //     var score = whiteMoves - blackMoves;
-    //     return board.TurnToMove == Colour.White ? score : -score;
-    // }
+    //private static int KingSafetyScore(Board board)
+    //{ 
+    //    var relevantKing = board.WhiteToMove ? Piece.WK : Piece.BK;
+    //    var kingPlacements = board.Bitboards.OccupancyByPiece(relevantKing);
+    //}
+
+    private static int MobilityScore(Board board)
+    {
+        // cache turn
+        var boardTurnToMove = board.WhiteToMove;      
+        Span<Move> moveBuffer = stackalloc Move[256];
+
+        // get moves for both sides
+        board.WhiteToMove = true;
+        var whiteMoves = MoveGenerator.GetMoves(board, moveBuffer);
+        board.WhiteToMove = false;
+        var blackMoves = MoveGenerator.GetMoves(board, moveBuffer);
+
+        // restore turn
+        board.WhiteToMove = boardTurnToMove;
+
+        // 10 points per move
+        return (whiteMoves - blackMoves) * 10;
+    }
 
     // pawn, knight, bishop, rook, king, queen
     private static readonly int[] PieceValues = [100, 300, 320, 500, 0, 900];
