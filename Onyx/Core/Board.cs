@@ -136,7 +136,10 @@ public class Board
         }
         else
         {
-            capturedPiece = Bitboards.PieceAtSquare(move.To);
+            var moveCapturedPiece = move.CapturedPiece;
+            if (moveCapturedPiece > 0)
+                capturedPiece = Piece.MakePiece(moveCapturedPiece,!isWhite);
+            else capturedPiece = null;
             capturedSquare = move.To;
         }
 

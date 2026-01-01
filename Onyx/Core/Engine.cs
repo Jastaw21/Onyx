@@ -101,7 +101,6 @@ public class Engine
     }
 
 
-
     private int TimeBudgetPerMove(TimeControl timeControl)
     {
         var time = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
@@ -209,15 +208,10 @@ public class Engine
         var hash = board.Zobrist.HashValue;
         if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
         {
-            if (Math.Abs(searchResult.Value) >= MateScore)
-                Console.WriteLine("Excessive TT hit");
-            else
-            {
-                return searchResult;
-            }
+            return searchResult;
         }
 
-        Evaluator.SortMoves(moves, ttMove, board);
+        Evaluator.SortMoves(moves, ttMove);
 
         Move bestMove = default;
         var legalMoveCount = 0;
@@ -284,14 +278,16 @@ public class Engine
     {
         var entry = TranspositionTable.Retrieve(hash);
 
+        bestMove = default;
         if (entry.HasValue && entry.Value.Depth >= depth)
         {
+            bestMove = entry.Value.BestMove;
             switch (entry.Value.BoundFlag)
             {
                 case BoundFlag.Exact:
                     _statistics.TtHits++;
                     searchFlag = new SearchFlag(true, entry.Value.Eval);
-                    bestMove = entry.Value.bestMove;
+                    bestMove = entry.Value.BestMove;
                     return true;
 
                 case BoundFlag.Upper:
@@ -299,7 +295,7 @@ public class Engine
                     {
                         _statistics.TtHits++;
                         searchFlag = new SearchFlag(true, entry.Value.Eval);
-                        bestMove = entry.Value.bestMove;
+                        bestMove = entry.Value.BestMove;
                         return true;
                     }
 
@@ -310,16 +306,14 @@ public class Engine
                     {
                         _statistics.TtHits++;
                         searchFlag = new SearchFlag(true, entry.Value.Eval);
-                        bestMove = entry.Value.bestMove;
+                        bestMove = entry.Value.BestMove;
                         return true;
                     }
 
                     break;
             }
         }
-
         searchFlag = default;
-        bestMove = default;
         return false;
     }
 

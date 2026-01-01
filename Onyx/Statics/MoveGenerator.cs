@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Reflection;
+using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -88,23 +89,48 @@ public static class MoveGenerator
 
         var normalAttacks = opponentOccupancy & attacks;
 
+
+        var enPassantAttacks = 0ul;
         // the board has a viable en passant square, and we're on an appropriate file
         if (board.EnPassantSquare.HasValue &&
             Math.Abs(RankAndFile.FileIndex(board.EnPassantSquare.Value) - RankAndFile.FileIndex(square)) == 1)
         {
             var relevantAttackRank = isWhite ? 5 : 2;
             var pawnHomeRank = isWhite ? 4 : 3;
+            
+            // all other conditions for en passant are met
             if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare.Value))
+            {
                 normalAttacks |= 1ul << board.EnPassantSquare.Value;
+                enPassantAttacks |= 1ul << board.EnPassantSquare.Value;
+            }
         }
 
         var result = pushes | normalAttacks;
         result &= ~board.Bitboards.OccupancyByColour(!isWhite);
-        // Add moves from result bitboard
+        // Add moves from the result bitboard
         while (result > 0)
         {
             var lowest = ulong.TrailingZeroCount(result);
-            moveBuffer[count++] = new Move(piece, square, (int)lowest);
+            var move = new Move(piece, square, (int)lowest);
+            
+            // is a capture
+            if (((1ul << (int)lowest) & opponentOccupancy) != 0)
+            {
+                var capturedPiece = board.Bitboards.PieceAtSquare((int)lowest);
+                if (capturedPiece.HasValue)
+                {
+                    move.CapturedPiece = capturedPiece.Value;
+                }
+            }
+            
+            // is an en passant capture
+            if (((1ul << (int)lowest) & enPassantAttacks) != 0)
+            {
+                var capturedPiece = Piece.MakePiece(Piece.Pawn, !isWhite);
+                move.CapturedPiece = capturedPiece;
+            }
+            moveBuffer[count++] = move;
             result &= result - 1;
         }
     }
@@ -123,6 +149,8 @@ public static class MoveGenerator
 
         var offset = isWhite ? 8 : -8;
         var promotionPieces = isWhite ? Piece._whitePromotionTypes : Piece._blackPromotionTypes;
+        
+        // non capturing promotion
         foreach (var promotionType in promotionPieces)
         {
             var targetSquare = square + offset;
@@ -137,7 +165,7 @@ public static class MoveGenerator
         }
 
         var fileIndex = RankAndFile.FileIndex(square);
-        // can go right (board wise, not piece wise, it's left as far as a black pawn is concerned)
+        // can capture to right (board wise, not piece wise, it's left as far as a black pawn is concerned)
         if (fileIndex < 7)
         {
             var targetSquare = square + offset + 1;
@@ -148,12 +176,14 @@ public static class MoveGenerator
             {
                 foreach (var promotionType in promotionPieces)
                 {
-                    moveBuffer[count++] = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                    var move = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                    move.CapturedPiece = pieceAtTarget.Value;
+                    moveBuffer[count++] = move;
                 }
             }
         }
 
-        // can go left (board wise, not piece wise, it's right as far as a black pawn is concerned)
+        // can capture to left (board wise, not piece wise, it's right as far as a black pawn is concerned)
         if (fileIndex > 0)
         {
             var targetSquare = square + offset - 1;
@@ -164,7 +194,9 @@ public static class MoveGenerator
             {
                 foreach (var promotionType in promotionPieces)
                 {
-                    moveBuffer[count++] = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                    var move = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
+                    move.CapturedPiece = pieceAtTarget.Value;
+                    moveBuffer[count++] = move;
                 }
             }
         }
@@ -267,10 +299,18 @@ public static class MoveGenerator
     private static void GenerateBasicMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
         var moves = GetMovesUlong(piece, square, board);
+        var opponentOccupancy = board.Bitboards.OccupancyByColour(Piece.IsWhite(piece));
         while (moves > 0)
         {
             var lowest = ulong.TrailingZeroCount(moves);
-            moveBuffer[count++] = new Move(piece, square, (int)lowest);
+            var move = new Move(piece, square, (int)lowest);
+            if (((1ul << (int)lowest) & opponentOccupancy) != 0)
+            {
+                var capturedPiece = board.Bitboards.PieceAtSquare((int)lowest);
+                if (capturedPiece.HasValue)
+                    move.CapturedPiece = capturedPiece.Value;
+            }
+            moveBuffer[count++] = move;
             moves &= moves - 1;
         }
     }

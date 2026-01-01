@@ -14,7 +14,7 @@ public struct TranspositionTableEntry
     public int Depth;
     public int Age;
     public BoundFlag BoundFlag;
-    public Move bestMove;
+    public Move BestMove;
 }
 
 public class TranspositionTable
@@ -45,7 +45,7 @@ public class TranspositionTable
                 Depth = depth,
                 Age = age,
                 BoundFlag = boundFlag,
-                bestMove =  bestMove
+                BestMove =  bestMove
             };
         }
     }

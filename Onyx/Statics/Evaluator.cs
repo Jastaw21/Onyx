@@ -5,7 +5,7 @@ namespace Onyx.Statics;
 
 public static class Evaluator
 {
-    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Board board)
+    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove)
     {
         
         moves.Sort((move, move1) =>
@@ -13,15 +13,15 @@ public static class Evaluator
             var aScore = move.IsPromotion ? 1:0;
             var bScore = move.IsPromotion ? 1:0;
 
-            if (transpositionTableMove.HasValue)
+            if (transpositionTableMove.HasValue && transpositionTableMove.Value.Data > 0)
             {
                 if (move.Data == transpositionTableMove.Value.Data)
-                    return 1;
-                if (move1.Data == transpositionTableMove.Value.Data)
                     return -1;
+                if (move1.Data == transpositionTableMove.Value.Data)
+                    return 1;
             }
 
-            return aScore.CompareTo(bScore);
+            return bScore.CompareTo(aScore);
         });
     }
     public static int Evaluate(Board board)

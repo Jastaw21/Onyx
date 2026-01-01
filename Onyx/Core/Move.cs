@@ -4,14 +4,16 @@ public static class MoveFlags
 {
     public static readonly uint ToSquareBits = 0x3f;
     public static readonly uint FromSquareBits = 0xfc0;
+    public static readonly uint CapturedPieceBits = 0xf0000;
     public static readonly uint Promotion = 1 << 14;
     public static readonly uint EnPassant = 2 << 14;
     public static readonly uint Castling = 3 << 14;
 }
 
-// 00   00       000000 000000
-//      special  from   to  
-
+// Bits 0: to square.
+// 6-11: from square.
+// 14-15: special move flag.
+// 16-19: encode captured piece.
 public struct Move
 {
     public Move(sbyte pieceMoved, int from, int to)
@@ -40,6 +42,7 @@ public struct Move
                 _ => PromotedPiece
             };
         }
+
         Data |= (uint)fromIndex << 6;
         Data |= (uint)toIndex;
     }
@@ -65,22 +68,31 @@ public struct Move
         }
     }
 
+    public sbyte CapturedPiece
+    {
+        get => (sbyte)((Data & MoveFlags.CapturedPieceBits) >> 16);
+        set
+        {
+            Data &= ~MoveFlags.CapturedPieceBits;
+            Data |= (uint)(value << 16);
+        }
+    }
 
     public bool IsPromotion
     {
-        get => (Data &(3<<14)) == MoveFlags.Promotion;
+        get => (Data & (3 << 14)) == MoveFlags.Promotion;
         set => Data |= MoveFlags.Promotion;
     }
     public bool IsCastling
     {
-        get => (Data &(3<<14)) ==  MoveFlags.Castling;
+        get => (Data & (3 << 14)) == MoveFlags.Castling;
         set => Data |= MoveFlags.Castling;
     }
 
 
     public bool IsEnPassant
     {
-        get => (Data &(3<<14)) ==   MoveFlags.EnPassant;
+        get => (Data & (3 << 14)) == MoveFlags.EnPassant;
         set => Data |= MoveFlags.EnPassant;
     }
 

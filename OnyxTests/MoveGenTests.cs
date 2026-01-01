@@ -78,10 +78,12 @@ public class MoveGenTests
 
         foreach (var move in legalMoves)
         {
+            var localMove = move;
+            localMove.CapturedPiece = Piece.BQ;
             int count = 0;
-            MoveGenerator.GetMoves(move.PieceMoved, move.From, testBoard, moveBuffer, ref count);
+            MoveGenerator.GetMoves(localMove.PieceMoved, localMove.From, testBoard, moveBuffer, ref count);
             var movesByPieceBySquare = moveBuffer[..count].ToArray();
-            Assert.That(movesByPieceBySquare, Does.Contain(move));
+            Assert.That(movesByPieceBySquare, Does.Contain(localMove));
         }
     }
 
@@ -256,7 +258,9 @@ public class MoveGenTests
         int count = 0;
         MoveGenerator.GetMoves(Piece.BP, RankAndFile.SquareIndex("g2"), board, moveBuffer, ref count);
         var moves = moveBuffer[..count].ToArray();
-        Assert.That(moves, Does.Contain(new Move(Piece.BP,"g2h1q")));
+        var expectedMove = new Move(Piece.BP,"g2h1q");
+        expectedMove.CapturedPiece = Piece.WR;
+        Assert.That(moves, Does.Contain(expectedMove));
     }
 
     [Test]
@@ -305,5 +309,58 @@ public class MoveGenTests
         var move = new Move(Piece.BQ, "d8h4");
         Assert.That(moves, Does.Contain(move), "d8h4 should be generated");
         Assert.That(Referee.MoveIsLegal(move, board), Is.True, "d8h4 should be legal");
+    }
+
+    [Test]
+    public void MoveGenAddsCaptures()
+    {
+        var board = new Board("rnbqkbnr/ppppppp1/8/7p/8/4P3/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        Span<Move> moveBuffer = stackalloc Move[256];
+        var count = 0;
+        var moves = MoveGenerator.GetMoves(Piece.WQ, board, moveBuffer, ref count);
+        var movesIndexed = moveBuffer[..moves].ToArray();
+        foreach (var move in movesIndexed)
+        {
+            if (move.Notation == "d1h5")
+            {
+                Assert.That(move.CapturedPiece, Is.EqualTo(Piece.PieceType(Piece.BP)));
+            }
+        }
+    }
+    
+    [Test]
+    public void EnPassantMovesHaveCapturedPieceAssigned()
+    {
+        List<string> startingPositions =
+        [
+            "rnbqkbnr/pp1p1ppp/2p5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1",
+            "rnbqkbnr/ppp1pppp/8/8/3pP3/1PP5/P2P1PPP/RNBQKBNR b KQkq e3 0 1"
+        ];
+
+        List<Move> expectedMoves =
+        [
+            new(Piece.WP, "d5e6"),
+            new(Piece.BP, "d4e3")
+        ];
+
+        List<string> endingPositions =
+        [
+            "rnbqkbnr/pp1p1ppp/2p1P3/8/8/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
+            "rnbqkbnr/ppp1pppp/8/8/8/1PP1p3/P2P1PPP/RNBQKBNR w KQkq - 0 2"
+        ];
+
+       var board = new Board(startingPositions[0]);
+       Span<Move> moveBuffer = stackalloc Move[256];
+       var count = 0;
+       var moves = MoveGenerator.GetMoves(Piece.WQ, board, moveBuffer, ref count);
+       var movesIndexed = moveBuffer[..moves].ToArray();
+
+       foreach (var move in movesIndexed)
+       {
+           if (move.Notation == expectedMoves[0].Notation)
+           {
+               Assert.That(move.CapturedPiece, Is.EqualTo(Piece.PieceType(Piece.WP)));
+           }
+       }
     }
 }
