@@ -8,12 +8,14 @@ public class Bitboards
     public Bitboards()
     {
         _boards = new ulong[12];
+        _allPieces = 0;
         for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
     }
 
     public Bitboards(string fenString)
     {
         _boards = new ulong[12];
+        _allPieces = 0;
         for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
         LoadFen(fenString);
     }
@@ -59,6 +61,7 @@ public class Bitboards
     }
 
     private ulong[] _boards;
+    private ulong _allPieces;
     public ulong[] Boards => _boards;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,7 +69,6 @@ public class Bitboards
     {
         return _boards[Piece.BitboardIndex(piece)];
     }
-
     public ulong OccupancyByColour(bool forBlack)
     {
         var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
@@ -75,42 +77,51 @@ public class Bitboards
 
     public ulong Occupancy()
     {
+        return _allPieces;
         return Boards.Aggregate(0ul, (current, board) => current | board);
     }
 
     public void SetByPiece(sbyte piece, ulong boardByPiece)
     {
-        _boards[Piece.BitboardIndex(piece)] = boardByPiece;       
+        _boards[Piece.BitboardIndex(piece)] = boardByPiece;
+        _allPieces = 0;
+        for (int i = 0; i < 12; i++) _allPieces |= _boards[i];
     }
 
     public void SetAllOff(int square)
     {
         var index = 1ul << square;
+        _allPieces &= ~index;
         for (var i = 0; i < _boards.Length; i++)
         {
             _boards[i] &= ~index;
         }      
-
     }
 
     public void SetOff(sbyte piece, int square)
     {
-        _boards[Piece.BitboardIndex(piece)] &= ~(1ul << square);        
+        var mask = ~(1ul << square);
+        _boards[Piece.BitboardIndex(piece)] &= mask;
+        _allPieces &= mask;
     }
 
     public void SetOn(sbyte piece, int square)
     {
-        _boards[Piece.BitboardIndex(piece)] |= 1ul << square;        
+        var index = 1ul << square;
+        _boards[Piece.BitboardIndex(piece)] |= index;
+        _allPieces |= index;
     }
 
     public bool SquareOccupied(int squareToTest)
-    {       
+    {    
+        return (_allPieces & (1ul << squareToTest)) > 0;
         return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest)) > 0);
     }
 
     public sbyte? PieceAtSquare(int squareToTest)
     {    
         ulong mask = 1UL << squareToTest;
+        if ((_allPieces & (1ul << squareToTest)) == 0) return null;
         var pieces = Piece.AllPieces;
         foreach (var piece in pieces)
         {

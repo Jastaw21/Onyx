@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Diagnostics;
+using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -64,6 +65,7 @@ public static class PerftSearcher
         foreach (var move in moves)
         {
             var side = board.WhiteToMove;
+            
             board.ApplyMove(move);
 
             if (!Referee.IsInCheck(side, board))
@@ -72,9 +74,8 @@ public static class PerftSearcher
                 total += nodes;
                 Console.WriteLine($"{move}: {nodes}");
             }
-
-
             board.UndoMove(move);
+           
         }
 
         Console.WriteLine($"Total: {total}");
@@ -92,6 +93,7 @@ public static class PerftSearcher
         {
             if (!Referee.MoveIsLegal(move, board))
                 continue;
+            var fenPre = board.GetFen();
             var sideToMve = board.WhiteToMove;
             board.ApplyMove(move);
 
@@ -102,6 +104,7 @@ public static class PerftSearcher
             }
 
             board.UndoMove(move);
+            Debug.Assert(board.GetFen() == fenPre);
         }
 
         return results;

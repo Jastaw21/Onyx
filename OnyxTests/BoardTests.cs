@@ -271,6 +271,20 @@ public class UndoMove
         board.UndoMove(promotionMove);
 
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
+
+        board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2");
+        var move = new Move(Piece.BP, "g2h1b");
+        board.ApplyMove(move);
+        board.UndoMove(move);
+        Assert.That(board.GetFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2"));
+
+        board = new Board("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2");
+        move = new Move(Piece.WP, "a7b8B");
+        board.ApplyMove(move);
+        board.UndoMove(move);
+        Assert.That(board.GetFen(), Is.EqualTo("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2"));
+
+
     }
 
     [Test]

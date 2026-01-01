@@ -101,7 +101,7 @@ public class Engine
     }
 
 
-    // timed saerch methods
+
     private int TimeBudgetPerMove(TimeControl timeControl)
     {
         var time = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
@@ -109,15 +109,21 @@ public class Engine
 
         var safeInc = increment ?? 0;
 
-        int movesToGo = timeControl.movesToGo ?? MovesRemaining(Board);
+        var calcMovesRemaining = MovesRemaining(Board);
+        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
 
+        // if moves remaining feels nonsense, use our own calc
+        var movesToGo =
+            Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
+                ? calcMovesRemaining
+                : instructedMovesRemaining;
         var baseTime = time / movesToGo + safeInc * 0.8;
 
         // use max of 20% remaining time
         var safeMax = time * 0.2;
         int finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
-        
-        return Math.Max(finalBudget, 50); 
+
+        return Math.Max(finalBudget, 50);
     }
 
     private static int MovesRemaining(Board board)
@@ -128,13 +134,6 @@ public class Engine
         if (ply < 60) return 30; // middlegame
         return 20; // endgame
     }
-
-    private int CalculateRemainingTime(int remainingTimeForTurnToMove)
-    {
-        // keep 5% or 100ms, whichever is larger
-        return Math.Max(remainingTimeForTurnToMove - Math.Max(remainingTimeForTurnToMove / 20, 100), 0);
-    }
-
 
     private (bool completed, Move bestMove, int score)
         ExecuteSearch(int depth, bool timed)

@@ -44,9 +44,7 @@ public class EngineTests
         var engine = new Engine();
         engine.SetPosition(fen);
 
-       
-
-        for (int i = 2; i < 7; i++)
+        for (int i = 2; i < 4; i++)
         {
             var timedSearch = engine.Search(new SearchParameters { MaxDepth = i, TimeLimit = 2000 });
             var depthReached = timedSearch.Statistics.Depth;

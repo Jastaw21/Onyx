@@ -64,6 +64,10 @@ public class Board
     public int FullMoves { get; private set; }
     private readonly Stack<BoardState> _boardStateHistory;
 
+    public sbyte LastCapture => _boardStateHistory.Count > 0 && _boardStateHistory.Last().CapturedPiece.HasValue
+        ? _boardStateHistory.Last().CapturedPiece.Value
+        : (sbyte)0;
+
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
@@ -80,7 +84,7 @@ public class Board
         builtFen += Bitboards.GetFen();
 
         // apply turn to move
-        var moveChar = WhiteToMove  ? 'w' : 'b';
+        var moveChar = WhiteToMove ? 'w' : 'b';
         builtFen += ' ';
         builtFen += moveChar;
         builtFen += ' ';
@@ -143,8 +147,7 @@ public class Board
         };
         _boardStateHistory.Push(state);
 
-        // action the required change for the moving piece
-        MovePiece(move.PieceMoved, move.From, move.To);
+       
 
         // get rid of the captured piece
         if (capturedPiece.HasValue)
@@ -152,6 +155,9 @@ public class Board
             Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
         }
 
+        // action the required change for the moving piece
+        MovePiece(move.PieceMoved, move.From, move.To);
+        
         // action the promotion
         if (move is { IsPromotion: true, PromotedPiece: not null })
         {
@@ -220,7 +226,11 @@ public class Board
         HalfMoves = previousState.HalfMove;
         FullMoves = previousState.FullMove;
         move.Data = previousState.LastMoveFlags;
-        if (previousState.CapturedPiece.HasValue)
+        
+        MovePiece(movePieceMoved, move.To, move.From);
+
+        var capturedPieceHasValue = previousState.CapturedPiece.HasValue;
+        if (capturedPieceHasValue)
         {
             if (!move.IsEnPassant)
             {
@@ -228,8 +238,7 @@ public class Board
                 capturedOn = move.To;
             }
         }
-
-        MovePiece(movePieceMoved, move.To, move.From);
+        
         if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
             Bitboards.SetOff(move.PromotedPiece.Value, move.To);
@@ -272,7 +281,8 @@ public class Board
 
         var pieceType = Piece.PieceType(move.PieceMoved);
         if (pieceType == Piece.Pawn &&
-            ((Piece.IsWhite(move.PieceMoved) && toRankIndex == 7) || (Piece.IsBlack(move.PieceMoved) && toRankIndex == 0)))
+            ((Piece.IsWhite(move.PieceMoved) && toRankIndex == 7) ||
+             (Piece.IsBlack(move.PieceMoved) && toRankIndex == 0)))
         {
             move.IsPromotion = true;
         }
@@ -291,7 +301,7 @@ public class Board
 
     private void UpdateCastlingRights(Move move)
     {
-        var type  = Piece.PieceType(move.PieceMoved);
+        var type = Piece.PieceType(move.PieceMoved);
         var isWhite = Piece.IsWhite(move.PieceMoved);
         if (type == Piece.King)
         {

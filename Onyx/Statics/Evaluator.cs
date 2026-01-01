@@ -7,6 +7,7 @@ public static class Evaluator
 {
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Board board)
     {
+        
         moves.Sort((move, move1) =>
         {
             var aScore = move.IsPromotion ? 1:0;
@@ -15,9 +16,9 @@ public static class Evaluator
             if (transpositionTableMove.HasValue)
             {
                 if (move.Data == transpositionTableMove.Value.Data)
-                    return int.MaxValue;
-                if (move.Data == transpositionTableMove.Value.Data)
-                    return int.MinValue;
+                    return 1;
+                if (move1.Data == transpositionTableMove.Value.Data)
+                    return -1;
             }
 
             return aScore.CompareTo(bScore);
