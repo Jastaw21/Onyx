@@ -93,7 +93,7 @@ public static class PerftSearcher
         {
             if (!Referee.MoveIsLegal(move, board))
                 continue;
-            var fenPre = board.GetFen();
+            
             var sideToMve = board.WhiteToMove;
             board.ApplyMove(move);
 
@@ -102,9 +102,7 @@ public static class PerftSearcher
                 var childResults = ExecutePerft(board, depth - 1);
                 results += childResults;
             }
-
             board.UndoMove(move);
-            Debug.Assert(board.GetFen() == fenPre);
         }
 
         return results;

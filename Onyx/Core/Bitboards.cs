@@ -7,23 +7,23 @@ public class Bitboards
 {
     public Bitboards()
     {
-        _boards = new ulong[12];
+        Boards = new ulong[12];
         _allPieces = 0;
-        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
+        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
     }
 
     public Bitboards(string fenString)
     {
-        _boards = new ulong[12];
+        Boards = new ulong[12];
         _allPieces = 0;
-        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
+        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         LoadFen(fenString);
     }
 
     public void LoadFen(string fenString)
     {
         // reset the boards
-        for (int i = 0; i < _boards.Length; i++) _boards[i] = 0ul;
+        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
@@ -60,14 +60,13 @@ public class Bitboards
         }
     }
 
-    private ulong[] _boards;
     private ulong _allPieces;
-    public ulong[] Boards => _boards;
+    public ulong[] Boards { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(sbyte piece)
     {
-        return _boards[Piece.BitboardIndex(piece)];
+        return Boards[Piece.BitboardIndex(piece)];
     }
     public ulong OccupancyByColour(bool forBlack)
     {
@@ -78,44 +77,59 @@ public class Bitboards
     public ulong Occupancy()
     {
         return _allPieces;
-        return Boards.Aggregate(0ul, (current, board) => current | board);
     }
 
     public void SetByPiece(sbyte piece, ulong boardByPiece)
     {
-        _boards[Piece.BitboardIndex(piece)] = boardByPiece;
+        Boards[Piece.BitboardIndex(piece)] = boardByPiece;
         _allPieces = 0;
-        for (int i = 0; i < 12; i++) _allPieces |= _boards[i];
+        for (int i = 0; i < 12; i++) _allPieces |= Boards[i];
     }
 
     public void SetAllOff(int square)
     {
         var index = 1ul << square;
         _allPieces &= ~index;
-        for (var i = 0; i < _boards.Length; i++)
+        for (var i = 0; i < Boards.Length; i++)
         {
-            _boards[i] &= ~index;
+            Boards[i] &= ~index;
         }      
     }
 
     public void SetOff(sbyte piece, int square)
     {
-        var mask = ~(1ul << square);
-        _boards[Piece.BitboardIndex(piece)] &= mask;
-        _allPieces &= mask;
+        var bit = 1ul << square;
+        var index = Piece.BitboardIndex(piece);
+        
+        if ((Boards[index] & bit) != 0)
+        {
+            Boards[index] &= ~bit;
+
+            // Only clear _allPieces if no other piece is on this square
+            bool stillOccupied = false;
+            for (int i = 0; i < 12; i++)
+            {
+                if ((Boards[i] & bit) != 0)
+                {
+                    stillOccupied = true;
+                    break;
+                }
+            }
+            if (!stillOccupied)
+                _allPieces &= ~bit;
+        }
     }
 
     public void SetOn(sbyte piece, int square)
     {
         var index = 1ul << square;
-        _boards[Piece.BitboardIndex(piece)] |= index;
+        Boards[Piece.BitboardIndex(piece)] |= index;
         _allPieces |= index;
     }
 
     public bool SquareOccupied(int squareToTest)
     {    
         return (_allPieces & (1ul << squareToTest)) > 0;
-        return _boards.Any(pieceBoard => (pieceBoard & (1ul << squareToTest)) > 0);
     }
 
     public sbyte? PieceAtSquare(int squareToTest)

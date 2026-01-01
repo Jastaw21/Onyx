@@ -156,15 +156,14 @@ public class Board
         }
 
         // action the required change for the moving piece
-        MovePiece(move.PieceMoved, move.From, move.To);
-        
-        // action the promotion
         if (move is { IsPromotion: true, PromotedPiece: not null })
         {
-            // We need to undo the move to of the piece, thats covered in MovePiece,
-            // as obviously for promotion this is overridden by the promoted piece. Explicitly set it off here
-            Bitboards.SetOff(move.PieceMoved, move.To);
+            Bitboards.SetOff(move.PieceMoved, move.From);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
+        }
+        else
+        {
+            MovePiece(move.PieceMoved, move.From, move.To);
         }
 
         var toRankIndex = RankAndFile.RankIndex(move.To);
@@ -215,8 +214,6 @@ public class Board
 
     public void UndoMove(Move move, bool fullUndoMove = true)
     {
-        //ApplyMoveFlags(move: ref move);
-
         int? capturedOn = null;
         var movePieceMoved = move.PieceMoved;
 
@@ -227,7 +224,15 @@ public class Board
         FullMoves = previousState.FullMove;
         move.Data = previousState.LastMoveFlags;
         
-        MovePiece(movePieceMoved, move.To, move.From);
+        if (move.IsPromotion && move.PromotedPiece.HasValue)
+        {
+            Bitboards.SetOff(move.PromotedPiece.Value, move.To);
+            Bitboards.SetOn(movePieceMoved, move.From);
+        }
+        else
+        {
+            MovePiece(movePieceMoved, move.To, move.From);
+        }
 
         var capturedPieceHasValue = previousState.CapturedPiece.HasValue;
         if (capturedPieceHasValue)
@@ -237,11 +242,6 @@ public class Board
                 Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
                 capturedOn = move.To;
             }
-        }
-        
-        if (move.IsPromotion && move.PromotedPiece.HasValue)
-        {
-            Bitboards.SetOff(move.PromotedPiece.Value, move.To);
         }
 
         var isBlack = Piece.IsBlack(movePieceMoved);
@@ -273,7 +273,7 @@ public class Board
         SwapTurns();
     }
 
-    public void ApplyMoveFlags(ref Move move)
+    private void ApplyMoveFlags(ref Move move)
     {
         var toRankIndex = RankAndFile.RankIndex(move.To);
         var toFileIndex = RankAndFile.FileIndex(move.To);
