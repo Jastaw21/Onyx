@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using Onyx.Statics;
 using Onyx.UCI;
 
 namespace Onyx;
@@ -9,7 +10,7 @@ public static class Program
     public static void Main()
     {
         var engine = new UciInterface();
-       
+        Logger.timeString = DateTime.Now.ToString("yyyyMMddHHmmssfff");
         var command = string.Empty;
         while (command != "quit")
         {

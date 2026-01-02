@@ -171,6 +171,7 @@ public class Engine
                 bestMove = move;
             }
 
+            Logger.Log(LogType.Search,$"{Board.GetFen()} {move} Score: {score} Depth: {depth}");
             alpha = Math.Max(alpha, score);
         }
 

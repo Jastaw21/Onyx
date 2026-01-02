@@ -84,18 +84,19 @@ public static class Evaluator
         var blackMaterial = EvaluateMaterial(board, false);
 
         // value of material
-        var score = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
-
+        var materialScore = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
+        
         // small boost for having both bishops on the board
-        score += whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
-
-        // number of moves available to you
-        //score += MobilityScore(board);
-
+        var bishopPairScore = whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
+        
+        // piece square score
         var whitePSS = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
         var blackPSS = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
-        score += whitePSS - blackPSS;
-
+        var pieceSquareScore = whitePSS - blackPSS;
+        
+        Logger.Log(LogType.Evaluator,$"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
+        
+        var score = materialScore + bishopPairScore + pieceSquareScore;
         return board.WhiteToMove ? score : -score;
     }
 

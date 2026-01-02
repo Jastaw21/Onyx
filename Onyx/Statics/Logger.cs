@@ -1,4 +1,5 @@
 ﻿namespace Onyx.Statics;
+
 public interface ILoggable
 {
     public string Get();
@@ -8,39 +9,48 @@ public enum LogType
 {
     UCIReceived,
     UCISent,
-    EngineLog
+    EngineLog,
+    Search,
+    Evaluator
 }
 
 public static class Logger
 {
+    public static string timeString;
+
     public static void Log(LogType type, string message)
     {
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logEntry = $"[{timestamp}] {message}";
-
         var logFile = type switch
         {
-            LogType.UCIReceived => "uci_recieved.log",
-            LogType.UCISent => "uci_sent.log",
-            LogType.EngineLog => "engine.log",
+            LogType.UCIReceived => "recieved",
+            LogType.UCISent => "sent",
+            LogType.EngineLog => "engine",
+            LogType.Search => "search",
+            LogType.Evaluator => "evaluator",
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
-        File.AppendAllText(logFile, logEntry + Environment.NewLine);
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logEntry = $"[{timestamp}] [{logFile}] {message}";
+
+        var finalLog = "uci_log" + timeString + ".log";
+        File.AppendAllText(finalLog, logEntry + Environment.NewLine);
     }
 
     public static void Log(LogType type, ILoggable loggable)
     {
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-        var logEntry = $"[{timestamp}] {loggable.Get()}";
-
         var logFile = type switch
         {
-            LogType.UCIReceived => "uci_recieved.log",
-            LogType.UCISent => "uci_sent.log",
-            LogType.EngineLog => "engine.log",
+            LogType.UCIReceived => "recieved",
+            LogType.UCISent => "sent",
+            LogType.EngineLog => "engine",
+            LogType.Search => "search",
+            LogType.Evaluator => "evaluator",
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
-        File.AppendAllText(logFile, logEntry + Environment.NewLine);
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logEntry = $"[{timestamp}] [{logFile}] {loggable.Get()}";
+
+        var finalLog = "uci_log" + timeString + ".log";
+        File.AppendAllText(finalLog, logEntry + Environment.NewLine);
     }
 }
-
