@@ -14,7 +14,8 @@ public static class MoveFlags
 // 6-11: from square.
 // 14-15: special move flag.
 // 16-19: encode captured piece.
-public struct Move
+// 31 - has capture been checked
+public struct Move : IEquatable<Move>
 {
     public Move(sbyte pieceMoved, int from, int to)
     {
@@ -51,7 +52,11 @@ public struct Move
 
     public int To => (int)(Data & MoveFlags.ToSquareBits);
     public int From => (int)((Data & MoveFlags.FromSquareBits) >> 6);
-
+    public bool HasCaptureBeenChecked
+    {
+        get => (Data & 0x80000000) != 0;
+        set => Data |= value ? 0x80000000 : 0;
+    }
     public sbyte? PromotedPiece = null;
     public uint Data { get; set; } = 0;
 
@@ -75,6 +80,7 @@ public struct Move
         {
             Data &= ~MoveFlags.CapturedPieceBits;
             Data |= (uint)(value << 16);
+            Data |= 0x80000000;
         }
     }
 
@@ -95,6 +101,30 @@ public struct Move
         get => (Data & (3 << 14)) == MoveFlags.EnPassant;
         set => Data |= MoveFlags.EnPassant;
     }
+
+    public bool Equals(Move other)
+    {
+        // Functional equality: from, to, piece moved, promoted piece, and move type flags.
+        // We ignore internal state: HasCaptureBeenChecked and CapturedPiece bits.
+        
+        // Mask for From (6-11), To (0-5), and Special Flags (14-15)
+        const uint functionalMask = 0xFC0 | 0x3F | (3 << 14);
+        
+        return PieceMoved == other.PieceMoved &&
+               (Data & functionalMask) == (other.Data & functionalMask) &&
+               PromotedPiece == other.PromotedPiece;
+    }
+
+    public override bool Equals(object? obj) => obj is Move other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        const uint functionalMask = 0xFC0 | 0x3F | (3 << 14);
+        return HashCode.Combine(PieceMoved, Data & functionalMask, PromotedPiece);
+    }
+
+    public static bool operator ==(Move left, Move right) => left.Equals(right);
+    public static bool operator !=(Move left, Move right) => !left.Equals(right);
 
     public override string ToString()
     {

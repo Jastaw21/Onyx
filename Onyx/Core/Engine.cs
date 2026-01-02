@@ -5,7 +5,7 @@ namespace Onyx.Core;
 
 public class Engine
 {
-    public static string Version => "0.6.0";
+    public static string Version => "0.7.0";
 
     // data members
     public Board Board = new();

@@ -130,6 +130,7 @@ public static class MoveGenerator
                 var capturedPiece = Piece.MakePiece(Piece.Pawn, !isWhite);
                 move.CapturedPiece = capturedPiece;
             }
+            move.HasCaptureBeenChecked = true;
             moveBuffer[count++] = move;
             result &= result - 1;
         }
@@ -196,6 +197,7 @@ public static class MoveGenerator
                 {
                     var move = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
                     move.CapturedPiece = pieceAtTarget.Value;
+                    move.HasCaptureBeenChecked = true;
                     moveBuffer[count++] = move;
                 }
             }
@@ -310,6 +312,7 @@ public static class MoveGenerator
                 if (capturedPiece.HasValue)
                     move.CapturedPiece = capturedPiece.Value;
             }
+            move.HasCaptureBeenChecked = true;
             moveBuffer[count++] = move;
             moves &= moves - 1;
         }

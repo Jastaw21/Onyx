@@ -256,10 +256,11 @@ public class Board
 
         var isBlack = Piece.IsBlack(movePieceMoved);
         var isWhite = !isBlack;
+        var fileIndex = RankAndFile.FileIndex(move.To);
         if (move.IsCastling)
         {
             var rank = RankAndFile.RankIndex(move.To);
-            var file = RankAndFile.FileIndex(move.To);
+            var file = fileIndex;
             var rookHomeFile = file > 4 ? 7 : 0;
             var rookNewFile = file == 2 ? 3 : 5;
             var rook = Piece.MakePiece(Piece.Rook, isWhite);
@@ -272,7 +273,7 @@ public class Board
         if (move.IsEnPassant)
         {
             var pawnHomeRank = isBlack ? 3 : 4;
-            capturedOn = RankAndFile.SquareIndex(pawnHomeRank, RankAndFile.FileIndex(move.To));
+            capturedOn = RankAndFile.SquareIndex(pawnHomeRank, fileIndex);
             Bitboards.SetOn(Piece.MakePiece(Piece.Pawn, !isWhite), capturedOn.Value);
         }
 
@@ -285,6 +286,7 @@ public class Board
 
     private void ApplyMoveFlags(ref Move move)
     {
+        
         var toRankIndex = RankAndFile.RankIndex(move.To);
         var toFileIndex = RankAndFile.FileIndex(move.To);
         var fromFileIndex = RankAndFile.FileIndex(move.From);
@@ -306,6 +308,22 @@ public class Board
             !Bitboards.PieceAtSquare(move.To).HasValue)
         {
             move.IsEnPassant = true;
+        }
+        
+        // this move isn't from move gen, so need to check for capture
+        if (!move.HasCaptureBeenChecked)
+        {
+            // normal capture
+            if ((Bitboards.AllPieces & (1ul << move.To)) != 0)
+            {
+                var pieceAtSquare = Bitboards.PieceAtSquare(move.To);
+                move.CapturedPiece = pieceAtSquare.Value;
+            }
+            // en passant capture
+            else if (move.IsEnPassant)
+            {
+                move.CapturedPiece = Piece.MakePiece(Piece.Pawn, !Piece.IsWhite(move.PieceMoved));
+            }
         }
     }
 
