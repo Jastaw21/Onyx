@@ -4,15 +4,23 @@ namespace Onyx.Statics;
 
 public static class Referee
 {
-    public static bool MoveIsLegal(Move move, Board position)
+    public static bool MoveIsLegal(Move move, Board position, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
     {
         var isWhite = Piece.IsWhite(move.PieceMoved);
         var type = Piece.PieceType(move.PieceMoved);
         if (type == Piece.King)
             return FullLegalityCheck(move, position);
+        
+
+        var haveToTestForCheck = !alreadyKnowBoardInCheck;
+        var isInCheck = false;
+        if (haveToTestForCheck)
+            isInCheck = IsInCheck(position.WhiteToMove , position);
+        else
+            isInCheck = isAlreadyInCheck;
 
         // if the board isn't in check, can just check for pinned pieces
-        if (!IsInCheck(position.WhiteToMove , position))
+        if (!isInCheck)
         {
             var relevantKing = isWhite ? Piece.WK : Piece.BK;
             var kingBoard = position.Bitboards.OccupancyByPiece(relevantKing);

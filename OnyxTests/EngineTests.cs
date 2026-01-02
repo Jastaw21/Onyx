@@ -24,6 +24,54 @@ public class EngineTests
     }
 
     [Test]
+    public void FindsCheckmate()
+    {
+        var engine = new Engine();
+        List<string> startingPositions =
+        [
+            "4R3/8/8/6P1/5k2/8/Q5R1/1K6 w - - 17 77",
+            "4R3/8/8/6P1/8/5k2/Q5R1/2K5 w - - 15 76",
+            "4R3/8/8/6P1/5k2/8/6R1/1Q2K3 w - - 9 73",
+            "r3kbnr/pppp1pp1/8/2P1p3/4q2p/PP5P/b2P1PP1/2BK1BNR b kq - 1 11",
+            "r4bnr/pp1k2p1/2p2p2/4p3/PP5p/B2b3P/3P1P2/3K2Nq b - - 3 20"
+        ];
+
+        foreach (var startingPosition in startingPositions)
+        {
+            engine.SetPosition(startingPosition);
+            var bestMove = engine.Search(new SearchParameters { MaxDepth = 12 });
+            engine.Board.ApplyMove(bestMove.BestMove);
+            Assert.Multiple(() =>
+            {
+                Assert.That(bestMove.Score, Is.GreaterThan(20000));
+                Assert.That(Referee.IsCheckmate(engine.Board), Is.True);
+            });
+            engine.Board.UndoMove(bestMove.BestMove);
+        }
+        
+        engine.Reset();
+        
+        // now timed
+        foreach (var startingPosition in startingPositions)
+        {
+            engine.SetPosition(startingPosition);
+            var parameters = new SearchParameters
+            {
+                TimeControl = new TimeControl { Wtime = 32000, Btime = 32000, movesToGo = 3},
+                CancellationToken = new CancellationToken(false)
+            };
+            var bestMove = engine.Search(parameters);
+            engine.Board.ApplyMove(bestMove.BestMove);
+            Assert.Multiple(() =>
+            {
+                Assert.That(bestMove.Score, Is.GreaterThan(20000));
+                Assert.That(Referee.IsCheckmate(engine.Board), Is.True);
+            });
+            engine.Board.UndoMove(bestMove.BestMove);
+        }
+    }
+
+    [Test]
     public void FindsMateInThree()
     {
         var fen = "3NQQ2/P6P/8/8/8/1k4PK/8/8 w - - 0 94";

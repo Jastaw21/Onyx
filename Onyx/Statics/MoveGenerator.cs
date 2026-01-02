@@ -5,7 +5,7 @@ namespace Onyx.Statics;
 
 public static class MoveGenerator
 {
-    public static int GetLegalMoves(Board board, Span<Move> moveBuffer)
+    public static int GetLegalMoves(Board board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
     {
         Span<Move> pseudoMovesBuffer = stackalloc Move[256];
         int pseudoMoveCount = GetMoves(board.WhiteToMove , board, pseudoMovesBuffer);
@@ -14,7 +14,7 @@ public static class MoveGenerator
         for (int i = 0; i < pseudoMoveCount; i++)
         {
             var move = pseudoMovesBuffer[i];
-            if (Referee.MoveIsLegal(move, board))
+            if (Referee.MoveIsLegal(move, board, alreadyKnowBoardInCheck, isAlreadyInCheck))
             {
                 moveBuffer[legalMoveCount++] = move;
             }

@@ -5,7 +5,7 @@ namespace Onyx.Core;
 
 public class Engine
 {
-    public static string Version => "0.7.0";
+    public static string Version => "0.7.2";
 
     // data members
     public Board Board = new();
@@ -92,6 +92,12 @@ public class Engine
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             _statistics.Depth = depth;
+            
+            if (bestScore > MateScore - 100) 
+            {
+                // We found a way to win. No need to look deeper.
+                break; 
+            }
         }
 
         _statistics.RunTime = TimerManager.Elapsed;
@@ -122,7 +128,9 @@ public class Engine
         var safeMax = time * 0.2;
         int finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
 
-        return Math.Max(finalBudget, 50);
+        var timeBudgetPerMove = Math.Max(finalBudget, 50);
+        _statistics.ChosenMilliseconds = timeBudgetPerMove;
+        return timeBudgetPerMove;
     }
 
     private static int MovesRemaining(Board board)

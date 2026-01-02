@@ -48,8 +48,10 @@ public static class Evaluator
     {
         moves.Sort((move, move1) =>
         {
-            var aScore = move.IsPromotion ? 1 : 0;
-            var bScore = move.IsPromotion ? 1 : 0;
+            if (move.Data == move1.Data)
+            {
+                return 0;
+            }
 
             if (transpositionTableMove.HasValue && transpositionTableMove.Value.Data > 0)
             {
@@ -58,6 +60,17 @@ public static class Evaluator
                 if (move1.Data == transpositionTableMove.Value.Data)
                     return 1;
             }
+
+            if (transpositionTableMove.HasValue && transpositionTableMove.Value.Data > 0)
+            {
+                if (move.Data == transpositionTableMove.Value.Data)
+                    return -1;
+                if (move1.Data == transpositionTableMove.Value.Data)
+                    return 1;
+            }
+
+            var aScore = move.IsPromotion ? 1 : 0;
+            var bScore = move.IsPromotion ? 1 : 0;
 
             return bScore.CompareTo(aScore);
         });
@@ -77,8 +90,8 @@ public static class Evaluator
         score += whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
 
         // number of moves available to you
-        score += MobilityScore(board);
-        
+        //score += MobilityScore(board);
+
         var whitePSS = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
         var blackPSS = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         score += whitePSS - blackPSS;
@@ -92,16 +105,11 @@ public static class Evaluator
         var boardTurnToMove = board.WhiteToMove;
         Span<Move> moveBuffer = stackalloc Move[256];
 
-        var boardInCheck = Referee.IsInCheck(board.WhiteToMove, board);
         // get moves for both sides. Psuedo legal fine, but reward positions where board is in check
         board.WhiteToMove = true;
-        var whiteMoves = boardInCheck
-            ? MoveGenerator.GetLegalMoves(board, moveBuffer)
-            : MoveGenerator.GetMoves(board, moveBuffer);
+        var whiteMoves = MoveGenerator.GetMoves(board, moveBuffer);
         board.WhiteToMove = false;
-        var blackMoves = boardInCheck
-            ? MoveGenerator.GetLegalMoves(board, moveBuffer)
-            : MoveGenerator.GetMoves(board, moveBuffer);
+        var blackMoves = MoveGenerator.GetMoves(board, moveBuffer);
 
         // restore turn
         board.WhiteToMove = boardTurnToMove;
@@ -177,6 +185,7 @@ public static class Evaluator
                 score += (int)(endGameScore * enemyEndGameScale + earlyGameScore * (1 - enemyEndGameScale));
             }
             else score += GetPieceValueOnSquare(square, piece);
+
             occupancy &= occupancy - 1;
         }
 
@@ -248,7 +257,7 @@ public static class Evaluator
         -10, 0, 5, 0, 0, 0, 0, -10,
         -20, -10, -10, -5, -5, -10, -10, -20
     ];
-    private static readonly int[] RookScores =
+    private static readonly int[] RookStart =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
         5, 10, 10, 10, 10, 10, 10, 5,
@@ -258,6 +267,17 @@ public static class Evaluator
         -5, 0, 0, 0, 0, 0, 0, -5,
         -5, 0, 0, 0, 0, 0, 0, -5,
         0, 0, 0, 5, 5, 0, 0, 0
+    ];
+    private static readonly int[] RookEnd =
+    [
+        5, 5, 5, 5, 5, 5, 5, 5,
+        10, 10, 10, 10, 10, 10, 10, 10,
+        5, 5, 5, 5, 5, 5, 5, 5,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
     ];
     private static readonly int[] ZeroScores =
     [
@@ -281,7 +301,7 @@ public static class Evaluator
             Piece.Knight => KnightScores,
             Piece.Bishop => BishopStart,
             Piece.Queen => QueenScores,
-            Piece.Rook => RookScores,
+            Piece.Rook => endGame ? RookStart : RookEnd,
             _ => ZeroScores
         };
     }
