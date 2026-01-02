@@ -25,7 +25,7 @@ public record GoCommand : Command
 
 public record UciNewGameCommand : Command;
 public record IsReadyCommand : Command;
-
+public record SetLoggingOn : Command;
 public record PositionCommand : Command
 {
     public bool IsStartpos { get; }

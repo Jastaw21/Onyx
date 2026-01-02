@@ -77,11 +77,8 @@ public class EngineTests
         var fen = "3NQQ2/P6P/8/8/8/1k4PK/8/8 w - - 0 94";
         var engine = new Engine();
         engine.SetPosition(fen);
-        var bestMove = engine.Search(new SearchParameters { MaxDepth = 6 });
-        //Assert.Multiple(() => { Assert.That(bestMove.BestMove.Notation, Is.EqualTo("e8e2")); });
-        
         engine.SetPosition("Q2NQQQQ/8/8/8/8/8/5K2/1k6 w - - 5 104");
-        bestMove = engine.Search(new SearchParameters { MaxDepth = 3 });
+        var bestMove = engine.Search(new SearchParameters { MaxDepth = 3 });
         Assert.Multiple(() => { Assert.That(bestMove.Score, Is.GreaterThan(20000)); });
     }
 
@@ -130,7 +127,7 @@ public class EngineTests
             Btime = 1000
         };
         engine.Search(new SearchParameters { MaxDepth = 3, TimeControl = tc, CancellationToken = new CancellationToken(false) });
-        Assert.That(engine.Position, Is.EqualTo(fen));
+        Assert.That(engine.Board.GetFen(), Is.EqualTo(fen));
     }
 
     [Test]
@@ -140,7 +137,7 @@ public class EngineTests
         var move = new Move(Piece.WQ, "c3h8");
         var fenPre = board.GetFen();
         board.ApplyMove(move);
-        var result = Referee.IsCheckmate(board);
+        var unused = Referee.IsCheckmate(board);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo(fenPre));
     }
@@ -151,12 +148,7 @@ public class EngineTests
         var engine = new Engine();
 
         var sw = Stopwatch.StartNew();
-        var timeControl = new TimeControl
-        {
-            Btime = 1000,
-            Wtime = 1000
-        };
-        var result = engine.Search(new SearchParameters { MaxDepth = 10, TimeLimit = 1000 });
+        var unused = engine.Search(new SearchParameters { MaxDepth = 10, TimeLimit = 1000 });
         sw.Stop();
 
         Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(900).And.LessThanOrEqualTo(1100));

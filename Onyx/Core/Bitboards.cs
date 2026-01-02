@@ -10,7 +10,7 @@ public class Bitboards
         Boards = new ulong[12];
         AllPieces = 0;
         _whitePieces = 0;
-        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
+        for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
     }
 
     public Bitboards(string fenString)
@@ -18,14 +18,14 @@ public class Bitboards
         Boards = new ulong[12];
         AllPieces = 0;
         _whitePieces = 0;
-        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
+        for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         LoadFen(fenString);
     }
 
     public void LoadFen(string fenString)
     {
         // reset the boards
-        for (int i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
+        for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         _whitePieces = 0;
         AllPieces = 0;
 
@@ -93,7 +93,7 @@ public class Bitboards
         Boards[Piece.BitboardIndex(piece)] = boardByPiece;
         AllPieces = 0;
         _whitePieces = 0;
-        for (int i = 0; i < 12; i++)
+        for (var i = 0; i < 12; i++)
         {
             if (Piece.IsWhite(Piece.AllPieces[i]))
                 _whitePieces |= Boards[i];
@@ -122,8 +122,8 @@ public class Bitboards
             Boards[index] &= ~bit;
 
             // Only clear _allPieces if no other piece is on this square
-            bool stillOccupied = false;
-            for (int i = 0; i < 12; i++)
+            var stillOccupied = false;
+            for (var i = 0; i < 12; i++)
             {
                 if ((Boards[i] & bit) != 0)
                 {
@@ -156,7 +156,7 @@ public class Bitboards
 
     public sbyte? PieceAtSquare(int squareToTest)
     {
-        ulong mask = 1UL << squareToTest;
+        var mask = 1UL << squareToTest;
         if ((AllPieces & (1ul << squareToTest)) == 0) return null;
         var pieces = Piece.AllPieces;
         foreach (var piece in pieces)

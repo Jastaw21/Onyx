@@ -67,7 +67,7 @@ public static class Referee
         {
             // If the piece is on a diagonal ray and there's a diagonal attacker...
             // it can ONLY move if the destination is also on the ray between the king and that attacker.
-            int attackerSquare = (int)ulong.TrailingZeroCount(diagAttackers);
+            var attackerSquare = (int)ulong.TrailingZeroCount(diagAttackers);
             var pinRay = RankAndFile.GetRayBetween(kingSquare, attackerSquare);
             return (pinRay & (1ul << squareMoveTo)) == 0;
         }
@@ -82,7 +82,7 @@ public static class Referee
 
         if (straightAttackers != 0)
         {
-            int attackerSquare = (int)ulong.TrailingZeroCount(straightAttackers);
+            var attackerSquare = (int)ulong.TrailingZeroCount(straightAttackers);
             var pinRay = RankAndFile.GetRayBetween(kingSquare, attackerSquare);
             return (pinRay & (1ul << squareMoveTo)) == 0;
         }
@@ -108,10 +108,10 @@ public static class Referee
 
         // check each of the pieces they have moves with
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(checkingWhite, position, moveBuffer);
+        var moveCount = MoveGenerator.GetMoves(checkingWhite, position, moveBuffer);
 
         // then see if these moves take the board out of check
-        for (int i = 0; i < moveCount; i++)
+        for (var i = 0; i < moveCount; i++)
         {
             var move = moveBuffer[i];
             position.ApplyMove(move);
@@ -171,7 +171,7 @@ public static class Referee
         var fileIndex = RankAndFile.FileIndex(square);
         if (fileIndex > 0)
         {
-            int targetIndex = byWhite ? square - 9 : square + 7;
+            var targetIndex = byWhite ? square - 9 : square + 7;
             if ((uint)targetIndex < 64)
             {
                 if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;
@@ -180,7 +180,7 @@ public static class Referee
 
         if (fileIndex < 7)
         {
-            int targetIndex = byWhite ? square - 7 : square + 9;
+            var targetIndex = byWhite ? square - 7 : square + 9;
             if ((uint)targetIndex < 64)
             {
                 if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;

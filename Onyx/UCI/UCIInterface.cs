@@ -55,6 +55,9 @@ public class UciInterface
             case StopCommand:
                 StopSearch();
                 break;
+            case SetLoggingOn:
+                _player.SetLogging(true);
+                break;
         }
 
         Console.Out.Flush();

@@ -3,6 +3,43 @@ using Onyx.UCI;
 
 namespace Onyx.Core;
 
+public class TimeManager(Engine engine)
+{
+    public int TimeBudgetPerMove(TimeControl timeControl)
+    {
+        var time = engine.Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
+        var increment = engine.Board.WhiteToMove ? timeControl.Winc : timeControl.Binc;
+
+        var safeInc = increment ?? 0;
+
+        var calcMovesRemaining = MovesRemaining(engine.Board);
+        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
+
+        // if moves remaining feels nonsense, use our own calc
+        var movesToGo =
+            Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
+                ? calcMovesRemaining
+                : instructedMovesRemaining;
+        var baseTime = time / movesToGo + safeInc * 0.8;
+
+        // use max of 20% remaining time
+        var safeMax = time * 0.2;
+        var finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
+
+        var timeBudgetPerMove = Math.Max(finalBudget, 50);
+        return timeBudgetPerMove;
+    }
+
+    private static int MovesRemaining(Board board)
+    {
+        var ply = board.FullMoves * 2;
+
+        if (ply < 20) return 40; // opening
+        if (ply < 60) return 30; // middlegame
+        return 20; // endgame
+    }
+}
+
 public class Engine
 {
     public static string Version => "0.7.2";
@@ -10,17 +47,29 @@ public class Engine
     // data members
     public Board Board = new();
     private TranspositionTable TranspositionTable { get; } = new();
-    private TimerManager TimerManager { get; set; } = new();
+    private StopwatchManager StopwatchManager { get; set; } = new();
     private const int MateScore = 30000;
     private CancellationToken _ct; // for threading
-
+    private Move?[,] _killerMoves = new Move?[128,2];
+    
     // search members
     private SearchStatistics _statistics;
     private int _currentSearchId;
+    private bool _loggingEnabled;
+    private readonly TimeManager _timeManager;
 
-    public string Position => Board.GetFen();
+    public Engine()
+    {
+        _timeManager = new TimeManager(this);
+    }
 
     // UCI Interface methods
+    public void SetLogging(bool enabled)
+    {
+        _loggingEnabled = enabled;
+        Evaluator.LoggingEnabled = enabled;
+    }
+
     public void SetPosition(string fen)
     {
         Board = new Board(fen);
@@ -40,16 +89,36 @@ public class Engine
     {
         _statistics = new SearchStatistics();
         Board = new Board();
-        TimerManager = new TimerManager();
+        StopwatchManager = new StopwatchManager();
+        _killerMoves = new Move?[128,2];
     }
 
+    private void StoreKillerMove(Move move, int ply)
+    {
+        var existingMove = _killerMoves[ply,0];
+        if (existingMove == null)
+        {
+            _killerMoves[ply, 0] = move;
+            return;
+        };
+        
+        // don't store the same move twice
+        if (existingMove!.Value.Data == move.Data)
+            return;
+        
+        _killerMoves[ply,0] = move;
+        _killerMoves[ply,1] = existingMove;
+        
+    }
+    
+    
     public SearchResults Search(SearchParameters searchParameters)
     {
         _statistics = new SearchStatistics();
         _currentSearchId++;
         _ct = searchParameters.CancellationToken;
 
-        long timeLimit = long.MaxValue;
+        var timeLimit = long.MaxValue;
         var isTimed = false;
         if (searchParameters.TimeLimit.HasValue)
         {
@@ -59,12 +128,12 @@ public class Engine
 
         else if (searchParameters.TimeControl.HasValue)
         {
-            timeLimit = TimeBudgetPerMove(searchParameters.TimeControl.Value);
+            timeLimit = _timeManager.TimeBudgetPerMove(searchParameters.TimeControl.Value);
             isTimed = true;
         }
 
-        TimerManager.Start(timeLimit);
-        int depthLimit = searchParameters.MaxDepth ?? 100;
+        StopwatchManager.Start(timeLimit);
+        var depthLimit = searchParameters.MaxDepth ?? 100;
         return IterativeDeepeningSearch(depthLimit, isTimed);
     }
 
@@ -76,9 +145,9 @@ public class Engine
         for (var depth = 1; depth <= depthLimit; depth++)
         {
             // time out
-            if (isTimed && TimerManager.ShouldStop)
+            if (isTimed && StopwatchManager.ShouldStop)
             {
-                _statistics.RunTime = TimerManager.Elapsed;
+                _statistics.RunTime = StopwatchManager.Elapsed;
                 return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
             }
 
@@ -92,62 +161,26 @@ public class Engine
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             _statistics.Depth = depth;
-            
-            if (bestScore > MateScore - 100) 
+
+            if (bestScore > MateScore - 100)
             {
                 // We found a way to win. No need to look deeper.
-                break; 
+                break;
             }
         }
 
-        _statistics.RunTime = TimerManager.Elapsed;
-        Logger.Log(LogType.EngineLog, _statistics);
+        _statistics.RunTime = StopwatchManager.Elapsed;
+        
+            Logger.Log(LogType.EngineLog, _statistics);
 
         return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
     }
 
-
-    private int TimeBudgetPerMove(TimeControl timeControl)
-    {
-        var time = Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-        var increment = Board.WhiteToMove ? timeControl.Winc : timeControl.Binc;
-
-        var safeInc = increment ?? 0;
-
-        var calcMovesRemaining = MovesRemaining(Board);
-        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
-
-        // if moves remaining feels nonsense, use our own calc
-        var movesToGo =
-            Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
-                ? calcMovesRemaining
-                : instructedMovesRemaining;
-        var baseTime = time / movesToGo + safeInc * 0.8;
-
-        // use max of 20% remaining time
-        var safeMax = time * 0.2;
-        int finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
-
-        var timeBudgetPerMove = Math.Max(finalBudget, 50);
-        _statistics.ChosenMilliseconds = timeBudgetPerMove;
-        return timeBudgetPerMove;
-    }
-
-    private static int MovesRemaining(Board board)
-    {
-        var ply = board.FullMoves * 2;
-
-        if (ply < 20) return 40; // opening
-        if (ply < 60) return 30; // middlegame
-        return 20; // endgame
-    }
-
-    private (bool completed, Move bestMove, int score)
-        ExecuteSearch(int depth, bool timed)
+    private (bool completed, Move bestMove, int score) ExecuteSearch(int depth, bool timed)
     {
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(Board, moveBuffer);
-        Span<Move> moves = moveBuffer[..moveCount];
+        var moveCount = MoveGenerator.GetMoves(Board, moveBuffer);
+        var moves = moveBuffer[..moveCount];
         var bestMove = moves[0];
         var bestScore = int.MinValue + 1;
 
@@ -171,7 +204,8 @@ public class Engine
                 bestMove = move;
             }
 
-            Logger.Log(LogType.Search,$"{Board.GetFen()} {move} Score: {score} Depth: {depth}");
+            if (_loggingEnabled)
+                Logger.Log(LogType.Search, $"{Board.GetFen()} {move} Score: {score} Depth: {depth}");
             alpha = Math.Max(alpha, score);
         }
 
@@ -182,45 +216,29 @@ public class Engine
     {
         if ((_statistics.Nodes & 2047) == 0)
         {
-            if ((timed && TimerManager.ShouldStop) || _ct.IsCancellationRequested)
+            if ((timed && StopwatchManager.ShouldStop) || _ct.IsCancellationRequested)
                 return SearchFlag.Abort;
         }
 
         _statistics.Nodes++;
 
         Span<Move> moveBuffer = stackalloc Move[256];
-        int moveCount = MoveGenerator.GetMoves(board, moveBuffer);
-        Span<Move> moves = moveBuffer[..moveCount];
-        // no moves, either checkmate or stalemate
-        if (moveCount == 0)
-        {
-            return Referee.IsCheckmate(board)
-                ? new SearchFlag(true, -(MateScore - ply))
-                : new SearchFlag(true, 0); // stalemate
-        }
+        var moveCount = MoveGenerator.GetMoves(board, moveBuffer);
+        var moves = moveBuffer[..moveCount];
 
-        // leaf node
-        if (depth == 0)
-        {
-            if (Referee.IsCheckmate(board))
-            {
-                return new SearchFlag(true, -(MateScore - ply));
-            }
-
-            return new SearchFlag(true, Evaluator.Evaluate(board));
-        }
+        // exit if the end-of-game state
+        var flagExit = AssessCheckmateOrStalemate(depth, board, ply, moveCount, out var searchFlag);
+        if (flagExit) return searchFlag;
 
         var alphaOrig = alpha;
         var bestValue = int.MinValue + 1;
 
         // ---- TT probe ----
         var hash = board.Zobrist.HashValue;
-        if (TTProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
-        {
+        if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
-        }
 
-        Evaluator.SortMoves(moves, ttMove);
+        Evaluator.SortMoves(moves, ttMove,_killerMoves,ply);
 
         Move bestMove = default;
         var legalMoveCount = 0;
@@ -249,10 +267,23 @@ public class Engine
 
             if (alpha < beta) continue;
 
+            // beta cutoff
             _statistics.BetaCutoffs++;
+            if (move.CapturedPiece == 0)
+                StoreKillerMove(move, ply);
             break;
         }
 
+        bestValue = HandleTtStoring(depth, beta, board, ply, legalMoveCount, bestValue, alphaOrig, hash, bestMove);
+
+
+        return new SearchFlag(true, bestValue);
+    }
+
+    private int HandleTtStoring(int depth, int beta, Board board, int ply, int legalMoveCount, int bestValue,
+        int alphaOrig,
+        ulong hash, Move bestMove)
+    {
         // No legal moves were found in the loop -- need to make sure we've cleared the nonsense Int.MaxValue score.
         var endGameScore = 0;
         var endGameScoreModified = false;
@@ -278,12 +309,40 @@ public class Engine
 
         TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
         _statistics.TtStores++;
-
-
-        return new SearchFlag(true, bestValue);
+        return bestValue;
     }
 
-    private bool TTProbe(int depth, int alpha, int beta, ulong hash, out SearchFlag searchFlag, out Move bestMove)
+    private static bool AssessCheckmateOrStalemate(int depth, Board board, int ply, int moveCount,
+        out SearchFlag flag)
+    {
+        // no moves, either checkmate or stalemate
+        if (moveCount == 0)
+        {
+            flag = Referee.IsCheckmate(board)
+                ? new SearchFlag(true, -(MateScore - ply))
+                : new SearchFlag(true, 0); // stalemate
+            return true;
+        }
+
+        // leaf node
+        if (depth == 0)
+        {
+            if (Referee.IsCheckmate(board))
+            {
+                flag = new SearchFlag(true, -(MateScore - ply));
+                return true;
+            }
+
+            flag = new SearchFlag(true, Evaluator.Evaluate(board));
+            return true;
+        }
+
+        flag = default;
+        return false;
+    }
+
+    private bool TtProbe(int depth, int alpha, int beta, ulong hash, out SearchFlag searchFlag,
+        out Move bestMove)
     {
         var entry = TranspositionTable.Retrieve(hash);
 
@@ -322,20 +381,15 @@ public class Engine
                     break;
             }
         }
+
         searchFlag = default;
         return false;
     }
 
-    internal readonly struct SearchFlag
+    internal readonly struct SearchFlag(bool completed, int value)
     {
-        public bool Completed { get; }
-        public int Value { get; }
-
-        public SearchFlag(bool completed, int value)
-        {
-            Completed = completed;
-            Value = value;
-        }
+        public bool Completed { get; } = completed;
+        public int Value { get; } = value;
 
         public static SearchFlag Abort => new(false, 0);
     }

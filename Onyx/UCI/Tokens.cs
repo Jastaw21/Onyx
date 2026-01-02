@@ -28,7 +28,7 @@ public enum TokenType
     Quit,
     Stop,
     Divide,
-    
+    SetLoggingOn,
     DebugBoard
 }
 

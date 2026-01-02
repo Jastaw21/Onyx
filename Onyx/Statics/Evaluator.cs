@@ -44,36 +44,49 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
-    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove)
+    public static bool LoggingEnabled = false;
+    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
-        moves.Sort((move, move1) =>
+        moves.Sort((a, b) =>
         {
-            if (move.Data == move1.Data)
+            if (a.Data == b.Data)
             {
                 return 0;
             }
 
-            if (transpositionTableMove.HasValue && transpositionTableMove.Value.Data > 0)
+            if (transpositionTableMove is { Data: > 0 })
             {
-                if (move.Data == transpositionTableMove.Value.Data)
+                if (a.Data == transpositionTableMove.Value.Data)
                     return -1;
-                if (move1.Data == transpositionTableMove.Value.Data)
+                if (b.Data == transpositionTableMove.Value.Data)
                     return 1;
             }
 
-            if (transpositionTableMove.HasValue && transpositionTableMove.Value.Data > 0)
-            {
-                if (move.Data == transpositionTableMove.Value.Data)
-                    return -1;
-                if (move1.Data == transpositionTableMove.Value.Data)
-                    return 1;
-            }
-
-            var aScore = move.IsPromotion ? 1 : 0;
-            var bScore = move.IsPromotion ? 1 : 0;
+            var aScore = GetMoveScore(a, killerMoves, ply);
+            var bScore = GetMoveScore(b,killerMoves, ply);
 
             return bScore.CompareTo(aScore);
         });
+    }
+
+    private static int GetMoveScore(Move move, Move?[,] killerMoves, int ply)
+    {
+        var score = 0;
+        if (move.IsPromotion) score += 10000;
+
+        if (move.CapturedPiece != 0)
+        {
+            var victimPiece = PieceValues[Piece.PieceTypeIndex(move.CapturedPiece)];
+            var attackerPiece = PieceValues[Piece.PieceTypeIndex(move.PieceMoved)];
+            score += 9000 + (victimPiece * 10 - attackerPiece);
+        }
+        
+        if (killerMoves[ply, 0]?.Data == move.Data)
+            return 8000;
+        if (killerMoves[ply, 1]?.Data == move.Data)
+            return 7000;
+
+        return score;
     }
 
     public static int Evaluate(Board board)
@@ -86,15 +99,16 @@ public static class Evaluator
         // value of material
         var materialScore = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
         
-        // small boost for having both bishops on the board
+        // a small boost for having both bishops on the board
         var bishopPairScore = whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
         
         // piece square score
-        var whitePSS = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
-        var blackPSS = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
-        var pieceSquareScore = whitePSS - blackPSS;
+        var whitePss = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
+        var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
+        var pieceSquareScore = whitePss - blackPss;
         
-        Logger.Log(LogType.Evaluator,$"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
+        if (LoggingEnabled)
+            Logger.Log(LogType.Evaluator,$"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
         
         var score = materialScore + bishopPairScore + pieceSquareScore;
         return board.WhiteToMove ? score : -score;
@@ -106,7 +120,7 @@ public static class Evaluator
         var boardTurnToMove = board.WhiteToMove;
         Span<Move> moveBuffer = stackalloc Move[256];
 
-        // get moves for both sides. Psuedo legal fine, but reward positions where board is in check
+        // get moves for both sides. Pseudo legal fine, but reward positions where board is in check
         board.WhiteToMove = true;
         var whiteMoves = MoveGenerator.GetMoves(board, moveBuffer);
         board.WhiteToMove = false;
@@ -121,7 +135,7 @@ public static class Evaluator
 
     private static MaterialEvaluation EvaluateMaterial(Board board, bool forWhite)
     {
-        MaterialEvaluation materialEvaluation = new MaterialEvaluation();
+        var materialEvaluation = new MaterialEvaluation();
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
         foreach (var piece in pieces)
         {
@@ -181,6 +195,7 @@ public static class Evaluator
             var square = (int)lowestSetBit;
             if (Piece.PieceType(piece) == Piece.Pawn)
             {
+                // ReSharper disable once RedundantArgumentDefaultValue
                 var earlyGameScore = GetPieceValueOnSquare(square, piece, false);
                 var endGameScore = GetPieceValueOnSquare(square, piece, true);
                 score += (int)(endGameScore * enemyEndGameScale + earlyGameScore * (1 - enemyEndGameScale));
@@ -199,7 +214,7 @@ public static class Evaluator
     public static int GetPieceValueOnSquare(int square, sbyte piece, bool endGame = false)
     {
         var index = Piece.IsWhite(piece) ? square ^ 56 : square;
-        return getArray(piece, endGame)[index];
+        return GetArray(piece, endGame)[index];
     }
 
     // tables are laid out like looking at a board from white's perspective'
@@ -215,7 +230,7 @@ public static class Evaluator
         0, 0, 0, 0, 0, 0, 0, 0
     ];
     private static readonly int[] PawnEnd =
-    {
+    [
         0, 0, 0, 0, 0, 0, 0, 0,
         80, 80, 80, 80, 80, 80, 80, 80,
         50, 50, 50, 50, 50, 50, 50, 50,
@@ -224,7 +239,7 @@ public static class Evaluator
         10, 10, 10, 10, 10, 10, 10, 10,
         10, 10, 10, 10, 10, 10, 10, 10,
         0, 0, 0, 0, 0, 0, 0, 0
-    };
+    ];
     private static readonly int[] BishopStart =
     [
         -10, -10, -10, -10, -10, -10, -10, -10,
@@ -292,7 +307,7 @@ public static class Evaluator
         0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
-    private static int[] getArray(sbyte piece, bool endGame = false)
+    private static int[] GetArray(sbyte piece, bool endGame = false)
     {
         var type = Piece.PieceType(piece);
 

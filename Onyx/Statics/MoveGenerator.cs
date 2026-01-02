@@ -8,10 +8,10 @@ public static class MoveGenerator
     public static int GetLegalMoves(Board board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
     {
         Span<Move> pseudoMovesBuffer = stackalloc Move[256];
-        int pseudoMoveCount = GetMoves(board.WhiteToMove , board, pseudoMovesBuffer);
-        int legalMoveCount = 0;
+        var pseudoMoveCount = GetMoves(board.WhiteToMove , board, pseudoMovesBuffer);
+        var legalMoveCount = 0;
 
-        for (int i = 0; i < pseudoMoveCount; i++)
+        for (var i = 0; i < pseudoMoveCount; i++)
         {
             var move = pseudoMovesBuffer[i];
             if (Referee.MoveIsLegal(move, board, alreadyKnowBoardInCheck, isAlreadyInCheck))
@@ -61,7 +61,7 @@ public static class MoveGenerator
 
     public static int GetMoves(bool forWhite, Board board, Span<Move> moveBuffer)
     {
-        int moveCount = 0;
+        var moveCount = 0;
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
         foreach (var piece in pieces)
         {

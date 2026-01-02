@@ -47,6 +47,8 @@ public class UciParser
                     return new StopCommand();
                 case TokenType.DebugBoard:
                     return new DebugCommand();
+                case TokenType.SetLoggingOn:
+                    return new SetLoggingOn();
                 default:
                     throw new ArgumentException(
                         $"Invalid starting token of type {currentToken.Type} with value {currentToken.Value}");
@@ -56,10 +58,10 @@ public class UciParser
         return null;
     }
 
-    private Command? ParseGoCommand()
+    private GoCommand ParseGoCommand()
     {
         var command = new GoCommand();
-        TimeControl tc = new TimeControl();
+        var tc = new TimeControl();
         while (Peek().Type != TokenType.Eof)
         {
             var token = Peek();
@@ -117,15 +119,13 @@ public class UciParser
             }
         }
 
-        if (tc.Wtime > 0 && tc.Btime > 0)
+        if (tc is { Wtime: > 0, Btime: > 0 })
             command.TimeControl = tc;
         else command.TimeControl = null;
         return command;
     }
 
-    
-
-    private Command? ParsePositionCommand()
+    private PositionCommand? ParsePositionCommand()
     {
         var isStartpos = false;
 
@@ -134,7 +134,7 @@ public class UciParser
         if (positionType.Type == TokenType.Fen)
             isStartpos = false;
 
-        // if we haven't recieved position fen, the next word must be startpos
+        // if we haven't received position fen, the next word must be startpos
         if (positionType.Type != TokenType.Startpos && positionType.Type != TokenType.Fen)
             return null;
 

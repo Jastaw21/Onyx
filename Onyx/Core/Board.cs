@@ -51,7 +51,7 @@ public class Board
 {
     public Board Clone()
     {
-        return new Board(this.GetFen());
+        return new Board(GetFen());
     }
 
     public readonly Bitboards Bitboards;

@@ -1,17 +1,17 @@
 ﻿using System.Diagnostics;
 
 namespace Onyx.Core;
-public class TimerManager
+public class StopwatchManager
 {
     private Stopwatch _stopwatch = null!;
     private bool _started;
     private long _milliseconds;
-    public bool instantStopFlag = false;
+    public readonly bool instantStopFlag = false;
 
-    public void Start(long milliseconds_)
+    public void Start(long milliseconds)
     {
         _stopwatch = Stopwatch.StartNew();
-        _milliseconds = milliseconds_;
+        _milliseconds = milliseconds;
         _started = true;
     }
 

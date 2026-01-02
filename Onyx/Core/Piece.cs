@@ -1,5 +1,8 @@
-﻿namespace Onyx.Core;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace Onyx.Core;
+
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 public static class Piece
 {
     // first 0th-3rd bits encode the type, 4th the colour
@@ -18,39 +21,39 @@ public static class Piece
     public static bool IsWhite(sbyte piece) => (piece & IsBlack_) == 0;
     public static bool IsBlack(sbyte piece) => !IsWhite(piece);
 
-    public static sbyte WP = Pawn;
-    public static sbyte WN = Knight;
-    public static sbyte WB = Bishop;
-    public static sbyte WR = Rook;
-    public static sbyte WK = King;
-    public static sbyte WQ = Queen;
+    public static readonly sbyte WP = Pawn;
+    public static readonly sbyte WN = Knight;
+    public static readonly sbyte WB = Bishop;
+    public static readonly sbyte WR = Rook;
+    public static readonly sbyte WK = King;
+    public static readonly sbyte WQ = Queen;
 
-    public static sbyte BP = Pawn | IsBlack_;
-    public static sbyte BN = Knight | IsBlack_;
-    public static sbyte BB = Bishop | IsBlack_;
-    public static sbyte BR = Rook | IsBlack_;
-    public static sbyte BK = King | IsBlack_;
-    public static sbyte BQ = Queen | IsBlack_;
+    public static readonly sbyte BP = Pawn | IsBlack_;
+    public static readonly sbyte BN = Knight | IsBlack_;
+    public static readonly sbyte BB = Bishop | IsBlack_;
+    public static readonly sbyte BR = Rook | IsBlack_;
+    public static readonly sbyte BK = King | IsBlack_;
+    public static readonly sbyte BQ = Queen | IsBlack_;
 
     public static int BitboardIndex(sbyte piece)
     {
         return (piece & IsBlack_) > 0 ? PieceType(piece) - 1 + 6 : PieceType(piece) - 1;
     }
 
-    public readonly static sbyte[] AllPieces =
+    public static readonly sbyte[] AllPieces =
     [
         WP, WB, WK, WQ, WN, WR,
         BP, BB, BK, BQ, BN, BR
     ];
-    public static sbyte[] _whitePieces =
+    public static readonly sbyte[] _whitePieces =
     [
         WP, WB, WK, WQ, WN, WR
     ];
-    public static sbyte[] _blackPieces =
+    public static readonly sbyte[] _blackPieces =
     [
         BP, BB, BK, BQ, BN, BR
     ];
 
-    public static sbyte[] _whitePromotionTypes = [WB, WQ, WR, WN];
-    public static sbyte[] _blackPromotionTypes = [BB, BQ, BR, BN];
+    public static readonly sbyte[] _whitePromotionTypes = [WB, WQ, WR, WN];
+    public static readonly sbyte[] _blackPromotionTypes = [BB, BQ, BR, BN];
 }

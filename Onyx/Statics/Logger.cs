@@ -22,7 +22,7 @@ public static class Logger
     {
         var logFile = type switch
         {
-            LogType.UCIReceived => "recieved",
+            LogType.UCIReceived => "received",
             LogType.UCISent => "sent",
             LogType.EngineLog => "engine",
             LogType.Search => "search",
@@ -40,7 +40,7 @@ public static class Logger
     {
         var logFile = type switch
         {
-            LogType.UCIReceived => "recieved",
+            LogType.UCIReceived => "received",
             LogType.UCISent => "sent",
             LogType.EngineLog => "engine",
             LogType.Search => "search",
@@ -49,7 +49,7 @@ public static class Logger
         };
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logEntry = $"[{timestamp}] [{logFile}] {loggable.Get()}";
-
+        Console.Error.WriteLine(logEntry);
         var finalLog = "uci_log" + timeString + ".log";
         File.AppendAllText(finalLog, logEntry + Environment.NewLine);
     }
