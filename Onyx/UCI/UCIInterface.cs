@@ -114,8 +114,9 @@ public class UciInterface
                     var result = $"bestmove {move.BestMove}";
                     var infoString = PrintSearchInfoString(move);
                     
-                    Console.WriteLine($"bestmove {move.BestMove}");
                     Console.WriteLine(infoString);
+                    Console.WriteLine($"bestmove {move.BestMove}");
+                    
                     
                     Logger.Log(LogType.UCISent, result);
                     Logger.Log(LogType.UCISent, infoString);
@@ -138,14 +139,16 @@ public class UciInterface
         _engineThread?.Join(1000);
     }
 
-    private string MovesToString(List<Move> moves)
+    private string MovesToString(List<Move>? moves)
     {
         var sb = new StringBuilder();
+        if (moves == null || moves.Count == 0) return sb.ToString();
         foreach (var move in moves)
         {
             sb.Append(move.Notation);
             sb.Append(' ');
         }
+        sb.Remove(sb.Length - 1, 1); // remove last space
         return sb.ToString();
     }
 
@@ -156,7 +159,7 @@ public class UciInterface
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
-        return $"info depth {stats.Depth} nodes {stats.Nodes} time {stats.RunTime} nps {nps} pv {MovesToString(pv)}";
+        return $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
     }
 
     private readonly UciParser _parser = new();

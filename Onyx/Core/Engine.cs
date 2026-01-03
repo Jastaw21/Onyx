@@ -145,25 +145,22 @@ public class Engine
     {
         Move bestMove = default;
         var bestScore = 0;
-
+        List<Move> pv = [];
         for (var depth = 1; depth <= depthLimit; depth++)
         {
-            // time out
-            if (isTimed && StopwatchManager.ShouldStop)
-            {
-                _statistics.RunTime = StopwatchManager.Elapsed;
-                return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
-            }
-
-            // stop flag thrown from gui, return best so far
-            if (_ct.IsCancellationRequested)
-                return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
-
             var searchResult = ExecuteSearch(depth, isTimed);
             if (!searchResult.completed) continue;
 
+            // stop flag thrown from gui, return best so far
+            if (_ct.IsCancellationRequested)
+            {
+                return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
+            }
+
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
+            pv.Clear();
+            BuildPV(pv);
             _statistics.Depth = depth;
 
             if (bestScore > MateScore - 100)
@@ -175,15 +172,12 @@ public class Engine
 
         _statistics.RunTime = StopwatchManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
-
-        List<Move> pv = new();
-        BuildPV(pv);
-        return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv  };
+        
+        return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
     }
 
     public void BuildPV(List<Move> pv)
     {
-        
         for (int i = 0; i < _pvLength[0]; i++)
         {
             var move = _pvTable[0, i];
@@ -264,8 +258,7 @@ public class Engine
         var hash = board.Zobrist.HashValue;
         if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
-        
-        
+
 
         Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
 
@@ -326,8 +319,9 @@ public class Engine
         var endGameScoreModified = false;
         if (legalMoveCount == 0)
         {
+            var boardState = Referee.IsCheckmate(board);
             endGameScoreModified = true;
-            if (Referee.IsCheckmate(board))
+            if (boardState == Statics.BoardState.Checkmate)
                 endGameScore = -(MateScore - ply);
             else
                 endGameScore = 0;
@@ -356,7 +350,6 @@ public class Engine
         // no moves, either checkmate or stalemate
         if (moveCount == 0)
         {
-            
             _pvLength[ply] = ply;
             flag = boardState == Statics.BoardState.Checkmate
                 ? new SearchFlag(true, -(MateScore - ply))
