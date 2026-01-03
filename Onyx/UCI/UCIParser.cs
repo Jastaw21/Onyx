@@ -119,7 +119,7 @@ public class UciParser
             }
         }
 
-        if (tc is { Wtime: > 0, Btime: > 0 })
+        if (tc.Wtime > 0 || tc.Btime > 0)
             command.TimeControl = tc;
         else command.TimeControl = null;
         return command;
