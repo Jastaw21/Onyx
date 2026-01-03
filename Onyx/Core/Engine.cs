@@ -172,7 +172,7 @@ public class Engine
 
         _statistics.RunTime = StopwatchManager.Elapsed;
         Logger.Log(LogType.EngineLog, _statistics);
-        
+
         return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
     }
 
@@ -246,7 +246,7 @@ public class Engine
 
         // exit if the end-of-game state
         var flagExit = AssessCheckmateOrStalemate(depth, board, ply, moveCount, out var searchFlag);
-        if (flagExit)
+        if (flagExit.exit)
         {
             return searchFlag;
         }
@@ -303,31 +303,20 @@ public class Engine
                 StoreKillerMove(move, ply);
             break;
         }
-
-        bestValue = HandleTtStoring(depth, beta, board, ply, legalMoveCount, bestValue, alphaOrig, hash, bestMove);
-
-
-        return new SearchFlag(true, bestValue);
-    }
-
-    private int HandleTtStoring(int depth, int beta, Board board, int ply, int legalMoveCount, int bestValue,
-        int alphaOrig,
-        ulong hash, Move bestMove)
-    {
-        // No legal moves were found in the loop -- need to make sure we've cleared the nonsense Int.MaxValue score.
+        
+        
+        // handle if the board is in an illegal state
         var endGameScore = 0;
         var endGameScoreModified = false;
         if (legalMoveCount == 0)
         {
-            var boardState = Referee.IsCheckmate(board);
             endGameScoreModified = true;
-            if (boardState == Statics.BoardState.Checkmate)
+            if (flagExit.state == BoardStatus.Checkmate)
                 endGameScore = -(MateScore - ply);
             else
                 endGameScore = 0;
         }
 
-        // only store in the transposition table if legal moves were found
         BoundFlag flag;
         if (endGameScoreModified)
             bestValue = endGameScore;
@@ -340,10 +329,12 @@ public class Engine
 
         TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
         _statistics.TtStores++;
-        return bestValue;
+
+        return new SearchFlag(true, bestValue);
     }
 
-    private bool AssessCheckmateOrStalemate(int depth, Board board, int ply, int moveCount,
+    private (bool exit, BoardStatus state) AssessCheckmateOrStalemate(int depth, Board board, int ply,
+        int moveCount,
         out SearchFlag flag)
     {
         var boardState = Referee.IsCheckmate(board);
@@ -351,28 +342,31 @@ public class Engine
         if (moveCount == 0)
         {
             _pvLength[ply] = ply;
-            flag = boardState == Statics.BoardState.Checkmate
+            flag = boardState == BoardStatus.Checkmate
                 ? new SearchFlag(true, -(MateScore - ply))
                 : new SearchFlag(true, 0); // stalemate
-            return true;
+            var state = boardState == BoardStatus.Checkmate
+                ? BoardStatus.Checkmate
+                : BoardStatus.Stalemate;
+            return (true, state);
         }
 
         // leaf node
         if (depth == 0)
         {
             _pvLength[ply] = ply;
-            if (boardState == Statics.BoardState.Checkmate)
+            if (boardState == BoardStatus.Checkmate)
             {
                 flag = new SearchFlag(true, -(MateScore - ply));
-                return true;
+                return (true, BoardStatus.Checkmate);
             }
 
             flag = new SearchFlag(true, Evaluator.Evaluate(board));
-            return true;
+            return (true, BoardStatus.Normal);
         }
 
         flag = default;
-        return false;
+        return (false, BoardStatus.Normal);
     }
 
     private bool TtProbe(int depth, int alpha, int beta, ulong hash, out SearchFlag searchFlag,

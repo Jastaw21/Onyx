@@ -36,7 +36,7 @@ public static class BoardConstants
         [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
 }
 
-public class BoardState
+public class PositionState
 {
     public sbyte? CapturedPiece;
     public int? EnPassantSquare;
@@ -63,8 +63,8 @@ public class Board
     public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
-    public Stack<BoardState> BoardStateHistory { get; }
-
+    public Stack<PositionState> BoardStateHistory { get; }
+    
     public sbyte LastCapture => BoardStateHistory.Count > 0 && BoardStateHistory.Last().CapturedPiece.HasValue
         ? BoardStateHistory.Last().CapturedPiece.Value
         : (sbyte)0;
@@ -74,8 +74,8 @@ public class Board
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         Zobrist = new Zobrist(fen);
-        BoardStateHistory = new Stack<BoardState>();
-        var startingState = new BoardState
+        BoardStateHistory = new Stack<PositionState>();
+        var startingState = new PositionState
         {
             Hash = Zobrist.HashValue, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
             HalfMove = HalfMoves, FullMove = FullMoves
@@ -143,10 +143,13 @@ public class Board
             capturedSquare = move.To;
         }
 
+        var zobristHashValue = Zobrist.HashValue;
         if (fullApplyMove)
+        {
             Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
+        }
 
-        var state = new BoardState
+        var state = new PositionState
         {
             CapturedPiece = capturedPiece,
             EnPassantSquare = EnPassantSquare,
@@ -154,7 +157,7 @@ public class Board
             LastMoveFlags = move.Data,
             FullMove = FullMoves,
             HalfMove = HalfMoves,
-            Hash = Zobrist.HashValue
+            Hash = zobristHashValue
         };
         BoardStateHistory.Push(state);
 
@@ -216,6 +219,7 @@ public class Board
             FullMoves++;
         if (pieceType != Piece.Pawn && !capturedPiece.HasValue)
             HalfMoves++;
+        // irreversible move
         else
         {
             HalfMoves = 0;
@@ -278,7 +282,9 @@ public class Board
         }
 
         if (fullUndoMove)
+        {
             Zobrist.ApplyMove(move, previousState.CapturedPiece, capturedOn);
+        }
 
 
         SwapTurns();

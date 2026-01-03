@@ -2,7 +2,7 @@
 
 namespace Onyx.Statics;
 
-public enum BoardState
+public enum BoardStatus
 {
     Normal,
     Check,
@@ -108,10 +108,10 @@ public static class Referee
         return IsSquareAttacked((int)square, position, !isWhite);
     }
 
-    public static (bool isCheckmate, BoardState boardState) IsCheckmate(bool checkingWhite, Board position)
+    public static (bool isCheckmate, BoardStatus boardState) IsCheckmate(bool checkingWhite, Board position)
     {
         if (!IsInCheck(checkingWhite, position))
-            return (false, BoardState.Normal);
+            return (false, BoardStatus.Normal);
 
         // check each of the pieces they have moves with
         Span<Move> moveBuffer = stackalloc Move[256];
@@ -125,19 +125,19 @@ public static class Referee
             var isInCheck = IsInCheck(checkingWhite, position);
             position.UndoMove(move);
             if (!isInCheck)
-                return (false, BoardState.Check);
+                return (false, BoardStatus.Check);
         }
 
-        return (true, BoardState.Checkmate);
+        return (true, BoardStatus.Checkmate);
     }
 
-    public static BoardState IsCheckmate(Board position)
+    public static BoardStatus IsCheckmate(Board position)
     {
         var whiteState = IsCheckmate(true, position);
         var blackState = IsCheckmate(false, position);
-        if (whiteState.isCheckmate || blackState.isCheckmate) return BoardState.Checkmate;
-        if (whiteState.boardState == BoardState.Check || blackState.boardState == BoardState.Check) return BoardState.Check;
-        return BoardState.Normal;
+        if (whiteState.isCheckmate || blackState.isCheckmate) return BoardStatus.Checkmate;
+        if (whiteState.boardState == BoardStatus.Check || blackState.boardState == BoardStatus.Check) return BoardStatus.Check;
+        return BoardStatus.Normal;
     }
 
     public static bool IsSquareAttacked(int square, Board board, bool byWhite)
@@ -209,15 +209,22 @@ public static class Referee
 
     public static bool IsThreeFoldRepetition(Board board)
     {
-        if (board.BoardStateHistory.Count <6) return false;
-        
-        var recentStates = board.BoardStateHistory.TakeLast(5);
-        var currentHash = board.BoardStateHistory.Last().Hash;
-        var boardStates = recentStates.ToList();
-        
-        if (boardStates.ElementAt(0).Hash == currentHash) return true;
-        if (boardStates.ElementAt(2).Hash == currentHash) return true;
-        
+        var currentHash = board.Zobrist.HashValue;
+        int matches = 0;
+        int historyToSearch = board.HalfMoves;
+
+        // Iterate through the stack (Top to Bottom)
+        foreach (var state in board.BoardStateHistory)
+        {
+            if (historyToSearch <= 0) break;
+            if (state.Hash == currentHash)
+            {
+                matches++;
+                if (matches >= 2) return true; // Found 3rd occurrence (1 current + 2 in history)
+            }
+            historyToSearch--;
+        }
+
         return false;
     }
 }

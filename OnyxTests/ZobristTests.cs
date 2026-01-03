@@ -110,4 +110,15 @@ public class ZobristTests
             Assert.That(board.Zobrist.HashValue, Is.EqualTo(hashPre));
         }
     }
+    [Test]
+    public void ZobristHashIsStableWithRepeatedMoves()
+    {
+        var board = new Board("8/8/8/2k2b2/8/1B1pK3/2pB4/8 b - - 23 69");
+        var hashPre = board.Zobrist.HashValue;
+        board.ApplyMove(new Move(Piece.BB, "f5g6"));
+        board.ApplyMove(new Move(Piece.WB, "b3a2"));
+        board.ApplyMove(new Move(Piece.BB, "g6f5"));
+        board.ApplyMove(new Move(Piece.WB, "a2b3"));
+        Assert.That(board.Zobrist.HashValue, Is.EqualTo(hashPre));
+    }
 }

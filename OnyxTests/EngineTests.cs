@@ -2,7 +2,6 @@
 using Onyx.Core;
 using Onyx.Statics;
 using Onyx.UCI;
-
 namespace OnyxTests;
 
 public class EngineTests
@@ -44,7 +43,7 @@ public class EngineTests
             Assert.Multiple(() =>
             {
                 Assert.That(bestMove.Score, Is.GreaterThan(20000));
-                Assert.That(Referee.IsCheckmate(engine.Board), Is.True);
+                Assert.That(Referee.IsCheckmate(engine.Board), Is.EqualTo(BoardStatus.Checkmate));
             });
             engine.Board.UndoMove(bestMove.BestMove);
         }
@@ -65,7 +64,7 @@ public class EngineTests
             Assert.Multiple(() =>
             {
                 Assert.That(bestMove.Score, Is.GreaterThan(20000));
-                Assert.That(Referee.IsCheckmate(engine.Board), Is.True);
+                Assert.That(Referee.IsCheckmate(engine.Board), Is.EqualTo(BoardStatus.Checkmate));
             });
             engine.Board.UndoMove(bestMove.BestMove);
         }

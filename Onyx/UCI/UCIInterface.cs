@@ -33,7 +33,7 @@ public class UciInterface
                 List<string> lines = [$"id name Onyx {Engine.Version}", "id author JackWeddell", "uciok"];
                 foreach (var line in lines)
                 {
-                    Logger.Log(LogType.UCISent, line);
+                    //Logger.Log(LogType.UCISent, line);
                     Console.WriteLine(line);
                 }
 
@@ -93,7 +93,7 @@ public class UciInterface
                     var perftResult = _player.Perft(i);
               
                     var result = $"Depth {i} :  {perftResult}";
-                    Logger.Log(LogType.UCISent, result);
+                    //Logger.Log(LogType.UCISent, result);
                     Console.WriteLine($"Depth {i} :  {perftResult}");
                 }
             }
@@ -118,8 +118,8 @@ public class UciInterface
                     Console.WriteLine($"bestmove {move.BestMove}");
                     
                     
-                    Logger.Log(LogType.UCISent, result);
-                    Logger.Log(LogType.UCISent, infoString);
+                    //Logger.Log(LogType.UCISent, result);
+                    //Logger.Log(LogType.UCISent, infoString);
                 }
 
                 catch (OperationCanceledException)

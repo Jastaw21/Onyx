@@ -1,0 +1,1 @@
+﻿ .\fastchess -engine cmd=..\v0.7.3\Onyx.exe name="0.7.2" -engine cmd=..\v0.7.3\Onyx.exe name="0.7.3" -rounds 1 -each tc=20+0.1 -pgnout file="pgn.pgn"
