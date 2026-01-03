@@ -40,4 +40,5 @@ public struct SearchResults
     public Move BestMove;
     public int Score;
     public SearchStatistics Statistics;
+    public List<Move> PV;
 }

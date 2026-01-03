@@ -2,6 +2,13 @@
 
 namespace Onyx.Statics;
 
+public enum BoardState
+{
+    Normal,
+    Check,
+    Checkmate,
+    Stalemate
+}
 public static class Referee
 {
     public static bool MoveIsLegal(Move move, Board position, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
@@ -101,10 +108,10 @@ public static class Referee
         return IsSquareAttacked((int)square, position, !isWhite);
     }
 
-    public static bool IsCheckmate(bool checkingWhite, Board position)
+    public static (bool isCheckmate, BoardState boardState) IsCheckmate(bool checkingWhite, Board position)
     {
         if (!IsInCheck(checkingWhite, position))
-            return false;
+            return (false, BoardState.Normal);
 
         // check each of the pieces they have moves with
         Span<Move> moveBuffer = stackalloc Move[256];
@@ -118,15 +125,19 @@ public static class Referee
             var isInCheck = IsInCheck(checkingWhite, position);
             position.UndoMove(move);
             if (!isInCheck)
-                return false;
+                return (false, BoardState.Check);
         }
 
-        return true;
+        return (true, BoardState.Checkmate);
     }
 
-    public static bool IsCheckmate(Board position)
+    public static BoardState IsCheckmate(Board position)
     {
-        return IsCheckmate(true, position) || IsCheckmate(false, position);
+        var whiteState = IsCheckmate(true, position);
+        var blackState = IsCheckmate(false, position);
+        if (whiteState.isCheckmate || blackState.isCheckmate) return BoardState.Checkmate;
+        if (whiteState.boardState == BoardState.Check || blackState.boardState == BoardState.Check) return BoardState.Check;
+        return BoardState.Normal;
     }
 
     public static bool IsSquareAttacked(int square, Board board, bool byWhite)

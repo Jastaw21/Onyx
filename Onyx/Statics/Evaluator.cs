@@ -146,23 +146,23 @@ public static class Evaluator
             switch (Piece.PieceType(piece))
             {
                 case Piece.Pawn:
-                    materialEvaluation.Pawns++;
+                    materialEvaluation.Pawns+= (int)pieceCount;
                     //materialEvaluation.PawnBoard = occupancyByPiece;
                     break;
                 case Piece.Knight:
-                    materialEvaluation.Knights++;
+                    materialEvaluation.Knights+= (int)pieceCount;
                     //materialEvaluation.KnightBoard = occupancyByPiece;
                     break;
                 case Piece.Rook:
-                    materialEvaluation.Rooks++;
+                    materialEvaluation.Rooks+= (int)pieceCount;
                     //materialEvaluation.RookBoard = occupancyByPiece;
                     break;
                 case Piece.Queen:
-                    materialEvaluation.Queens++;
+                    materialEvaluation.Queens+= (int)pieceCount;
                     //materialEvaluation.QueenBoard = occupancyByPiece;
                     break;
                 case Piece.Bishop:
-                    materialEvaluation.Bishops++;
+                    materialEvaluation.Bishops+= (int)pieceCount;
                     //materialEvaluation.BishopBoard = occupancyByPiece;
                     break;
             }

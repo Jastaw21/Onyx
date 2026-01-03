@@ -1,6 +1,7 @@
 ﻿using Onyx.Statics;
 using Onyx.UCI;
 
+
 namespace Onyx.Core;
 
 public class TimeManager(Engine engine)
@@ -50,8 +51,10 @@ public class Engine
     private StopwatchManager StopwatchManager { get; set; } = new();
     private const int MateScore = 30000;
     private CancellationToken _ct; // for threading
-    private Move?[,] _killerMoves = new Move?[128,2];
-    
+    private Move?[,] _killerMoves = new Move?[128, 2];
+    private Move[,] _pvTable = new Move[128, 128];
+    private int[] _pvLength = new int[128];
+
     // search members
     private SearchStatistics _statistics;
     private int _currentSearchId;
@@ -90,32 +93,33 @@ public class Engine
         _statistics = new SearchStatistics();
         Board = new Board();
         StopwatchManager = new StopwatchManager();
-        _killerMoves = new Move?[128,2];
+        _killerMoves = new Move?[128, 2];
     }
 
     private void StoreKillerMove(Move move, int ply)
     {
-        var existingMove = _killerMoves[ply,0];
+        var existingMove = _killerMoves[ply, 0];
         if (existingMove == null)
         {
             _killerMoves[ply, 0] = move;
             return;
-        };
-        
+        }
+
         // don't store the same move twice
         if (existingMove!.Value.Data == move.Data)
             return;
-        
-        _killerMoves[ply,0] = move;
-        _killerMoves[ply,1] = existingMove;
-        
+
+        _killerMoves[ply, 0] = move;
+        _killerMoves[ply, 1] = existingMove;
     }
-    
-    
+
     public SearchResults Search(SearchParameters searchParameters)
     {
         _statistics = new SearchStatistics();
         _currentSearchId++;
+        Array.Clear(_killerMoves);
+        Array.Clear(_pvTable);
+        Array.Clear(_pvLength);
         _ct = searchParameters.CancellationToken;
 
         var timeLimit = long.MaxValue;
@@ -170,10 +174,22 @@ public class Engine
         }
 
         _statistics.RunTime = StopwatchManager.Elapsed;
-        
-            Logger.Log(LogType.EngineLog, _statistics);
+        Logger.Log(LogType.EngineLog, _statistics);
 
-        return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics };
+        List<Move> pv = new();
+        BuildPV(pv);
+        return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv  };
+    }
+
+    public void BuildPV(List<Move> pv)
+    {
+        
+        for (int i = 0; i < _pvLength[0]; i++)
+        {
+            var move = _pvTable[0, i];
+            if (move.Data == 0) break; // No more moves
+            pv.Add(move);
+        }
     }
 
     private (bool completed, Move bestMove, int score) ExecuteSearch(int depth, bool timed)
@@ -202,6 +218,13 @@ public class Engine
             {
                 bestScore = score;
                 bestMove = move;
+                _pvTable[0, 0] = bestMove;
+                for (var i = 1; i < _pvLength[1]; i++)
+                {
+                    _pvTable[0, i] = _pvTable[1, i];
+                }
+
+                _pvLength[0] = _pvLength[1];
             }
 
             if (_loggingEnabled)
@@ -214,6 +237,7 @@ public class Engine
 
     private SearchFlag AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply)
     {
+        _pvLength[ply] = ply;
         if ((_statistics.Nodes & 2047) == 0)
         {
             if ((timed && StopwatchManager.ShouldStop) || _ct.IsCancellationRequested)
@@ -228,17 +252,22 @@ public class Engine
 
         // exit if the end-of-game state
         var flagExit = AssessCheckmateOrStalemate(depth, board, ply, moveCount, out var searchFlag);
-        if (flagExit) return searchFlag;
+        if (flagExit)
+        {
+            return searchFlag;
+        }
 
         var alphaOrig = alpha;
         var bestValue = int.MinValue + 1;
 
-        // ---- TT probe ----
+        // Early exit if found the TTMove
         var hash = board.Zobrist.HashValue;
         if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
+        
+        
 
-        Evaluator.SortMoves(moves, ttMove,_killerMoves,ply);
+        Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
 
         Move bestMove = default;
         var legalMoveCount = 0;
@@ -260,6 +289,14 @@ public class Engine
             {
                 bestValue = eval;
                 bestMove = move;
+
+                _pvTable[ply, ply] = move;
+                for (int i = ply + 1; i < _pvLength[ply + 1]; i++)
+                {
+                    _pvTable[ply, i] = _pvTable[ply + 1, i];
+                }
+
+                _pvLength[ply] = _pvLength[ply + 1];
             }
 
             if (eval > alpha)
@@ -312,13 +349,16 @@ public class Engine
         return bestValue;
     }
 
-    private static bool AssessCheckmateOrStalemate(int depth, Board board, int ply, int moveCount,
+    private bool AssessCheckmateOrStalemate(int depth, Board board, int ply, int moveCount,
         out SearchFlag flag)
     {
+        var boardState = Referee.IsCheckmate(board);
         // no moves, either checkmate or stalemate
         if (moveCount == 0)
         {
-            flag = Referee.IsCheckmate(board)
+            
+            _pvLength[ply] = ply;
+            flag = boardState == Statics.BoardState.Checkmate
                 ? new SearchFlag(true, -(MateScore - ply))
                 : new SearchFlag(true, 0); // stalemate
             return true;
@@ -327,7 +367,8 @@ public class Engine
         // leaf node
         if (depth == 0)
         {
-            if (Referee.IsCheckmate(board))
+            _pvLength[ply] = ply;
+            if (boardState == Statics.BoardState.Checkmate)
             {
                 flag = new SearchFlag(true, -(MateScore - ply));
                 return true;

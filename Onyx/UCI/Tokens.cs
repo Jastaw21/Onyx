@@ -29,7 +29,8 @@ public enum TokenType
     Stop,
     Divide,
     SetLoggingOn,
-    DebugBoard
+    DebugBoard,
+    Evaluate
 }
 
 public struct Token

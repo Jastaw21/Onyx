@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Text;
+using Onyx.Core;
 using Onyx.Statics;
 
 namespace Onyx.UCI;
@@ -55,6 +56,10 @@ public class UciInterface
             case StopCommand:
                 StopSearch();
                 break;
+            case EvaluateCommand:
+                var turnToMoveSocre = Evaluator.Evaluate(_player.Board);
+                Console.WriteLine($"Score: {turnToMoveSocre}");
+                break;
             case SetLoggingOn:
                 _player.SetLogging(true);
                 break;
@@ -107,7 +112,7 @@ public class UciInterface
                     });
                    
                     var result = $"bestmove {move.BestMove}";
-                    var infoString = GetInf(move.Statistics);
+                    var infoString = PrintSearchInfoString(move);
                     
                     Console.WriteLine($"bestmove {move.BestMove}");
                     Console.WriteLine(infoString);
@@ -133,12 +138,25 @@ public class UciInterface
         _engineThread?.Join(1000);
     }
 
-    private string GetInf(SearchStatistics stats)
+    private string MovesToString(List<Move> moves)
     {
+        var sb = new StringBuilder();
+        foreach (var move in moves)
+        {
+            sb.Append(move.Notation);
+            sb.Append(' ');
+        }
+        return sb.ToString();
+    }
+
+    private string PrintSearchInfoString(SearchResults results)
+    {
+        var stats = results.Statistics;
+        var pv = results.PV;
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
-        return $"info depth {stats.Depth} nodes {stats.Nodes} time {stats.RunTime} nps {nps}";
+        return $"info depth {stats.Depth} nodes {stats.Nodes} time {stats.RunTime} nps {nps} pv {MovesToString(pv)}";
     }
 
     private readonly UciParser _parser = new();

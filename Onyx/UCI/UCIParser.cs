@@ -49,6 +49,8 @@ public class UciParser
                     return new DebugCommand();
                 case TokenType.SetLoggingOn:
                     return new SetLoggingOn();
+                case TokenType.Evaluate:
+                    return new EvaluateCommand();
                 default:
                     throw new ArgumentException(
                         $"Invalid starting token of type {currentToken.Type} with value {currentToken.Value}");
