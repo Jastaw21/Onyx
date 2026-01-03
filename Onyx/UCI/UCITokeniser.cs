@@ -74,6 +74,8 @@ public class Tokeniser
             type = TokenType.Stop;
         else if (builtToken == "-logging")
             type = TokenType.SetLoggingOn;
+        else if (builtToken == "evaluate")
+            type = TokenType.Evaluate;
         
         else if (int.TryParse(builtToken, out _))
             type = TokenType.IntLiteral;
