@@ -68,7 +68,7 @@ public struct Move : IEquatable<Move>
             var toNotation = RankAndFile.Notation(To);
             var isPromotion = PromotedPiece.HasValue;
             if (isPromotion)
-                return $"{fromNotation}{toNotation}{Fen.GetCharFromPiece(PromotedPiece!.Value)}";
+                return $"{fromNotation}{toNotation}{char.ToLower(Fen.GetCharFromPiece(PromotedPiece!.Value))}";
             return $"{fromNotation}{toNotation}";
         }
     }
