@@ -63,24 +63,38 @@ public class Board
     public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
-    public Stack<PositionState> BoardStateHistory { get; }
+    public ReadOnlySpan<PositionState> History => HistoryBuffer.AsSpan(0, HistoryStackPointer+1);
+
+    private PositionState[] HistoryBuffer = new PositionState[1024];
+    private int HistoryStackPointer = 0;
     
-    public sbyte LastCapture => BoardStateHistory.Count > 0 && BoardStateHistory.Last().CapturedPiece.HasValue
-        ? BoardStateHistory.Last().CapturedPiece.Value
-        : (sbyte)0;
+    
 
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         Zobrist = new Zobrist(fen);
-        BoardStateHistory = new Stack<PositionState>();
+        for (int i=0; i<HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
+       
         var startingState = new PositionState
         {
             Hash = Zobrist.HashValue, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
             HalfMove = HalfMoves, FullMove = FullMoves
         };
-        BoardStateHistory.Push(startingState);
+       
+        HistoryStackPointer = 0;
+        HistoryBuffer[HistoryStackPointer] = startingState;
+    }
+    private void UpdateHistoryState()
+    {
+        var state = HistoryBuffer[HistoryStackPointer];
+        state.Hash = Zobrist.HashValue;
+        state.CastlingRights = CastlingRights;
+        state.EnPassantSquare = EnPassantSquare;
+        state.HalfMove = HalfMoves;
+        state.FullMove = FullMoves;
+        // CapturedPiece and LastMoveFlags are set during ApplyMove
     }
 
     public string GetFen()
@@ -123,7 +137,7 @@ public class Board
     public void ApplyMove(Move move, bool fullApplyMove = true)
     {
         ApplyMoveFlags(ref move);
-
+        
         var isWhite = Piece.IsWhite(move.PieceMoved);
         sbyte? capturedPiece;
         int? capturedSquare;
@@ -142,26 +156,14 @@ public class Board
             else capturedPiece = null;
             capturedSquare = move.To;
         }
-
-        var zobristHashValue = Zobrist.HashValue;
+        HistoryBuffer[HistoryStackPointer].LastMoveFlags = move.Data;
+        HistoryBuffer[HistoryStackPointer].CapturedPiece = capturedPiece;
+        HistoryStackPointer++;
+        
         if (fullApplyMove)
         {
             Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
         }
-
-        var state = new PositionState
-        {
-            CapturedPiece = capturedPiece,
-            EnPassantSquare = EnPassantSquare,
-            CastlingRights = CastlingRights,
-            LastMoveFlags = move.Data,
-            FullMove = FullMoves,
-            HalfMove = HalfMoves,
-            Hash = zobristHashValue
-        };
-        BoardStateHistory.Push(state);
-
-
         // get rid of the captured piece
         if (capturedPiece.HasValue)
         {
@@ -224,19 +226,22 @@ public class Board
         {
             HalfMoves = 0;
         }
+        
+        UpdateHistoryState();
     }
 
     public void UndoMove(Move move, bool fullUndoMove = true)
     {
+        HistoryStackPointer--;
+        var state = HistoryBuffer[HistoryStackPointer];
+        EnPassantSquare = state.EnPassantSquare;
+        CastlingRights = state.CastlingRights;
+        HalfMoves = state.HalfMove;
+        FullMoves = state.FullMove;
+        move.Data = state.LastMoveFlags;
         int? capturedOn = null;
         var movePieceMoved = move.PieceMoved;
-
-        var previousState = BoardStateHistory.Pop();
-        EnPassantSquare = previousState.EnPassantSquare;
-        CastlingRights = previousState.CastlingRights;
-        HalfMoves = previousState.HalfMove;
-        FullMoves = previousState.FullMove;
-        move.Data = previousState.LastMoveFlags;
+        
 
         if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
@@ -248,12 +253,12 @@ public class Board
             MovePiece(movePieceMoved, move.To, move.From);
         }
 
-        var capturedPieceHasValue = previousState.CapturedPiece.HasValue;
+        var capturedPieceHasValue = state.CapturedPiece.HasValue;
         if (capturedPieceHasValue)
         {
             if (!move.IsEnPassant)
             {
-                Bitboards.SetOn(previousState.CapturedPiece.Value, move.To);
+                Bitboards.SetOn(state.CapturedPiece.Value, move.To);
                 capturedOn = move.To;
             }
         }
@@ -283,7 +288,7 @@ public class Board
 
         if (fullUndoMove)
         {
-            Zobrist.ApplyMove(move, previousState.CapturedPiece, capturedOn);
+            Zobrist.ApplyMove(move, state.CapturedPiece, capturedOn);
         }
 
 

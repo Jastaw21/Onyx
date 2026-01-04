@@ -209,22 +209,22 @@ public static class Referee
 
     public static bool IsThreeFoldRepetition(Board board)
     {
+        var history = board.History; // The span of historical states
         var currentHash = board.Zobrist.HashValue;
         int matches = 0;
-        int historyToSearch = board.HalfMoves;
+    
+        // We only need to check back as far as the HalfMoves rule allows
+        int startSearch = history.Length - 1;
+        int endSearch = Math.Max(0, history.Length - board.HalfMoves);
 
-        // Iterate through the stack (Top to Bottom)
-        foreach (var state in board.BoardStateHistory)
+        for (int i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
         {
-            if (historyToSearch <= 0) break;
-            if (state.Hash == currentHash)
+            if (history[i].Hash == currentHash)
             {
                 matches++;
-                if (matches >= 2) return true; // Found 3rd occurrence (1 current + 2 in history)
+                if (matches >= 2) return true;
             }
-            historyToSearch--;
         }
-
         return false;
     }
 }

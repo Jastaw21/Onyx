@@ -14,7 +14,7 @@ public class UciInterface
 
     public void HandleCommand(string commandString)
     {
-        Logger.Log(LogType.UCIReceived, commandString);
+        //Logger.Log(LogType.UCIReceived, commandString);
 
         var command = _parser.Parse(commandString);
         if (command is null)
