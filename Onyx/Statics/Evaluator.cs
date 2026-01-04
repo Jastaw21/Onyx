@@ -45,6 +45,7 @@ internal struct MaterialEvaluation
 public static class Evaluator
 {
     public static bool LoggingEnabled = false;
+
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
         moves.Sort((a, b) =>
@@ -63,7 +64,7 @@ public static class Evaluator
             }
 
             var aScore = GetMoveScore(a, killerMoves, ply);
-            var bScore = GetMoveScore(b,killerMoves, ply);
+            var bScore = GetMoveScore(b, killerMoves, ply);
 
             return bScore.CompareTo(aScore);
         });
@@ -80,7 +81,8 @@ public static class Evaluator
             var attackerPiece = PieceValues[Piece.PieceTypeIndex(move.PieceMoved)];
             score += 9000 + (victimPiece * 10 - attackerPiece);
         }
-        
+
+        if (killerMoves == null) return score;
         if (killerMoves[ply, 0]?.Data == move.Data)
             return 8000;
         if (killerMoves[ply, 1]?.Data == move.Data)
@@ -98,18 +100,19 @@ public static class Evaluator
 
         // value of material
         var materialScore = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
-        
+
         // a small boost for having both bishops on the board
         var bishopPairScore = whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
-        
+
         // piece square score
         var whitePss = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
         var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         var pieceSquareScore = whitePss - blackPss;
-        
+
         if (LoggingEnabled)
-            Logger.Log(LogType.Evaluator,$"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
-        
+            Logger.Log(LogType.Evaluator,
+                $"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
+
         var score = materialScore + bishopPairScore + pieceSquareScore;
         return board.WhiteToMove ? score : -score;
     }
@@ -146,23 +149,23 @@ public static class Evaluator
             switch (Piece.PieceType(piece))
             {
                 case Piece.Pawn:
-                    materialEvaluation.Pawns+= (int)pieceCount;
+                    materialEvaluation.Pawns += (int)pieceCount;
                     //materialEvaluation.PawnBoard = occupancyByPiece;
                     break;
                 case Piece.Knight:
-                    materialEvaluation.Knights+= (int)pieceCount;
+                    materialEvaluation.Knights += (int)pieceCount;
                     //materialEvaluation.KnightBoard = occupancyByPiece;
                     break;
                 case Piece.Rook:
-                    materialEvaluation.Rooks+= (int)pieceCount;
+                    materialEvaluation.Rooks += (int)pieceCount;
                     //materialEvaluation.RookBoard = occupancyByPiece;
                     break;
                 case Piece.Queen:
-                    materialEvaluation.Queens+= (int)pieceCount;
+                    materialEvaluation.Queens += (int)pieceCount;
                     //materialEvaluation.QueenBoard = occupancyByPiece;
                     break;
                 case Piece.Bishop:
-                    materialEvaluation.Bishops+= (int)pieceCount;
+                    materialEvaluation.Bishops += (int)pieceCount;
                     //materialEvaluation.BishopBoard = occupancyByPiece;
                     break;
             }
@@ -287,13 +290,13 @@ public static class Evaluator
     private static readonly int[] RookEnd =
     [
         5, 5, 5, 5, 5, 5, 5, 5,
-        10, 10, 10, 10, 10, 10, 10, 10,
+        8, 10, 10, 10, 10, 10, 10, 8,
         5, 5, 5, 5, 5, 5, 5, 5,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
+        -2, 0, 0, 0, 0, 0, 0, -2,
+        -2, 0, 0, 0, 0, 0, 0, -2,
+        -2, 0, 0, 0, 0, 0, 0, -2,
+        -12, -10, -10, -10, -10, -10, -10, -12,
+        -12, -10, -10, -10, -10, -10, -10, -12,
     ];
     private static readonly int[] ZeroScores =
     [

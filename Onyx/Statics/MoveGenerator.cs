@@ -5,10 +5,11 @@ namespace Onyx.Statics;
 
 public static class MoveGenerator
 {
-    public static int GetLegalMoves(Board board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
+    public static int GetLegalMoves(Board board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false,
+        bool isAlreadyInCheck = false)
     {
         Span<Move> pseudoMovesBuffer = stackalloc Move[256];
-        var pseudoMoveCount = GetMoves(board.WhiteToMove , board, pseudoMovesBuffer);
+        var pseudoMoveCount = GetMoves(board.WhiteToMove, board, pseudoMovesBuffer);
         var legalMoveCount = 0;
 
         for (var i = 0; i < pseudoMoveCount; i++)
@@ -23,34 +24,37 @@ public static class MoveGenerator
         return legalMoveCount;
     }
 
-    public static int GetMoves(Board board, Span<Move> moveBuffer)
+    public static int GetMoves(Board board, Span<Move> moveBuffer, bool capturesOnly = false)
     {
-        return GetMoves(board.WhiteToMove , board, moveBuffer);
+        return GetMoves(board.WhiteToMove, board, moveBuffer, capturesOnly);
     }
 
-    public static int GetMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
+    public static int GetMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+        bool capturesOnly = false)
     {
         if (Piece.PieceType(piece) != Piece.Pawn)
         {
-            GenerateBasicMoves(piece, square, board, moveBuffer, ref count);
-            GenerateCastlingMoves(piece, square, board, moveBuffer, ref count);
+            GenerateBasicMoves(piece, square, board, moveBuffer, ref count, capturesOnly);
+            if (!capturesOnly)
+                GenerateCastlingMoves(piece, square, board, moveBuffer, ref count);
         }
         else
         {
-            UnifiedPawnMoves(piece, square, board, moveBuffer, ref count);
+            UnifiedPawnMoves(piece, square, board, moveBuffer, ref count, capturesOnly);
         }
 
         return count;
     }
 
-    public static int GetMoves(sbyte piece, Board board, Span<Move> moveBuffer, ref int count)
+    public static int GetMoves(sbyte piece, Board board, Span<Move> moveBuffer, ref int count,
+        bool capturesOnly = false)
     {
         var thisPieceStartSquares = board.Bitboards.OccupancyByPiece(piece);
         while (thisPieceStartSquares > 0)
         {
             var lowestSetBit = ulong.TrailingZeroCount(thisPieceStartSquares);
             var thisSquare = (int)lowestSetBit;
-            GetMoves(piece, thisSquare, board, moveBuffer, ref count);
+            GetMoves(piece, thisSquare, board, moveBuffer, ref count, capturesOnly);
 
             thisPieceStartSquares &= thisPieceStartSquares - 1;
         }
@@ -58,29 +62,30 @@ public static class MoveGenerator
         return count;
     }
 
-    public static int GetMoves(bool forWhite, Board board, Span<Move> moveBuffer)
+    public static int GetMoves(bool forWhite, Board board, Span<Move> moveBuffer, bool capturesOnly = false)
     {
         var moveCount = 0;
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
         foreach (var piece in pieces)
         {
-            GetMoves(piece, board, moveBuffer, ref moveCount);
+            GetMoves(piece, board, moveBuffer, ref moveCount,capturesOnly);
         }
 
         return moveCount;
     }
 
-    private static void UnifiedPawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
+    private static void UnifiedPawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+        bool capturesOnly = false)
     {
         var isWhite = Piece.IsWhite(piece);
         var rankIndex = RankAndFile.RankIndex(square);
-        
+
         var opponentOccupancy = board.Bitboards.OccupancyByColour(isWhite);
         var movingSideOccupancy = board.Bitboards.OccupancyByColour(!isWhite);
         var occupancy = opponentOccupancy | movingSideOccupancy;
-        
+
         var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(isWhite, square, occupancy);
-        var attacks = MagicBitboards.MagicBitboards.GetPawnAttacks(isWhite, square, occupancy);
+        var attacks = MagicBitboards.MagicBitboards.GetPawnAttacks(isWhite, square);
 
         var normalAttacks = opponentOccupancy & attacks;
 
@@ -91,7 +96,7 @@ public static class MoveGenerator
         {
             var relevantAttackRank = isWhite ? 5 : 2;
             var pawnHomeRank = isWhite ? 4 : 3;
-            
+
             // all other conditions for en passant are met
             if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare.Value))
             {
@@ -101,7 +106,7 @@ public static class MoveGenerator
             }
         }
 
-        var result = pushes | normalAttacks;
+        var result = capturesOnly ? normalAttacks : pushes | normalAttacks;
         result &= ~movingSideOccupancy;
 
         var promotionMask = isWhite ? 0xff00000000000000 : 0xff;
@@ -109,22 +114,21 @@ public static class MoveGenerator
         {
             var lowest = ulong.TrailingZeroCount(result);
             var move = new Move(piece, square, (int)lowest);
-            
+
             // is a capture
             var thisSquare = 1ul << (int)lowest;
             sbyte? captured = null;
             if ((thisSquare & opponentOccupancy) != 0)
             {
                 captured = board.Bitboards.PieceAtSquare((int)lowest);
-                
             }
-            
+
             // is an en passant capture
             if ((thisSquare & enPassantAttacks) != 0)
             {
                 captured = Piece.MakePiece(Piece.Pawn, !isWhite);
             }
-            
+
             var isPromotion = (thisSquare & promotionMask) != 0;
 
             if (isPromotion)
@@ -140,14 +144,14 @@ public static class MoveGenerator
                     moveBuffer[count++] = promotionMove;
                 }
             }
-            
+
             if (!isPromotion)
             {
-                move.CapturedPiece = captured.GetValueOrDefault(0) ;
+                move.CapturedPiece = captured.GetValueOrDefault(0);
                 move.HasCaptureBeenChecked = true;
                 moveBuffer[count++] = move;
-                
             }
+
             result &= result - 1;
         }
     }
@@ -246,9 +250,10 @@ public static class MoveGenerator
     }
 
 
-    private static void GenerateBasicMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
+    private static void GenerateBasicMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+        bool capturesOnly = false)
     {
-        var moves = GetMovesUlong(piece, square, board);
+        var moves = GetMovesUlong(piece, square, board, capturesOnly);
         var opponentOccupancy = board.Bitboards.OccupancyByColour(Piece.IsWhite(piece));
         while (moves > 0)
         {
@@ -260,6 +265,7 @@ public static class MoveGenerator
                 if (capturedPiece.HasValue)
                     move.CapturedPiece = capturedPiece.Value;
             }
+
             move.HasCaptureBeenChecked = true;
             moveBuffer[count++] = move;
             moves &= moves - 1;
@@ -267,11 +273,19 @@ public static class MoveGenerator
     }
 
 
-    private static ulong GetMovesUlong(sbyte piece, int square, Board board)
+    private static ulong GetMovesUlong(sbyte piece, int square, Board board, bool capturesOnly = false)
     {
-        var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
-        var movingSideOccupancy = board.Bitboards.OccupancyByColour(Piece.IsBlack(piece));
-        result &= ~movingSideOccupancy;
-        return result;
+        if (!capturesOnly)
+        {
+            var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
+            var movingSideOccupancy = board.Bitboards.OccupancyByColour(Piece.IsBlack(piece));
+            result &= ~movingSideOccupancy;
+            return result;
+        }
+        
+        var movesByPiece = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
+        var opponentOccupancy = board.Bitboards.OccupancyByColour(Piece.IsWhite(piece));
+        return movesByPiece & opponentOccupancy;
+        
     }
 }

@@ -238,7 +238,11 @@ public class CoreTests
 
         var promotionMove = new Move(Piece.WP, "a7a8");
         promotionMove.PromotedPiece = Piece.WQ;
-        Assert.That(promotionMove.ToString(), Is.EqualTo("a7a8Q"));
+        Assert.That(promotionMove.ToString(), Is.EqualTo("a7a8q"));
+
+        var blackpromotionMove = new Move(Piece.BP, "a2a1");
+        blackpromotionMove.PromotedPiece = Piece.BQ;
+        Assert.That(blackpromotionMove.ToString(), Is.EqualTo("a2a1q"));
     }
 }
 

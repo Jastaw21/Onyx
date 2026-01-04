@@ -29,6 +29,11 @@ public class Zobrist
         BuildZobristFromFen(fen);
     }
 
+    public void LoadFen(string fen)
+    {
+        BuildZobristFromFen(fen);
+    }
+
     public void MakeNullMove()
     {
         HashValue ^= _whiteToMove;       

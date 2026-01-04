@@ -29,6 +29,7 @@ public class ApplyMove
             Assert.That(board.HalfMoves, Is.EqualTo(0));
         });
     }
+    
     [Test]
     public void ApplyPawnPush()
     {
@@ -410,5 +411,33 @@ public class BoardTests
         var board = new Board("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4");
 
         Assert.That(board.GetFen(), Is.EqualTo("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4"));
+    }
+
+    [Test]
+    public void SetFenGivesSameResultAsInit()
+    {
+        
+        var fen = "r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4";
+        var boardFromFen = new Board(fen);
+        var board = new Board();
+        board.SetFen(fen);
+
+        Assert.Multiple(() =>
+        {
+            // fens equal
+            Assert.That(board.GetFen(), Is.EqualTo(boardFromFen.GetFen()));
+
+            //  move history equal
+            Assert.That(board.History.Length, Is.EqualTo(boardFromFen.History.Length));
+
+            // boards equal
+            Assert.That(board.Bitboards.AllPieces, Is.EqualTo(boardFromFen.Bitboards.AllPieces));
+            Assert.That(board.Bitboards._whitePieces, Is.EqualTo(boardFromFen.Bitboards._whitePieces));
+            Assert.That(board.Bitboards.Boards, Is.EqualTo(boardFromFen.Bitboards.Boards));
+
+            // zobrist equal
+            Assert.That(board.Zobrist.HashValue, Is.EqualTo(boardFromFen.Zobrist.HashValue));
+        });
+
     }
 }

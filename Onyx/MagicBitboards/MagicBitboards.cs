@@ -24,6 +24,7 @@ public static class MagicBitboards
     {
         InitDiagMagics();
         InitStraightMagics();
+        BuildPawnAttacks();
 
         for (var square = 0; square < 64; square++)
         {
@@ -88,6 +89,7 @@ public static class MagicBitboards
     private static readonly Magic[] _straightMagics = new Magic[64];
     private static readonly ulong[] _knightAttacks = new ulong[64];
     private static readonly ulong[] _kingAttacks = new ulong[64];
+    private static readonly ulong[,] _pawnAttacks = new ulong[2, 64];
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetMovesByPiece(sbyte piece, int square, ulong boardState)
@@ -151,6 +153,15 @@ public static class MagicBitboards
         _knightAttacks[square] = movesFromHere;
     }
 
+    private static void BuildPawnAttacks()
+    {
+        for (ulong square = 0; square < 64; square++)
+        {;            
+            _pawnAttacks[0,(int)square] = GetPawnAttacks(true, (int)square);
+            _pawnAttacks[1,(int)square] = GetPawnAttacks(false, (int)square);
+        }
+    }
+
     private static void BuildKingMoves(int square)
     {
         var movesFromHere = 0ul;
@@ -167,7 +178,7 @@ public static class MagicBitboards
         _kingAttacks[square] = movesFromHere;
     }
 
-    public static ulong GetPawnAttacks(bool isWhite, int square, ulong boardState)
+    public static ulong GetPawnAttacks(bool isWhite, int square)
     {
         var result = 0ul;
         var FileIndex = RankAndFile.FileIndex(square);
@@ -188,7 +199,8 @@ public static class MagicBitboards
 
     private static ulong GetPawnMoves(bool isWhite, int square, ulong boardState)
     {
-        return GetPawnPushes(isWhite, square, boardState) | GetPawnAttacks(isWhite, square, boardState);
+        var index = isWhite ? 0 : 1;
+        return GetPawnPushes(isWhite, square, boardState) | _pawnAttacks[index, square];
     }
 
 

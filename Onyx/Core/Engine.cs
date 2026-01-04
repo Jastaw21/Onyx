@@ -43,7 +43,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.8.3";
+    public static string Version => "0.8.4";
     // data members
     public Board Board = new();
     private TranspositionTable TranspositionTable { get; } = new();
@@ -74,7 +74,7 @@ public class Engine
 
     public void SetPosition(string fen)
     {
-        Board = new Board(fen);
+        Board.SetFen(fen);
     }
 
     public ulong Perft(int depth)
@@ -170,7 +170,7 @@ public class Engine
         }
 
         _statistics.RunTime = StopwatchManager.Elapsed;
-        //Logger.Log(LogType.EngineLog, _statistics);
+        Console.Error.WriteLine($"{_statistics.Get()}");
 
         return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
     }
@@ -245,10 +245,23 @@ public class Engine
         var moves = moveBuffer[..moveCount];
 
         // exit if the end-of-game state
-        var flagExit = AssessCheckmateOrStalemate(depth, board, ply, moveCount, out var searchFlag);
-        if (flagExit.exit)
+        var boardState = Referee.IsCheckmate(board);
+        // no moves, either checkmate or stalemate
+        if (moveCount == 0)
         {
-            return searchFlag;
+            _pvLength[ply] = ply;
+            return boardState == BoardStatus.Checkmate
+                ? new SearchFlag(true, -(MateScore - ply))
+                : new SearchFlag(true, 0); // stalemate
+        }
+        
+        if (depth == 0)
+        {
+            _pvLength[ply] = ply;
+            if (boardState == BoardStatus.Checkmate)
+                return new SearchFlag(true, -(MateScore - ply));
+
+            return QuiescenceSearch(alpha, beta, board, timed, ply);
         }
 
         var alphaOrig = alpha;
@@ -260,6 +273,10 @@ public class Engine
             return searchResult;
 
         Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
+
+        // check extension
+        if (boardState == BoardStatus.Check && depth < 1)
+            depth += 2;
 
         Move bestMove = default;
         var legalMoveCount = 0;
@@ -303,14 +320,13 @@ public class Engine
             break;
         }
 
-
         // handle if the board is in an illegal state
         var endGameScore = 0;
         var endGameScoreModified = false;
         if (legalMoveCount == 0)
         {
             endGameScoreModified = true;
-            if (flagExit.state == BoardStatus.Checkmate)
+            if (boardState == BoardStatus.Checkmate)
                 endGameScore = -(MateScore - ply);
             else
                 endGameScore = 0;
@@ -332,6 +348,37 @@ public class Engine
         return new SearchFlag(true, bestValue);
     }
 
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Board board, bool timed, int ply)
+    {
+        if ((timed && StopwatchManager.ShouldStop) || _ct.IsCancellationRequested)
+            return SearchFlag.Abort;
+        
+        var eval = Evaluator.Evaluate(board);
+        if (eval >= beta) return new SearchFlag(true, beta);
+        if (eval > alpha) alpha = eval;
+
+        _statistics.QuiescencePlyReached = ply;
+        _statistics.Nodes++;
+        Span<Move> moveBuffer = stackalloc Move[128];
+        var moveCount = MoveGenerator.GetMoves(board, moveBuffer, true);
+        var moves = moveBuffer[..moveCount];
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, null, null, ply);
+
+        foreach (var move in moves)
+        {
+            board.ApplyMove(move);
+            var child = QuiescenceSearch(-beta, -alpha, board, timed, ply + 1);
+            board.UndoMove(move);
+            if (!child.Completed) return SearchFlag.Abort;
+            eval = -child.Value;
+            
+            if (eval >= beta) return new SearchFlag(true, beta);
+            if (eval > alpha) alpha = eval;
+        }
+        return new SearchFlag(true, alpha);
+    }
+    
     private (bool exit, BoardStatus state) AssessCheckmateOrStalemate(int depth, Board board, int ply,
         int moveCount,
         out SearchFlag flag)
