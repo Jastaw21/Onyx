@@ -92,7 +92,7 @@ public class UciInterface
     private void HandleGo(GoCommand command, int? depth)
     {
         _engineThread = new Thread(() =>
-        {
+        {   
             try
             {
                 var move = _player.Search(new SearchParameters
