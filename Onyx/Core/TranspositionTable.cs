@@ -1,4 +1,6 @@
-﻿namespace Onyx.Core;
+﻿using Onyx.Statics;
+
+namespace Onyx.Core;
 
 public enum BoundFlag
 {
@@ -15,6 +17,7 @@ public struct TranspositionTableEntry
     public int Age;
     public BoundFlag BoundFlag;
     public Move BestMove;
+    public BoardStatus BoardStatus;
 }
 
 public class TranspositionTable
@@ -30,7 +33,7 @@ public class TranspositionTable
     }
 
 
-    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
+    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove, BoardStatus boardStatus)
     {
         var index = hash % (ulong)_entries.Length;
 
@@ -45,7 +48,8 @@ public class TranspositionTable
                 Depth = depth,
                 Age = age,
                 BoundFlag = boundFlag,
-                BestMove =  bestMove
+                BestMove =  bestMove,
+                BoardStatus = boardStatus
             };
         }
     }

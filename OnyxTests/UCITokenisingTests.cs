@@ -90,7 +90,7 @@ public class UciParsingTests
     {
         var uciInterface = new UciInterface();
         uciInterface.HandleCommand("position startpos moves a2a4 b7b5");
-        Assert.That(uciInterface.Player.Board.GetFen(),
+        Assert.That(uciInterface.Player.Position.GetFen(),
             Is.EqualTo("rnbqkbnr/p1pppppp/8/1p6/P7/8/1PPPPPPP/RNBQKBNR w KQkq b6 0 2"));
     }
 }

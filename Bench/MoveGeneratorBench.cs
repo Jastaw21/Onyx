@@ -30,12 +30,12 @@ namespace Onyx.Benchmarks
             "8/pp2r1k1/2p1p3/3pP2p/1P1P1P1P/P5KR/8/8 w - - 0 1",
             "8/3p4/p1bk3p/Pp6/1Kp1PpPp/2P2P1P/2P5/5B2 b - - 0 1",
         ];
-        private Board board;
+        private Position board;
         private Move[] moves;
         [GlobalSetup]
         public void Setup()
         {
-            board = new Board();
+            board = new Position();
             moves = new Move[256];
         }
 

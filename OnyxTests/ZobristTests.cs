@@ -63,7 +63,7 @@ public class ZobristTests
 
         for (int i = 0; i < startingFen.Count; i++)
         {
-            var board = new Board(startingFen[i]);
+            var board = new Position(startingFen[i]);
             var zobFromFen = new Zobrist(PositionsAfter[i]);
             var move = moves[i];
             board.ApplyMove(move);
@@ -102,7 +102,7 @@ public class ZobristTests
 
         for (int i = 0; i < startingFen.Count; i++)
         {
-            var board = new Board(startingFen[i]);
+            var board = new Position(startingFen[i]);
             var hashPre = board.Zobrist.HashValue;
             var move = moves[i];
             board.ApplyMove(move);
@@ -113,7 +113,7 @@ public class ZobristTests
     [Test]
     public void ZobristHashIsStableWithRepeatedMoves()
     {
-        var board = new Board("8/8/8/2k2b2/8/1B1pK3/2pB4/8 b - - 23 69");
+        var board = new Position("8/8/8/2k2b2/8/1B1pK3/2pB4/8 b - - 23 69");
         var hashPre = board.Zobrist.HashValue;
         board.ApplyMove(new Move(Piece.BB, "f5g6"));
         board.ApplyMove(new Move(Piece.WB, "b3a2"));

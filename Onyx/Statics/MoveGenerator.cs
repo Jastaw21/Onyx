@@ -5,7 +5,7 @@ namespace Onyx.Statics;
 
 public static class MoveGenerator
 {
-    public static int GetLegalMoves(Board board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false,
+    public static int GetLegalMoves(Position board, Span<Move> moveBuffer, bool alreadyKnowBoardInCheck = false,
         bool isAlreadyInCheck = false)
     {
         Span<Move> pseudoMovesBuffer = stackalloc Move[256];
@@ -24,12 +24,12 @@ public static class MoveGenerator
         return legalMoveCount;
     }
 
-    public static int GetMoves(Board board, Span<Move> moveBuffer, bool capturesOnly = false)
+    public static int GetMoves(Position board, Span<Move> moveBuffer, bool capturesOnly = false)
     {
         return GetMoves(board.WhiteToMove, board, moveBuffer, capturesOnly);
     }
 
-    public static int GetMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+    public static int GetMoves(sbyte piece, int square, Position board, Span<Move> moveBuffer, ref int count,
         bool capturesOnly = false)
     {
         if (Piece.PieceType(piece) != Piece.Pawn)
@@ -46,7 +46,7 @@ public static class MoveGenerator
         return count;
     }
 
-    public static int GetMoves(sbyte piece, Board board, Span<Move> moveBuffer, ref int count,
+    public static int GetMoves(sbyte piece, Position board, Span<Move> moveBuffer, ref int count,
         bool capturesOnly = false)
     {
         var thisPieceStartSquares = board.Bitboards.OccupancyByPiece(piece);
@@ -62,7 +62,7 @@ public static class MoveGenerator
         return count;
     }
 
-    public static int GetMoves(bool forWhite, Board board, Span<Move> moveBuffer, bool capturesOnly = false)
+    public static int GetMoves(bool forWhite, Position board, Span<Move> moveBuffer, bool capturesOnly = false)
     {
         var moveCount = 0;
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
@@ -74,7 +74,7 @@ public static class MoveGenerator
         return moveCount;
     }
 
-    private static void UnifiedPawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+    private static void UnifiedPawnMoves(sbyte piece, int square, Position board, Span<Move> moveBuffer, ref int count,
         bool capturesOnly = false)
     {
         var isWhite = Piece.IsWhite(piece);
@@ -156,7 +156,7 @@ public static class MoveGenerator
         }
     }
 
-    private static void GenerateCastlingMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer,
+    private static void GenerateCastlingMoves(sbyte piece, int square, Position board, Span<Move> moveBuffer,
         ref int count)
     {
         if (Piece.PieceType(piece) != Piece.King || board.CastlingRights == 0)
@@ -211,7 +211,7 @@ public static class MoveGenerator
     }
 
     private static void TryCastling(
-        Board board,
+        Position board,
         sbyte piece,
         int fromSquare,
         int castlingFlag,
@@ -250,7 +250,7 @@ public static class MoveGenerator
     }
 
 
-    private static void GenerateBasicMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count,
+    private static void GenerateBasicMoves(sbyte piece, int square, Position board, Span<Move> moveBuffer, ref int count,
         bool capturesOnly = false)
     {
         var moves = GetMovesUlong(piece, square, board, capturesOnly);
@@ -273,7 +273,7 @@ public static class MoveGenerator
     }
 
 
-    private static ulong GetMovesUlong(sbyte piece, int square, Board board, bool capturesOnly = false)
+    private static ulong GetMovesUlong(sbyte piece, int square, Position board, bool capturesOnly = false)
     {
         if (!capturesOnly)
         {

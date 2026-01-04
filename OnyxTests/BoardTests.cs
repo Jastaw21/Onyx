@@ -7,7 +7,7 @@ public class ApplyMove
     [Test]
     public void HalfMoveIncrements()
     {
-        var board = new Board();
+        var board = new Position();
         board.ApplyMove(new Move(Piece.WP,"a2a4"));
         Assert.Multiple(() =>
         {
@@ -33,7 +33,7 @@ public class ApplyMove
     [Test]
     public void ApplyPawnPush()
     {
-        var board = new Board();
+        var board = new Position();
 
         var move = new Move(
             Piece.WP,
@@ -55,7 +55,7 @@ public class ApplyMove
     [Test]
     public void CaptureUpdatesBoardState()
     {
-        var board = new Board("rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1");
+        var board = new Position("rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1");
 
         var queenCapture = new Move(Piece.WQ, "d2f4");
         board.ApplyMove(queenCapture);
@@ -92,7 +92,7 @@ public class ApplyMove
 
         for (var test = 0; test < startingPositions.Count; test++)
         {
-            var board = new Board(startingPositions[test]);
+            var board = new Position(startingPositions[test]);
             board.ApplyMove(moves[test]);
             Assert.That(board.GetFen(), Is.EqualTo(endingPositions[test]));
         }
@@ -102,7 +102,7 @@ public class ApplyMove
     public void PromotionUpdatesBoardState()
     {
         // white can promote from here
-        var board = new Board("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
+        var board = new Position("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
         var promotionMove = new Move(Piece.WP, "b7b8q");
 
         board.ApplyMove(promotionMove);
@@ -137,7 +137,7 @@ public class ApplyMove
     {
         for (var test = 0; test < startingPositions.Count; test++)
         {
-            var board = new Board(startingPositions[test]);
+            var board = new Position(startingPositions[test]);
             board.ApplyMove(moves[test]);
             Assert.That(board.GetFen(), Is.EqualTo(PositionsAfter[test]));
         }
@@ -146,7 +146,7 @@ public class ApplyMove
     [Test]
     public void MovingRookLosesCastlingRights()
     {
-        var board = new Board("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR w KQkq - 2 3");
+        var board = new Position("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR w KQkq - 2 3");
         var rookMove = new Move(Piece.WR, "a1b1");
 
         board.ApplyMove(rookMove);
@@ -174,7 +174,7 @@ public class ApplyMove
     public void MovingRookBackDoesntResetCastling()
     {
         // black has already lost castling rights but the rook is back in it's starting square
-        var board = new Board("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N3P1/PP1PPPBP/1RBQK1NR b Kq - 2 5");
+        var board = new Position("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N3P1/PP1PPPBP/1RBQK1NR b Kq - 2 5");
 
         // check that black can't castle queen side
         Assert.That(board.CastlingRights,
@@ -192,7 +192,7 @@ public class ApplyMove
     [Test]
     public void BasicEnPassantSquareSetting()
     {
-        var board = new Board();
+        var board = new Position();
         board.ApplyMove(new Move(Piece.WP, "d2d4"));
         Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"));
 
@@ -232,7 +232,7 @@ public class UndoMove
     [Test]
     public void UndoPush()
     {
-        var board = new Board();
+        var board = new Position();
         var fenPrior = board.GetFen();
         var push = new Move(Piece.WP, "b2b4");
         board.ApplyMove(push);
@@ -249,7 +249,7 @@ public class UndoMove
     [Test]
     public void UndoCapture()
     {
-        var board = new Board("rnb1kbnr/pp1ppppp/2p5/2q5/8/2N1PP2/PPPP2PP/R1BQKBNR b KQkq - 0 1");
+        var board = new Position("rnb1kbnr/pp1ppppp/2p5/2q5/8/2N1PP2/PPPP2PP/R1BQKBNR b KQkq - 0 1");
         var fenBefore = board.GetFen();
         var capture = new Move(Piece.BQ, "c5c3");
         board.ApplyMove(capture);
@@ -263,7 +263,7 @@ public class UndoMove
     [Test]
     public void UndoPromotion()
     {
-        var board = new Board("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
+        var board = new Position("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
         var fenBefore = board.GetFen();
         var promotionMove = new Move(Piece.WP, "b7b8q");
 
@@ -275,13 +275,13 @@ public class UndoMove
 
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
 
-        board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2");
+        board = new Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2");
         var move = new Move(Piece.BP, "g2h1b");
         board.ApplyMove(move);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2"));
 
-        board = new Board("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2");
+        board = new Position("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2");
         move = new Move(Piece.WP, "a7b8B");
         board.ApplyMove(move);
         board.UndoMove(move);
@@ -324,7 +324,7 @@ public class UndoMove
     {
         for (var test = 0; test < startingPositions.Count; test++)
         {
-            var board = new Board(startingPositions[test]);
+            var board = new Position(startingPositions[test]);
             var fenBefore = board.GetFen();
             board.ApplyMove(moves[test]);
             board.UndoMove(moves[test]);
@@ -336,7 +336,7 @@ public class UndoMove
     [Test]
     public void UndoLossOfCastlingRights()
     {
-        var board = new Board("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
+        var board = new Position("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
         var rightsBefore = board.CastlingRights;
         var kingMove = new Move(Piece.WK, "e1f2");
         board.ApplyMove(kingMove);
@@ -365,7 +365,7 @@ public class UndoMove
     [Test]
     public void UndoLossOfEnPassantSquare()
     {
-        var board = new Board();
+        var board = new Position();
         var previousEP = board.EnPassantSquare;
         var move = new Move(Piece.WP, "d2d4");
         board.ApplyMove(move);
@@ -377,7 +377,7 @@ public class UndoMove
     [Test]
     public void UndoQueenCapture()
     {
-        var board = new Board("rnbqkbnr/p1pppppp/8/1p6/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 0 1");
+        var board = new Position("rnbqkbnr/p1pppppp/8/1p6/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 0 1");
         var captureMove = new Move(Piece.BP, "b5a4");
         var fenBefore = board.GetFen();
         board.ApplyMove(captureMove);
@@ -394,7 +394,7 @@ public class BoardTests
     [Test]
     public void InitFromFen()
     {
-        var board = new Board();
+        var board = new Position();
 
         Assert.Multiple(() =>
         {
@@ -408,7 +408,7 @@ public class BoardTests
     [Test]
     public void GetFenReflectsCastlingRules()
     {
-        var board = new Board("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4");
+        var board = new Position("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4");
 
         Assert.That(board.GetFen(), Is.EqualTo("r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4"));
     }
@@ -418,8 +418,8 @@ public class BoardTests
     {
         
         var fen = "r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4";
-        var boardFromFen = new Board(fen);
-        var board = new Board();
+        var boardFromFen = new Position(fen);
+        var board = new Position();
         board.SetFen(fen);
 
         Assert.Multiple(() =>

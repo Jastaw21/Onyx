@@ -8,12 +8,12 @@ public class TimeManager(Engine engine)
 {
     public int TimeBudgetPerMove(TimeControl timeControl)
     {
-        var time = engine.Board.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-        var increment = engine.Board.WhiteToMove ? timeControl.Winc : timeControl.Binc;
+        var time = engine.Position.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
+        var increment = engine.Position.WhiteToMove ? timeControl.Winc : timeControl.Binc;
 
         var safeInc = increment ?? 0;
 
-        var calcMovesRemaining = MovesRemaining(engine.Board);
+        var calcMovesRemaining = MovesRemaining(engine.Position);
         var instructedMovesRemaining = timeControl.movesToGo ?? 0;
 
         // if moves remaining feels nonsense, use our own calc
@@ -31,9 +31,9 @@ public class TimeManager(Engine engine)
         return timeBudgetPerMove;
     }
 
-    private static int MovesRemaining(Board board)
+    private static int MovesRemaining(Position position)
     {
-        var ply = board.FullMoves * 2;
+        var ply = position.FullMoves * 2;
 
         if (ply < 20) return 40; // opening
         if (ply < 60) return 30; // middlegame
@@ -45,7 +45,7 @@ public class Engine
 {
     public static string Version => "0.8.4";
     // data members
-    public Board Board = new();
+    public Position Position = new();
     private TranspositionTable TranspositionTable { get; } = new();
     private StopwatchManager StopwatchManager { get; set; } = new();
     private const int MateScore = 30000;
@@ -74,23 +74,12 @@ public class Engine
 
     public void SetPosition(string fen)
     {
-        Board.SetFen(fen);
+        Position.SetFen(fen);
     }
-
-    public ulong Perft(int depth)
-    {
-        return PerftSearcher.GetPerftResults(board: Board, depth);
-    }
-
-    public void PerftDivide(int depth)
-    {
-        PerftSearcher.PerftDivide(Board, depth);
-    }
-
     public void Reset()
     {
         _statistics = new SearchStatistics();
-        Board = new Board();
+        Position = new Position();
         StopwatchManager = new StopwatchManager();
         _killerMoves = new Move?[128, 2];
     }
@@ -188,7 +177,7 @@ public class Engine
     private (bool completed, Move bestMove, int score) ExecuteSearch(int depth, bool timed)
     {
         Span<Move> moveBuffer = stackalloc Move[256];
-        var moveCount = MoveGenerator.GetMoves(Board, moveBuffer);
+        var moveCount = MoveGenerator.GetMoves(Position, moveBuffer);
         var moves = moveBuffer[..moveCount];
         var bestMove = moves[0];
         var bestScore = int.MinValue + 1;
@@ -198,11 +187,11 @@ public class Engine
 
         foreach (var move in moves)
         {
-            if (!Referee.MoveIsLegal(move, Board)) 
+            if (!Referee.MoveIsLegal(move, Position))
                 continue;
-            Board.ApplyMove(move);
-            var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1, false);
-            Board.UndoMove(move);
+            Position.ApplyMove(move);
+            var result = AlphaBeta(depth - 1, -beta, -alpha, Position, timed, 1, false);
+            Position.UndoMove(move);
             if (!result.Completed)
                 return (false, default, 0);
 
@@ -222,14 +211,14 @@ public class Engine
             }
 
             if (_loggingEnabled)
-                Logger.Log(LogType.Search, $"{Board.GetFen()} {move} Score: {score} Depth: {depth}");
+                Logger.Log(LogType.Search, $"{Position.GetFen()} {move} Score: {score} Depth: {depth}");
             alpha = Math.Max(alpha, score);
         }
 
         return (true, bestMove, bestScore);
     }
 
-    private SearchFlag AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply, bool nullMoveAllowed = false)
+    private SearchFlag AlphaBeta(int depth, int alpha, int beta, Position position, bool timed, int ply, bool nullMoveAllowed = false)
     {
         _pvLength[ply] = ply;
         if ((_statistics.Nodes & 2047) == 0)
@@ -240,12 +229,30 @@ public class Engine
 
         _statistics.Nodes++;
 
+        // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
-        var moveCount = MoveGenerator.GetMoves(board, moveBuffer);
-        var moves = moveBuffer[..moveCount];
+        var moveCount = MoveGenerator.GetMoves(position, moveBuffer);
+        var moves = moveBuffer[..moveCount]; // for easier iteration, slice the moves down.
 
-        // exit if the end-of-game state
-        var boardState = Referee.IsCheckmate(board);
+        // Early exit if found the TTMove at a greater depth
+        var hash = position.Zobrist.HashValue;
+        var TTResult = TranspositionTable.Retrieve(hash);
+        if (TTResultUsable(alpha, beta, depth, TTResult))
+        {
+            _statistics.TtHits++;
+            return new SearchFlag(true, TTResult!.Value.Eval);
+        }
+
+        // exit if were in a end-game board state
+        BoardStatus boardState;
+        if (TTResult.HasValue)
+        {
+            boardState = TTResult.Value.BoardStatus;
+        }
+
+        else
+            boardState = Referee.GetBoardState(position);
+
         // no moves, either checkmate or stalemate
         if (moveCount == 0)
         {
@@ -254,46 +261,48 @@ public class Engine
                 ? new SearchFlag(true, -(MateScore - ply))
                 : new SearchFlag(true, 0); // stalemate
         }
-        
+
+        // reached our bottom depth, go to quiescence search
         if (depth == 0)
         {
             _pvLength[ply] = ply;
             if (boardState == BoardStatus.Checkmate)
                 return new SearchFlag(true, -(MateScore - ply));
 
-            return QuiescenceSearch(alpha, beta, board, timed, ply);
+            return QuiescenceSearch(alpha, beta, position, timed, ply);
         }
 
         var alphaOrig = alpha;
         var bestValue = int.MinValue + 1;
 
-        // Early exit if found the TTMove
-        var hash = board.Zobrist.HashValue;
-        if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
-            return searchResult;
-
+        Move? ttMove = TTResult.HasValue ? TTResult.Value.BestMove : null;
         Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
 
         // check extension
         if (boardState == BoardStatus.Check && depth < 1)
             depth += 2;
 
-        Move bestMove = default;
-        var legalMoveCount = 0;
+
         // ---- main loop ----
+        
+        Move bestMove = default;
+        var legalMoveCount = 0;       
         foreach (var move in moves)
         {
-            if (!Referee.MoveIsLegal(move, board)) continue;
+            if (!Referee.MoveIsLegal(move, position)) continue;
             legalMoveCount++;
-            board.ApplyMove(move);
-            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1, false);
-            board.UndoMove(move);
+            position.ApplyMove(move);
+            var child = AlphaBeta(depth - 1, -beta, -alpha, position, timed, ply + 1, false);
+            position.UndoMove(move);
 
+            // timed out in a child search, propagate up
             if (!child.Completed)
                 return SearchFlag.Abort;
 
+            // invert the eval for the opponent
             var eval = -child.Value;
 
+            // found a better move, so update our PV
             if (eval > bestValue)
             {
                 bestValue = eval;
@@ -308,6 +317,7 @@ public class Engine
                 _pvLength[ply] = _pvLength[ply + 1];
             }
 
+            // alpha update - we beat the alpha.
             if (eval > alpha)
                 alpha = eval;
 
@@ -315,6 +325,8 @@ public class Engine
 
             // beta cutoff
             _statistics.BetaCutoffs++;
+
+            // store killer move if not a capture and caused a beta cutoff
             if (move.CapturedPiece == 0)
                 StoreKillerMove(move, ply);
             break;
@@ -332,6 +344,7 @@ public class Engine
                 endGameScore = 0;
         }
 
+        // store in transposition table but calculate the correct bound flag first
         BoundFlag flag;
         if (endGameScoreModified)
             bestValue = endGameScore;
@@ -341,27 +354,34 @@ public class Engine
             flag = BoundFlag.Lower;
         else
             flag = BoundFlag.Exact;
-
-        TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove);
+        TranspositionTable.Store(hash, bestValue, depth, _currentSearchId, flag, bestMove, boardState);
         _statistics.TtStores++;
 
+        
         return new SearchFlag(true, bestValue);
     }
 
-    private SearchFlag QuiescenceSearch(int alpha, int beta, Board board, bool timed, int ply)
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Position board, bool timed, int ply)
     {
+
+        // make sure we can handle timing out in quiescence search
         if ((timed && StopwatchManager.ShouldStop) || _ct.IsCancellationRequested)
             return SearchFlag.Abort;
-        
+
+        // seb lague does this - not sure if it's needed though
         var eval = Evaluator.Evaluate(board);
         if (eval >= beta) return new SearchFlag(true, beta);
         if (eval > alpha) alpha = eval;
 
+        // make sure we can tarack the stats
         _statistics.QuiescencePlyReached = ply;
         _statistics.Nodes++;
+
+        // get only capture moves
         Span<Move> moveBuffer = stackalloc Move[128];
         var moveCount = MoveGenerator.GetMoves(board, moveBuffer, true);
         var moves = moveBuffer[..moveCount];
+
         if (moves.Length > 1)
             Evaluator.SortMoves(moves, null, null, ply);
 
@@ -372,93 +392,44 @@ public class Engine
             board.UndoMove(move);
             if (!child.Completed) return SearchFlag.Abort;
             eval = -child.Value;
-            
+
             if (eval >= beta) return new SearchFlag(true, beta);
             if (eval > alpha) alpha = eval;
         }
         return new SearchFlag(true, alpha);
     }
-    
-    private (bool exit, BoardStatus state) AssessCheckmateOrStalemate(int depth, Board board, int ply,
-        int moveCount,
-        out SearchFlag flag)
+
+    private static bool TTResultUsable(int alpha, int beta, int depth, TranspositionTableEntry? entry)
     {
-        var boardState = Referee.IsCheckmate(board);
-        // no moves, either checkmate or stalemate
-        if (moveCount == 0)
+        // Checks if the transposition table entry can be used to cut off search based on the bounds etc
+
+
+        if (!entry.HasValue)
+            return false;
+
+        var entryValue = entry.Value;
+
+        // only use if depth is sufficient
+        if (entryValue.Depth < depth)
+            return false;
+
+        switch (entryValue.BoundFlag)
         {
-            _pvLength[ply] = ply;
-            flag = boardState == BoardStatus.Checkmate
-                ? new SearchFlag(true, -(MateScore - ply))
-                : new SearchFlag(true, 0); // stalemate
-            var state = boardState == BoardStatus.Checkmate
-                ? BoardStatus.Checkmate
-                : BoardStatus.Stalemate;
-            return (true, state);
-        }
-
-        // leaf node
-        if (depth == 0)
-        {
-            _pvLength[ply] = ply;
-            if (boardState == BoardStatus.Checkmate)
-            {
-                flag = new SearchFlag(true, -(MateScore - ply));
-                return (true, BoardStatus.Checkmate);
-            }
-
-            flag = new SearchFlag(true, Evaluator.Evaluate(board));
-            return (true, BoardStatus.Normal);
-        }
-
-        flag = default;
-        return (false, BoardStatus.Normal);
-    }
-
-    private bool TtProbe(int depth, int alpha, int beta, ulong hash, out SearchFlag searchFlag,
-        out Move bestMove)
-    {
-        var entry = TranspositionTable.Retrieve(hash);
-
-        bestMove = default;
-        if (entry.HasValue && entry.Value.Depth >= depth)
-        {
-            bestMove = entry.Value.BestMove;
-            switch (entry.Value.BoundFlag)
-            {
-                case BoundFlag.Exact:
-                    _statistics.TtHits++;
-                    searchFlag = new SearchFlag(true, entry.Value.Eval);
-                    bestMove = entry.Value.BestMove;
+            case BoundFlag.Exact:
+                return true;
+            case BoundFlag.Upper:
+                // we at least know we're better than alpha
+                if (entryValue.Eval <= alpha)
                     return true;
-
-                case BoundFlag.Upper:
-                    if (entry.Value.Eval <= alpha)
-                    {
-                        _statistics.TtHits++;
-                        searchFlag = new SearchFlag(true, entry.Value.Eval);
-                        bestMove = entry.Value.BestMove;
-                        return true;
-                    }
-
-                    break;
-
-                case BoundFlag.Lower:
-                    if (entry.Value.Eval >= beta)
-                    {
-                        _statistics.TtHits++;
-                        searchFlag = new SearchFlag(true, entry.Value.Eval);
-                        bestMove = entry.Value.BestMove;
-                        return true;
-                    }
-
-                    break;
-            }
+                break;
+            case BoundFlag.Lower:
+                // basically a beta cutoff?
+                if (entryValue.Eval >= beta)
+                    return true;
+                break;
         }
-
-        searchFlag = default;
         return false;
-    }
+    }    
 
     internal readonly struct SearchFlag(bool completed, int value)
     {

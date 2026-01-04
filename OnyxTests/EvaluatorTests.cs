@@ -17,7 +17,7 @@ public class EvaluatorTests
     [Test]
     public void EvaluateNeutral()
     {
-        var board = new Board();
+        var board = new Position();
         Assert.That(Evaluator.Evaluate(board), Is.EqualTo(0));
     }
 
@@ -25,11 +25,11 @@ public class EvaluatorTests
     public void EvaluateAheadOnMaterial()
     {
         // black missing a queen
-        var board = new Board("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        var board = new Position("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         
         // white ahead
         Assert.That(Evaluator.Evaluate(board), Is.GreaterThan(0));
-        board = new Board("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
+        board = new Position("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
         
         // black ahead
         Assert.That(Evaluator.Evaluate(board), Is.LessThan(0));

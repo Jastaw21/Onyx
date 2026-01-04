@@ -8,7 +8,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenContainsBasicExpectedMoves()
     {
-        var board = new Board();
+        var board = new Position();
 
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
@@ -27,7 +27,7 @@ public class MoveGenTests
     [Test]
     public void DoesntGenerateMoveToOwn()
     {
-        var testBoard = new Board("8/8/8/8/8/NRBBN3/PKQBN3/8 w - - 0 1");
+        var testBoard = new Position("8/8/8/8/8/NRBBN3/PKQBN3/8 w - - 0 1");
         List<Move> movesToTest =
         [
             new(Piece.WP, 8, 16),
@@ -50,7 +50,7 @@ public class MoveGenTests
     [Test]
     public void CantPassOpponents()
     {
-        var testBoard = new Board("8/8/8/8/8/qqq1q3/8/QRB5 w - - 0 1");
+        var testBoard = new Position("8/8/8/8/8/qqq1q3/8/QRB5 w - - 0 1");
 
         List<Move> illegalMoves =
         [
@@ -110,7 +110,7 @@ public class MoveGenTests
         Span<Move> moveBuffer = stackalloc Move[256];
         for (var scen = 0; scen < startingPositions.Count; scen++)
         {
-            var pos = new Board(startingPositions[scen]);
+            var pos = new Position(startingPositions[scen]);
             var move = moves[scen];
             int count = 0;
             MoveGenerator.GetMoves(move.PieceMoved, move.From, pos, moveBuffer, ref count);
@@ -142,7 +142,7 @@ public class MoveGenTests
         Span<Move> moveBuffer = stackalloc Move[256];
         for (var scen = 0; scen < startingPositions.Count; scen++)
         {
-            var pos = new Board(startingPositions[scen]);
+            var pos = new Position(startingPositions[scen]);
             var move = moves[scen];
             int count = 0;
             MoveGenerator.GetMoves(move.PieceMoved, move.From, pos, moveBuffer, ref count);
@@ -154,7 +154,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenIncludesPromotionMoves()
     {
-        var board = new Board("8/P7/8/8/8/8/8/8 w - - 0 1");
+        var board = new Position("8/P7/8/8/8/8/8/8 w - - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.WP, RankAndFile.SquareIndex("a7"), board, moveBuffer, ref count);
@@ -164,7 +164,7 @@ public class MoveGenTests
     [Test]
     public void GetAllMovesForPieceWorksAsExpected()
     {
-        var board = new Board();
+        var board = new Position();
         List<Move> expectedKnightMoves =
         [
             new(Piece.WN, "b1a3"),
@@ -192,7 +192,7 @@ public class MoveGenTests
     [Test]
     public void GetAllMovesByColour()
     {
-        var board = new Board();
+        var board = new Position();
         Span<Move> moveBuffer = stackalloc Move[256];
         int whiteCount = MoveGenerator.GetMoves(true, board, moveBuffer);
         var whiteMoves = moveBuffer[..whiteCount].ToArray();
@@ -210,7 +210,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenEnPassantHasToBeNextTo()
     {
-        var board = new Board("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 1");
+        var board = new Position("rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR b KQkq a3 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BP, board, moveBuffer, ref count);
@@ -220,7 +220,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenPawnsCantAttackStraight()
     {
-        var testBoard = new Board("rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR w KQkq a6 0 1");
+        var testBoard = new Position("rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR w KQkq a6 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.WP, testBoard, moveBuffer, ref count);
@@ -231,7 +231,7 @@ public class MoveGenTests
     [Test]
     public void CanCastleIgB8Attacked()
     {
-        var board = new Board("r3k2r/p1pNqpb1/bn2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
+        var board = new Position("r3k2r/p1pNqpb1/bn2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BK, board, moveBuffer, ref count);
@@ -242,7 +242,7 @@ public class MoveGenTests
     [Test]
     public void CantCastleIfKingAttcked()
     {
-        var board = new Board("r3k2r/p1p1qpb1/bn1ppnp1/1B1PN3/1p2P3/P1N2Q1p/1PPB1PPP/R3K2R b KQkq - 0 1");
+        var board = new Position("r3k2r/p1p1qpb1/bn1ppnp1/1B1PN3/1p2P3/P1N2Q1p/1PPB1PPP/R3K2R b KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BK, board, moveBuffer, ref count);
@@ -253,7 +253,7 @@ public class MoveGenTests
     [Test]
     public void CanCaptureAndPromoteTogether()
     {
-        var board = new Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 1");
+        var board = new Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BP, RankAndFile.SquareIndex("g2"), board, moveBuffer, ref count);
@@ -266,7 +266,7 @@ public class MoveGenTests
     [Test]
     public void MissingPawnPushFixed()
     {
-        var board = new Board("r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/P1N2Q2/1PPBBPpP/R3K2R b KQkq - 0 1");
+        var board = new Position("r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/P1N2Q2/1PPBBPpP/R3K2R b KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BP, 44, board, moveBuffer, ref count);
@@ -279,7 +279,7 @@ public class MoveGenTests
     {
         var fen = "rnbqkbnr/p1pppppp/8/3N4/1p6/1P6/P1PPPPPP/R1BQKBNR b KQkq - 1 3";
 
-        var board = new Board(fen);
+        var board = new Position(fen);
         Span<Move> moveBuffer = stackalloc Move[256];
         MoveGenerator.GetLegalMoves(board, moveBuffer);
         Assert.That(board.GetFen(), Is.EqualTo(fen));
@@ -292,7 +292,7 @@ public class MoveGenTests
     {
         var fen = "6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1";
         Span<Move> moveBuffer = stackalloc Move[256];
-        int count = MoveGenerator.GetLegalMoves(new Board(fen), moveBuffer);
+        int count = MoveGenerator.GetLegalMoves(new Position(fen), moveBuffer);
         var moves = moveBuffer[..count].ToArray();
         Assert.That(moves,Does.Not.Contain(new Move(Piece.WP,"g2g3")));
     }
@@ -301,7 +301,7 @@ public class MoveGenTests
     public void FoolsMateMoveGen()
     {
         var fen = "rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 1";
-        var board = new Board(fen);
+        var board = new Position(fen);
         Span<Move> moveBuffer = stackalloc Move[256];
         int count = 0;
         MoveGenerator.GetMoves(Piece.BQ, board, moveBuffer, ref count);
@@ -314,7 +314,7 @@ public class MoveGenTests
     [Test]
     public void MoveGenAddsCaptures()
     {
-        var board = new Board("rnbqkbnr/ppppppp1/8/7p/8/4P3/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        var board = new Position("rnbqkbnr/ppppppp1/8/7p/8/4P3/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
         Span<Move> moveBuffer = stackalloc Move[256];
         var count = 0;
         var moves = MoveGenerator.GetMoves(Piece.WQ, board, moveBuffer, ref count);
@@ -349,7 +349,7 @@ public class MoveGenTests
             "rnbqkbnr/ppp1pppp/8/8/8/1PP1p3/P2P1PPP/RNBQKBNR w KQkq - 0 2"
         ];
 
-       var board = new Board(startingPositions[0]);
+       var board = new Position(startingPositions[0]);
        Span<Move> moveBuffer = stackalloc Move[256];
        var count = 0;
        var moves = MoveGenerator.GetMoves(Piece.WQ, board, moveBuffer, ref count);

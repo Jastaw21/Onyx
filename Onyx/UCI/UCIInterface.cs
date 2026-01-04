@@ -39,7 +39,7 @@ public class UciInterface
 
                 break;
             case GoCommand goCommand:
-                HandleGo(goCommand);
+                DispatchGoCommand(goCommand);
                 break;
             case PositionCommand positionCommand:
                 HandlePosition(positionCommand);
@@ -51,13 +51,13 @@ public class UciInterface
                 Console.WriteLine("readyok");
                 break;
             case DebugCommand:
-                Console.WriteLine(_player.Board.GetFen());
+                Console.WriteLine(_player.Position.GetFen());
                 break;
             case StopCommand:
                 StopSearch();
                 break;
             case EvaluateCommand:
-                var turnToMoveSocre = Evaluator.Evaluate(_player.Board);
+                var turnToMoveSocre = Evaluator.Evaluate(_player.Position);
                 Console.WriteLine($"Score: {turnToMoveSocre}");
                 break;
             case SetLoggingOn:
@@ -70,66 +70,76 @@ public class UciInterface
 
     private void HandlePosition(PositionCommand positionCommand)
     {
-        if (positionCommand.FenString != null) _player.Board.SetFen(positionCommand.FenString);
-        _player.Board.ApplyMoves(positionCommand.Moves);
+        if (positionCommand.FenString != null) _player.Position.SetFen(positionCommand.FenString);
+        _player.Position.ApplyMoves(positionCommand.Moves);
     }
 
-    private void HandleGo(GoCommand command)
+    private void DispatchGoCommand(GoCommand command)
     {
         StopSearch();
         _searchCTS = new CancellationTokenSource();
         var depth = command.Depth ?? null; // Default to 5 if not specified
         if (command.IsPerft && depth != null)
         {
-            if (command.IsPerftDivide)
-            {
-                _player.PerftDivide(depth.Value);
-            }
-            else
-            {
-                for (var i = 1; i <= depth; i++)
-                {
-                    
-                    var perftResult = _player.Perft(i);
-              
-                    var result = $"Depth {i} :  {perftResult}";
-                    //Logger.Log(LogType.UCISent, result);
-                    Console.WriteLine($"Depth {i} :  {perftResult}");
-                }
-            }
+            HandlePerft(command, depth);
         }
         else
         {
-            _engineThread = new Thread(() =>
-            {
-                try
-                {
-                    var move = _player.Search(new SearchParameters
-                    {
-                        CancellationToken =  _searchCTS.Token, 
-                        MaxDepth = depth,
-                        TimeControl = command.TimeControl
-                    });
-                   
-                    var result = $"bestmove {move.BestMove}";
-                    var infoString = PrintSearchInfoString(move);
-                    
-                    Console.WriteLine(infoString);
-                    Console.WriteLine($"bestmove {move.BestMove}");
-                    
-                    
-                    //Logger.Log(LogType.UCISent, result);
-                    //Logger.Log(LogType.UCISent, infoString);
-                }
+            HandleGo(command, depth);
+        }
+    }
 
-                catch (OperationCanceledException)
+    private void HandleGo(GoCommand command, int? depth)
+    {
+        _engineThread = new Thread(() =>
+        {
+            try
+            {
+                var move = _player.Search(new SearchParameters
                 {
-                    Console.WriteLine("search cancelled");
-                }
-            });
-            
-           
-            _engineThread.Start();
+                    CancellationToken = _searchCTS.Token,
+                    MaxDepth = depth,
+                    TimeControl = command.TimeControl
+                });
+
+                var result = $"bestmove {move.BestMove}";
+                var infoString = GetSearchInfoString(move);
+
+                Console.WriteLine(infoString);
+                Console.WriteLine($"bestmove {move.BestMove}");
+
+
+                //Logger.Log(LogType.UCISent, result);
+                //Logger.Log(LogType.UCISent, infoString);
+            }
+
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("search cancelled");
+            }
+        });
+
+
+        _engineThread.Start();
+    }
+
+    private void HandlePerft(GoCommand command, int? depth)
+    {
+        if (command.IsPerftDivide)
+        {
+            PerftSearcher.PerftDivide(_player.Position, depth.Value);           
+        }
+        else
+        {
+            for (var i = 1; i <= depth; i++)
+            {
+
+                var perftResult = PerftSearcher.GetPerftResults(_player.Position,i);
+
+                var result = $"Depth {i} :  {perftResult}";
+                //Logger.Log(LogType.UCISent, result);
+                Console.WriteLine($"Depth {i} :  {perftResult}");
+            }
         }
     }
 
@@ -139,7 +149,7 @@ public class UciInterface
         _engineThread?.Join(1000);
     }
 
-    private string MovesToString(List<Move>? moves)
+    private static string MovesToString(List<Move>? moves)
     {
         var sb = new StringBuilder();
         if (moves == null || moves.Count == 0) return sb.ToString();
@@ -152,7 +162,7 @@ public class UciInterface
         return sb.ToString();
     }
 
-    private string PrintSearchInfoString(SearchResults results)
+    private static string GetSearchInfoString(SearchResults results)
     {
         var stats = results.Statistics;
         var pv = results.PV;

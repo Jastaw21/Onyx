@@ -23,29 +23,29 @@ public struct PerftResults
 
 public static class PerftSearcher
 {
-    public static ulong GetPerftResults(Board board, int depth)
+    public static ulong GetPerftResults(Position position, int depth)
     {
-        return ParallelPerft(board, depth);
+        return ParallelPerft(position, depth);
     }
 
-    public static ulong ParallelPerft(Board board, int depth)
+    public static ulong ParallelPerft(Position position, int depth)
     {
         if (depth == 0)
             return 1;
 
         Span<Move> moveBuffer = stackalloc Move[256];
-        var moveCount = MoveGenerator.GetMoves(board.WhiteToMove, board, moveBuffer);
+        var moveCount = MoveGenerator.GetMoves(position.WhiteToMove, position, moveBuffer);
         var moves = moveBuffer[..moveCount].ToArray(); // Convert to array for Parallel.ForEach
         ulong total = 0;
         object lockObj = new();
 
         Parallel.ForEach(moves, move =>
         {
-            var localBoard = board.Clone();
-            localBoard.ApplyMove(move);
-            if (!Referee.IsInCheck(board.WhiteToMove, localBoard))
+            var localPosition = position.Clone();
+            localPosition.ApplyMove(move);
+            if (!Referee.IsInCheck(position.WhiteToMove, localPosition))
             {
-                var count = ExecutePerft(localBoard, depth - 1);
+                var count = ExecutePerft(localPosition, depth - 1);
                 lock (lockObj)
                     total += count;
             }
@@ -54,27 +54,27 @@ public static class PerftSearcher
         return total;
     }
 
-    public static void PerftDivide(Board board, int depth)
+    public static void PerftDivide(Position position, int depth)
     {
         ulong total = 0;
 
         Span<Move> moveBuffer = stackalloc Move[256];
-        var moveCount = MoveGenerator.GetMoves(board.WhiteToMove, board, moveBuffer);
+        var moveCount = MoveGenerator.GetMoves(position.WhiteToMove, position, moveBuffer);
         var moves = moveBuffer[..moveCount];
 
         foreach (var move in moves)
         {
-            var side = board.WhiteToMove;
+            var side = position.WhiteToMove;
             
-            board.ApplyMove(move);
+            position.ApplyMove(move);
 
-            if (!Referee.IsInCheck(side, board))
+            if (!Referee.IsInCheck(side, position))
             {
-                var nodes = ExecutePerft(board, depth - 1);
+                var nodes = ExecutePerft(position, depth - 1);
                 total += nodes;
                 Console.WriteLine($"{move}: {nodes}");
             }
-            board.UndoMove(move);
+            position.UndoMove(move);
            
         }
 
@@ -82,27 +82,27 @@ public static class PerftSearcher
     }
 
 
-    private static ulong ExecutePerft(Board board, int depth)
+    private static ulong ExecutePerft(Position position, int depth)
     {
         var results = 0ul;
         if (depth == 0) return 1ul;
         Span<Move> moveBuffer = stackalloc Move[256];
-        var moveCount = MoveGenerator.GetMoves(board, moveBuffer);
+        var moveCount = MoveGenerator.GetMoves(position, moveBuffer);
         var moves = moveBuffer[..moveCount];
         foreach (var move in moves)
         {
-            if (!Referee.MoveIsLegal(move, board))
+            if (!Referee.MoveIsLegal(move, position))
                 continue;
             
-            var sideToMve = board.WhiteToMove;
-            board.ApplyMove(move);
+            var sideToMve = position.WhiteToMove;
+            position.ApplyMove(move);
 
-            if (!Referee.IsInCheck(sideToMve, board))
+            if (!Referee.IsInCheck(sideToMve, position))
             {
-                var childResults = ExecutePerft(board, depth - 1);
+                var childResults = ExecutePerft(position, depth - 1);
                 results += childResults;
             }
-            board.UndoMove(move);
+            position.UndoMove(move);
         }
 
         return results;

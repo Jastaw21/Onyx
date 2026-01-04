@@ -47,11 +47,11 @@ public class PositionState
     public ulong Hash;
 }
 
-public class Board
+public class Position
 {
-    public Board Clone()
+    public Position Clone()
     {
-        return new Board(GetFen());
+        return new Position(GetFen());
     }
 
     public readonly Bitboards Bitboards;
@@ -70,7 +70,7 @@ public class Board
     
     
    
-    public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    public Position(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);

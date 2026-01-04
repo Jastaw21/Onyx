@@ -11,7 +11,7 @@ public enum BoardStatus
 }
 public static class Referee
 {
-    public static bool MoveIsLegal(Move move, Board position, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
+    public static bool MoveIsLegal(Move move, Position position, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
     {
         var isWhite = Piece.IsWhite(move.PieceMoved);
         var type = Piece.PieceType(move.PieceMoved);
@@ -43,7 +43,7 @@ public static class Referee
         return FullLegalityCheck(move, position);
     }
 
-    private static bool FullLegalityCheck(Move move, Board position)
+    private static bool FullLegalityCheck(Move move, Position position)
     {
         position.ApplyMove(move, false);
         var result = IsInCheck(Piece.IsWhite(move.PieceMoved), position);
@@ -51,7 +51,7 @@ public static class Referee
         return !result;
     }
 
-    private static bool IsPinnedToKing(int pinnedPieceSquare, int kingSquare, bool kingIsWhite, Board position,
+    private static bool IsPinnedToKing(int pinnedPieceSquare, int kingSquare, bool kingIsWhite, Position position,
         int squareMoveTo)
     {
         // 1. Get the ray between the piece and the king.
@@ -97,7 +97,7 @@ public static class Referee
         return false;
     }
 
-    public static bool IsInCheck(bool isWhite, Board position)
+    public static bool IsInCheck(bool isWhite, Position position)
     {
         var relevantKing = Piece.MakePiece(Piece.King, isWhite);
         var kingBitBoard = position.Bitboards.OccupancyByPiece(relevantKing);
@@ -108,7 +108,7 @@ public static class Referee
         return IsSquareAttacked((int)square, position, !isWhite);
     }
 
-    public static (bool isCheckmate, BoardStatus boardState) IsCheckmate(bool checkingWhite, Board position)
+    public static (bool isCheckmate, BoardStatus boardState) IsCheckmate(bool checkingWhite, Position position)
     {
         if (!IsInCheck(checkingWhite, position))
             return (false, BoardStatus.Normal);
@@ -131,7 +131,7 @@ public static class Referee
         return (true, BoardStatus.Checkmate);
     }
 
-    public static BoardStatus IsCheckmate(Board position)
+    public static BoardStatus GetBoardState(Position position)
     {
         var whiteState = IsCheckmate(true, position);
         var blackState = IsCheckmate(false, position);
@@ -140,7 +140,7 @@ public static class Referee
         return BoardStatus.Normal;
     }
 
-    public static bool IsSquareAttacked(int square, Board board, bool byWhite)
+    public static bool IsSquareAttacked(int square, Position board, bool byWhite)
     {
         var occupancy = board.Bitboards.Occupancy();
 
@@ -207,7 +207,7 @@ public static class Referee
         return false;
     }
 
-    public static bool IsThreeFoldRepetition(Board board)
+    public static bool IsThreeFoldRepetition(Position board)
     {
         var history = board.History; // The span of historical states
         var currentHash = board.Zobrist.HashValue;

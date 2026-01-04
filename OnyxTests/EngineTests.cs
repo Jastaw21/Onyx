@@ -39,13 +39,13 @@ public class EngineTests
         {
             engine.SetPosition(startingPosition);
             var bestMove = engine.Search(new SearchParameters { MaxDepth = 12 });
-            engine.Board.ApplyMove(bestMove.BestMove);
+            engine.Position.ApplyMove(bestMove.BestMove);
             Assert.Multiple(() =>
             {
                 Assert.That(bestMove.Score, Is.GreaterThan(20000));
-                Assert.That(Referee.IsCheckmate(engine.Board), Is.EqualTo(BoardStatus.Checkmate));
+                Assert.That(Referee.GetBoardState(engine.Position), Is.EqualTo(BoardStatus.Checkmate));
             });
-            engine.Board.UndoMove(bestMove.BestMove);
+            engine.Position.UndoMove(bestMove.BestMove);
         }
         
         engine.Reset();
@@ -60,13 +60,13 @@ public class EngineTests
                 CancellationToken = new CancellationToken(false)
             };
             var bestMove = engine.Search(parameters);
-            engine.Board.ApplyMove(bestMove.BestMove);
+            engine.Position.ApplyMove(bestMove.BestMove);
             Assert.Multiple(() =>
             {
                 Assert.That(bestMove.Score, Is.GreaterThan(20000));
-                Assert.That(Referee.IsCheckmate(engine.Board), Is.EqualTo(BoardStatus.Checkmate));
+                Assert.That(Referee.GetBoardState(engine.Position), Is.EqualTo(BoardStatus.Checkmate));
             });
-            engine.Board.UndoMove(bestMove.BestMove);
+            engine.Position.UndoMove(bestMove.BestMove);
         }
     }
 
@@ -126,17 +126,17 @@ public class EngineTests
             Btime = 1000
         };
         engine.Search(new SearchParameters { MaxDepth = 3, TimeControl = tc, CancellationToken = new CancellationToken(false) });
-        Assert.That(engine.Board.GetFen(), Is.EqualTo(fen));
+        Assert.That(engine.Position.GetFen(), Is.EqualTo(fen));
     }
 
     [Test]
     public void MoveResetExtension()
     {
-        var board = new Board("5k2/4pp1p/p5pN/1p1q4/4b3/P1Q4P/1PP3P1/7K w - - 0 1");
+        var board = new Position("5k2/4pp1p/p5pN/1p1q4/4b3/P1Q4P/1PP3P1/7K w - - 0 1");
         var move = new Move(Piece.WQ, "c3h8");
         var fenPre = board.GetFen();
         board.ApplyMove(move);
-        var unused = Referee.IsCheckmate(board);
+        var unused = Referee.GetBoardState(board);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo(fenPre));
     }

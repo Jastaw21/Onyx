@@ -1,4 +1,5 @@
 ﻿using Onyx.Core;
+using Onyx.Statics;
 
 namespace OnyxTests;
 
@@ -12,7 +13,7 @@ public class TranspositionTableTests
 
         var hash = startingHashZob.HashValue;
         
-        transpositionTable.Store(hash,1,1,1,BoundFlag.Exact, default);
+        transpositionTable.Store(hash, 1, 1, 1, BoundFlag.Exact, default, BoardStatus.Normal);
         var retrieved = transpositionTable.Retrieve(hash);
         Assert.Multiple(() =>
         {

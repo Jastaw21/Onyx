@@ -91,7 +91,7 @@ public static class Evaluator
         return score;
     }
 
-    public static int Evaluate(Board board)
+    public static int Evaluate(Position board)
     {
         if (Referee.IsThreeFoldRepetition(board)) return 0;
 
@@ -117,7 +117,7 @@ public static class Evaluator
         return board.WhiteToMove ? score : -score;
     }
 
-    private static int MobilityScore(Board board)
+    private static int MobilityScore(Position board)
     {
         // cache turn
         var boardTurnToMove = board.WhiteToMove;
@@ -136,7 +136,7 @@ public static class Evaluator
         return (whiteMoves - blackMoves) * 10;
     }
 
-    private static MaterialEvaluation EvaluateMaterial(Board board, bool forWhite)
+    private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)
     {
         var materialEvaluation = new MaterialEvaluation();
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
@@ -174,7 +174,7 @@ public static class Evaluator
         return materialEvaluation;
     }
 
-    private static int PieceSquareScore(Board board, float enemyEndGameScale, bool forWhite)
+    private static int PieceSquareScore(Position board, float enemyEndGameScale, bool forWhite)
     {
         var score = 0;
         var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
@@ -186,7 +186,7 @@ public static class Evaluator
         return score;
     }
 
-    private static int PieceSquareScoreByPiece(Board board, sbyte piece, float enemyEndGameScale)
+    private static int PieceSquareScoreByPiece(Position board, sbyte piece, float enemyEndGameScale)
     {
         var bitboardIndex = Piece.BitboardIndex(piece);
         var occupancy = board.Bitboards.Boards[bitboardIndex];
