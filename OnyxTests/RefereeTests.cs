@@ -162,5 +162,9 @@ public class RefereeTests
         player.HandleCommand("ucinewgame");
         player.HandleCommand("position startpos moves b1c3 e7e6 e2e3 b8c6 g1f3 g8f6 f1b5 a7a6 b5f1 e6e5 d2d4 e5e4 d4d5 c6a5 f3d2 f8b4 a2a3 b4c3 b2c3 d7d6 f1e2 c7c6 d5c6 a5c6 c1b2 d6d5 c3c4 d5c4 d2c4 c8e6 c4d6 e8f8 d1d2 d8d7 d6e4 f6e4 d2d7 e6d7 a1d1 d7f5 f2f4 e4f6 e2f3 f5g4 b2f6 g4f3 g2f3 g7f6 e3e4 a8c8 d1d7 f8e8 d7b7 c6d4 b7b6 a6a5 e1d1 d4c2 b6f6 c2a3 f6f5 c8b8 f5a5 f7f6 a5a3 b8b1 d1c2 b1h1 a3a8 e8f7 a8h8 h1h2 c2d3 h7h5 f4f5 h5h4 f3f4 h4h3 h8h7 f7g8 h7h6 h2a2 h6g6 g8f7 g6g1 h3h2 g1b1 f7e7 e4e5 a2a3 d3e4 a3a4 e4f3 a4b4 b1e1 f6e5 f4e5 b4b3 f3g2 b3b2 g2g3 b2e2 f5f6 e7e6 e1a1 e6f7 a1f1 e2e5 g3h2 e5e6 h2g1 e6f6 g1g2 f7e6 f1a1 e6d5 g2g1 f6b6 g1f1 d5c4 f1e1 c4c3 e1d1 c3b2 a1a4 b6b7 d1e1 b2b1 e1d1 b1b2 d1e1 b7c7 e1d1 c7d7 d1e2 b2b1 e2e1 d7e7 e1d1 b1b2 d1d2 e7b7 d2e2 b2b1 e2e1 b1c1 e1e2 c1b1 e2d1 b1b2");
         Assert.That(Referee.IsThreeFoldRepetition(player.Player.Board), Is.True);
+        
+        player.HandleCommand("ucinewgame");
+        player.HandleCommand("position startpos moves e2e3 b8c6 b1c3 e7e6 d1g4 g8f6 g4f3 f8c5 c3a4 c6b4 e1d1 c5d6 a2a3 b4c6 a4c3 c6e5 f3e2 f6d5 g1f3 d5c3 b2c3 e5f3 g2f3 b7b6 d2d4 c7c5 c1b2 c8b7 e3e4 c5d4 c3d4 d6f4 h1g1 e8g8 h2h3 d7d5 d1e1 h7h5 e2d3 a7a5 a3a4 d8e7 b2a3 f4d6 a3d6 e7d6 e4e5 d6e7 d3a3 e7a3 a1a3 a8c8 e1d1 c8b8 g1g5 h5h4 a3b3 b7c6 f1b5 c6b5 b3b5 f7f6 e5f6 f8f6 b5b3 b6b5 g5g4 b5b4 g4h4 b8f8 d1e2 f8c8 e2d2 c8f8 d2e2 f8c8 e2d2 c8f8 d2e2");
+        Assert.That(Referee.IsThreeFoldRepetition(player.Player.Board), Is.True);
     }
 }

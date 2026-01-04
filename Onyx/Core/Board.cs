@@ -69,7 +69,7 @@ public class Board
     private int HistoryStackPointer = 0;
     
     
-
+   
     public Board(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
@@ -132,6 +132,33 @@ public class Board
         builtFen += $" {FullMoves}";
 
         return builtFen;
+    }
+    public void MakeNullMove()
+    {
+        HistoryStackPointer++;
+        HistoryBuffer[HistoryStackPointer].LastMoveFlags = 0;
+        HistoryBuffer[HistoryStackPointer].CapturedPiece = null;
+        HistoryBuffer[HistoryStackPointer].EnPassantSquare = EnPassantSquare;
+        HistoryBuffer[HistoryStackPointer].CastlingRights = CastlingRights;
+        HistoryBuffer[HistoryStackPointer].HalfMove = HalfMoves;
+        HistoryBuffer[HistoryStackPointer].FullMove = FullMoves;
+        Zobrist.MakeNullMove();       
+        SwapTurns();
+        if (!WhiteToMove)
+            FullMoves++;
+        HalfMoves++;
+        UpdateHistoryState();
+    }
+    public void UndoNullMove()
+    {
+        HistoryStackPointer--;
+        var state = HistoryBuffer[HistoryStackPointer];
+        EnPassantSquare = state.EnPassantSquare;
+        CastlingRights = state.CastlingRights;
+        HalfMoves = state.HalfMove;
+        FullMoves = state.FullMove;
+        Zobrist.MakeNullMove();
+        SwapTurns();
     }
 
     public void ApplyMove(Move move, bool fullApplyMove = true)

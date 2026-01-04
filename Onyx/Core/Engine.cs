@@ -43,7 +43,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.7.2";
+    public static string Version => "0.8.0";
 
     // data members
     public Board Board = new();
@@ -229,7 +229,7 @@ public class Engine
         return (true, bestMove, bestScore);
     }
 
-    private SearchFlag AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply)
+    private SearchFlag AlphaBeta(int depth, int alpha, int beta, Board board, bool timed, int ply, bool nullMoveAllowed = false)
     {
         _pvLength[ply] = ply;
         if ((_statistics.Nodes & 2047) == 0)
@@ -259,6 +259,22 @@ public class Engine
         if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
 
+        if (nullMoveAllowed && flagExit.state != BoardStatus.Check && depth >= 3)
+        {
+            var reduction = depth > 6 ? 3 : 2; var reducedDepth = depth - 1 - reduction; 
+            board.MakeNullMove(); 
+            var nullMoveResult = AlphaBeta(reducedDepth, -beta, -beta + 1, board, timed, ply + 1, false); 
+            board.UndoNullMove(); 
+            if (!nullMoveResult.Completed) 
+                return SearchFlag.Abort; 
+            
+            if (nullMoveResult.Value >= beta)
+            {
+                _statistics.NullMoveReductions++; // immediate fail-high cutoff — return the probe value (or beta)
+                return new SearchFlag(true, nullMoveResult.Value);
+            }
+        }
+
 
         Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
 
@@ -270,7 +286,7 @@ public class Engine
             if (!Referee.MoveIsLegal(move, board)) continue;
             legalMoveCount++;
             board.ApplyMove(move);
-            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1);
+            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1, true);
             board.UndoMove(move);
 
             if (!child.Completed)
@@ -303,8 +319,8 @@ public class Engine
                 StoreKillerMove(move, ply);
             break;
         }
-        
-        
+
+
         // handle if the board is in an illegal state
         var endGameScore = 0;
         var endGameScoreModified = false;
