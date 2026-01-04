@@ -143,6 +143,7 @@ public class Board
         HistoryBuffer[HistoryStackPointer].HalfMove = HalfMoves;
         HistoryBuffer[HistoryStackPointer].FullMove = FullMoves;
         Zobrist.MakeNullMove();       
+        EnPassantSquare = null;
         SwapTurns();
         if (!WhiteToMove)
             FullMoves++;

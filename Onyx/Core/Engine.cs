@@ -43,7 +43,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.8.0";
+    public static string Version => "0.8.1";
 
     // data members
     public Board Board = new();
@@ -171,7 +171,7 @@ public class Engine
         }
 
         _statistics.RunTime = StopwatchManager.Elapsed;
-        Logger.Log(LogType.EngineLog, _statistics);
+        //Logger.Log(LogType.EngineLog, _statistics);
 
         return new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
     }
@@ -259,16 +259,18 @@ public class Engine
         if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
 
-        if (nullMoveAllowed && flagExit.state != BoardStatus.Check && depth >= 3)
+        if (nullMoveAllowed && flagExit.state != BoardStatus.Check && depth >= 3 && HasNonPawnMaterial(board))
         {
-            var reduction = depth > 6 ? 3 : 2; var reducedDepth = depth - 1 - reduction; 
+            var reduction = depth > 6 ? 3 : 2; 
+            var reducedDepth = depth - 1 - reduction; 
             board.MakeNullMove(); 
-            var nullMoveResult = AlphaBeta(reducedDepth, -beta, -beta + 1, board, timed, ply + 1, false); 
+            var nullMoveResult = AlphaBeta(reducedDepth, -beta, -beta + 1, board, timed, ply + 1, false);
+            var nullScore = -nullMoveResult.Value;
             board.UndoNullMove(); 
             if (!nullMoveResult.Completed) 
                 return SearchFlag.Abort; 
             
-            if (nullMoveResult.Value >= beta)
+            if (nullScore >= beta)
             {
                 _statistics.NullMoveReductions++; // immediate fail-high cutoff — return the probe value (or beta)
                 return new SearchFlag(true, nullMoveResult.Value);
@@ -428,6 +430,16 @@ public class Engine
 
         searchFlag = default;
         return false;
+    }
+
+    private static bool HasNonPawnMaterial(Board board)
+    {
+        var nonPawnWhite = board.Bitboards.OccupancyByColour(false) &
+                           ~(board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.WK));
+        var nonPawnBlack = board.Bitboards.OccupancyByColour(true) &
+                           ~(board.Bitboards.OccupancyByPiece(Piece.BP) | board.Bitboards.OccupancyByPiece(Piece.BK));
+
+        return board.WhiteToMove ? nonPawnWhite != 0 : nonPawnBlack != 0;
     }
 
     internal readonly struct SearchFlag(bool completed, int value)
