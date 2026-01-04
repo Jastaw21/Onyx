@@ -65,7 +65,7 @@ public class Bitboards
     }
 
     public ulong AllPieces { get; private set; }
-    private ulong _whitePieces;
+    public ulong _whitePieces { get; private set; }
     public ulong[] Boards { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

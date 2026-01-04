@@ -70,7 +70,7 @@ public class UciInterface
 
     private void HandlePosition(PositionCommand positionCommand)
     {
-        if (positionCommand.FenString != null) _player.Board = new Board(positionCommand.FenString);
+        if (positionCommand.FenString != null) _player.Board.SetFen(positionCommand.FenString);
         _player.Board.ApplyMoves(positionCommand.Moves);
     }
 

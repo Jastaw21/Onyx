@@ -86,6 +86,29 @@ public class Board
         HistoryStackPointer = 0;
         HistoryBuffer[HistoryStackPointer] = startingState;
     }
+
+    public void SetFen(string fen)
+    {
+       
+        Bitboards.LoadFen(fen);
+        ApplyBoardStateFromFen(fen);
+        Zobrist.LoadFen(fen);
+
+        for (int i = 0; i < HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
+
+        var startingState = new PositionState
+        {
+            Hash = Zobrist.HashValue,
+            CastlingRights = CastlingRights,
+            EnPassantSquare = EnPassantSquare,
+            HalfMove = HalfMoves,
+            FullMove = FullMoves
+        };
+
+        HistoryStackPointer = 0;
+        HistoryBuffer[HistoryStackPointer] = startingState;
+    }
+    
     private void UpdateHistoryState()
     {
         var state = HistoryBuffer[HistoryStackPointer];
@@ -415,6 +438,8 @@ public class Board
 
     private void ApplyBoardStateFromFen(string fen)
     {
+        CastlingRights = 0;
+        EnPassantSquare = null;
         var fenDetails = Fen.FromString(fen);
 
         WhiteToMove = fenDetails.WhiteToMove;
