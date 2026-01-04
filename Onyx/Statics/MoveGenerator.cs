@@ -37,8 +37,7 @@ public static class MoveGenerator
         }
         else
         {
-            GeneratePawnMoves(piece, square, board, moveBuffer, ref count);
-            GeneratePawnPromotionMoves(piece, square, board, moveBuffer, ref count);
+            UnifiedPawnMoves(piece, square, board, moveBuffer, ref count);
         }
 
         return count;
@@ -71,24 +70,19 @@ public static class MoveGenerator
         return moveCount;
     }
 
-    private static void GeneratePawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
+    private static void UnifiedPawnMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer, ref int count)
     {
-        var rankIndex = RankAndFile.RankIndex(square);
         var isWhite = Piece.IsWhite(piece);
-        // don't do anything if it's promotion eligible - delegate all promotion logic to GeneratePromotionMoves
-        if ((isWhite && rankIndex == 6) || (!isWhite && rankIndex == 1))
-            return;
-
+        var rankIndex = RankAndFile.RankIndex(square);
+        
         var opponentOccupancy = board.Bitboards.OccupancyByColour(isWhite);
         var movingSideOccupancy = board.Bitboards.OccupancyByColour(!isWhite);
         var occupancy = opponentOccupancy | movingSideOccupancy;
-
-        var rawMoveOutput = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, occupancy);
+        
         var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(isWhite, square, occupancy);
-        var attacks = rawMoveOutput ^ pushes;
+        var attacks = MagicBitboards.MagicBitboards.GetPawnAttacks(isWhite, square, occupancy);
 
         var normalAttacks = opponentOccupancy & attacks;
-
 
         var enPassantAttacks = 0ul;
         // the board has a viable en passant square, and we're on an appropriate file
@@ -101,106 +95,60 @@ public static class MoveGenerator
             // all other conditions for en passant are met
             if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare.Value))
             {
-                normalAttacks |= 1ul << board.EnPassantSquare.Value;
-                enPassantAttacks |= 1ul << board.EnPassantSquare.Value;
+                var epSquare = 1ul << board.EnPassantSquare.Value;
+                normalAttacks |= epSquare;
+                enPassantAttacks |= epSquare;
             }
         }
 
         var result = pushes | normalAttacks;
-        result &= ~board.Bitboards.OccupancyByColour(!isWhite);
-        // Add moves from the result bitboard
+        result &= ~movingSideOccupancy;
+
+        var promotionMask = isWhite ? 0xff00000000000000 : 0xff;
         while (result > 0)
         {
             var lowest = ulong.TrailingZeroCount(result);
             var move = new Move(piece, square, (int)lowest);
             
             // is a capture
-            if (((1ul << (int)lowest) & opponentOccupancy) != 0)
+            var thisSquare = 1ul << (int)lowest;
+            sbyte? captured = null;
+            if ((thisSquare & opponentOccupancy) != 0)
             {
-                var capturedPiece = board.Bitboards.PieceAtSquare((int)lowest);
-                if (capturedPiece.HasValue)
-                {
-                    move.CapturedPiece = capturedPiece.Value;
-                }
+                captured = board.Bitboards.PieceAtSquare((int)lowest);
+                
             }
             
             // is an en passant capture
-            if (((1ul << (int)lowest) & enPassantAttacks) != 0)
+            if ((thisSquare & enPassantAttacks) != 0)
             {
-                var capturedPiece = Piece.MakePiece(Piece.Pawn, !isWhite);
-                move.CapturedPiece = capturedPiece;
+                captured = Piece.MakePiece(Piece.Pawn, !isWhite);
             }
-            move.HasCaptureBeenChecked = true;
-            moveBuffer[count++] = move;
-            result &= result - 1;
-        }
-    }
+            
+            var isPromotion = (thisSquare & promotionMask) != 0;
 
-    private static void GeneratePawnPromotionMoves(sbyte piece, int square, Board board, Span<Move> moveBuffer,
-        ref int count)
-    {
-        var isWhite = Piece.IsWhite(piece);
-        if (Piece.PieceType(piece) != Piece.Pawn)
-            return;
-
-        var rankIndex = RankAndFile.RankIndex(square);
-
-        if ((isWhite && rankIndex != 6) || (!isWhite && rankIndex != 1))
-            return;
-
-        var offset = isWhite ? 8 : -8;
-        var promotionPieces = isWhite ? Piece._whitePromotionTypes : Piece._blackPromotionTypes;
-        
-        // non capturing promotion
-        foreach (var promotionType in promotionPieces)
-        {
-            var targetSquare = square + offset;
-            if (!board.Bitboards.PieceAtSquare(targetSquare).HasValue)
+            if (isPromotion)
             {
-                var move = new Move(piece, square, targetSquare)
+                var promotionPieces = isWhite ? Piece._whitePromotionTypes : Piece._blackPromotionTypes;
+                foreach (var promotionType in promotionPieces)
                 {
-                    PromotedPiece = promotionType
-                };
+                    var promotionMove = new Move(piece, square, (int)lowest)
+                    {
+                        PromotedPiece = promotionType,
+                        CapturedPiece = captured.GetValueOrDefault(0)
+                    };
+                    moveBuffer[count++] = promotionMove;
+                }
+            }
+            
+            if (!isPromotion)
+            {
+                move.CapturedPiece = captured.GetValueOrDefault(0) ;
+                move.HasCaptureBeenChecked = true;
                 moveBuffer[count++] = move;
+                
             }
-        }
-
-        var fileIndex = RankAndFile.FileIndex(square);
-        // can capture to right (board wise, not piece wise, it's left as far as a black pawn is concerned)
-        if (fileIndex < 7)
-        {
-            var targetSquare = square + offset + 1;
-            var pieceAtTarget = board.Bitboards.PieceAtSquare(targetSquare);
-            if (pieceAtTarget.HasValue // needs to be a piece there 
-                && Piece.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
-                && Piece.PieceType(pieceAtTarget.Value) != Piece.King) // and not a king
-            {
-                foreach (var promotionType in promotionPieces)
-                {
-                    var move = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
-                    move.CapturedPiece = pieceAtTarget.Value;
-                    moveBuffer[count++] = move;
-                }
-            }
-        }
-
-        // can capture to left (board wise, not piece wise, it's right as far as a black pawn is concerned)
-        if (fileIndex > 0)
-        {
-            var targetSquare = square + offset - 1;
-            var pieceAtTarget = board.Bitboards.PieceAtSquare(targetSquare);
-            if (pieceAtTarget.HasValue // needs to be a piece there 
-                && Piece.IsWhite(pieceAtTarget.Value) != isWhite // of the other colour
-                && Piece.PieceType(pieceAtTarget.Value) != Piece.King) // and not a king
-            {
-                foreach (var promotionType in promotionPieces)
-                {
-                    var move = new Move(piece, square, targetSquare) { PromotedPiece = promotionType };
-                    move.CapturedPiece = pieceAtTarget.Value;
-                    move.HasCaptureBeenChecked = true;
-                    moveBuffer[count++] = move;
-                }
-            }
+            result &= result - 1;
         }
     }
 

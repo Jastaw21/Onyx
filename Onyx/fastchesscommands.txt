@@ -1,1 +1,1 @@
-﻿.\fastchess -engine cmd=..\v0.8.1\Onyx.exe name="0.8.1" -engine cmd=..\v0.8.0\Onyx.exe name="0.8.0" -rounds 1 -each tc=60+0.05 -pgnout file="pgn.pgn" nodes=true nps=true -games 2 -concurrency 2
+﻿.\fastchess -engine cmd=..\v0.8.3\Onyx.exe name="0.8.3" -engine cmd=..\v0.8.1\Onyx.exe name="0.8.1" -rounds 1 -each tc=60+0.05 -pgnout file="pgn.pgn" nodes=true nps=true -games 12 -concurrency 1 -openings file=..\Games\opening.epd format=epd order=random

@@ -92,8 +92,8 @@ public static class MagicBitboards
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetMovesByPiece(sbyte piece, int square, ulong boardState)
     {
-        var type = Piece.PieceType(piece);       
-        
+        var type = Piece.PieceType(piece);
+
         switch (type)
         {
             case Piece.Queen:
@@ -106,7 +106,7 @@ public static class MagicBitboards
                 return GetPawnMoves(Piece.IsWhite(piece), square, boardState);
             case Piece.Knight:
                 return _knightAttacks[square];
-            case Piece.King:               
+            case Piece.King:
                 return _kingAttacks[square];
             default:
                 throw new ArgumentOutOfRangeException();
@@ -156,7 +156,7 @@ public static class MagicBitboards
         var movesFromHere = 0ul;
         foreach (var kingMove in BoardConstants.KingMoves)
         {
-            var newRank = RankAndFile.RankIndex(square)  + kingMove[0];
+            var newRank = RankAndFile.RankIndex(square) + kingMove[0];
             var newFile = RankAndFile.FileIndex(square) + kingMove[1];
             if (newRank < 0 || newRank > 7 || newFile < 0 || newFile > 7)
                 continue;
@@ -167,14 +167,9 @@ public static class MagicBitboards
         _kingAttacks[square] = movesFromHere;
     }
 
-    private static ulong GetPawnMoves(bool isWhite, int square, ulong boardState)
+    public static ulong GetPawnAttacks(bool isWhite, int square, ulong boardState)
     {
         var result = 0ul;
-
-        result |= GetPawnPushes(isWhite, square, boardState);
-       
-
-        // can go right
         var FileIndex = RankAndFile.FileIndex(square);
         if (FileIndex < 7)
         {
@@ -191,6 +186,11 @@ public static class MagicBitboards
         return result;
     }
 
+    private static ulong GetPawnMoves(bool isWhite, int square, ulong boardState)
+    {
+        return GetPawnPushes(isWhite, square, boardState) | GetPawnAttacks(isWhite, square, boardState);
+    }
+
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetPawnPushes(bool isWhite, int square, ulong boardState)
@@ -199,7 +199,7 @@ public static class MagicBitboards
         if (rankIndex is 7 or 0)
             return 0ul;
 
-       
+
         var squareOffset = isWhite ? 8 : -8;
 
         var isWhiteDoublePush = isWhite && rankIndex == 1;
@@ -208,7 +208,7 @@ public static class MagicBitboards
 
         // add the single push
         var result = 1ul << square + squareOffset;
-        
+
         // cant go anywhere occupied
         if ((result & boardState) > 0)
             return 0ul;
@@ -233,7 +233,7 @@ public static class MagicBitboards
                 // if there's anything on the immediate next rank, can't do a double push
                 if (((1ul << square - 8) & boardState) > 0)
                     break;
-                
+
                 // or on the square we're going to
                 if (((1ul << square - 16) & boardState) > 0)
                     break;

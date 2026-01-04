@@ -43,8 +43,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.8.1";
-
+    public static string Version => "0.8.3";
     // data members
     public Board Board = new();
     private TranspositionTable TranspositionTable { get; } = new();
@@ -199,9 +198,10 @@ public class Engine
 
         foreach (var move in moves)
         {
-            if (!Referee.MoveIsLegal(move, Board)) continue;
+            if (!Referee.MoveIsLegal(move, Board)) 
+                continue;
             Board.ApplyMove(move);
-            var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1);
+            var result = AlphaBeta(depth - 1, -beta, -alpha, Board, timed, 1, false);
             Board.UndoMove(move);
             if (!result.Completed)
                 return (false, default, 0);
@@ -259,25 +259,6 @@ public class Engine
         if (TtProbe(depth, alpha, beta, hash, out var searchResult, out var ttMove))
             return searchResult;
 
-        if (nullMoveAllowed && flagExit.state != BoardStatus.Check && depth >= 3 && HasNonPawnMaterial(board))
-        {
-            var reduction = depth > 6 ? 3 : 2; 
-            var reducedDepth = depth - 1 - reduction; 
-            board.MakeNullMove(); 
-            var nullMoveResult = AlphaBeta(reducedDepth, -beta, -beta + 1, board, timed, ply + 1, false);
-            var nullScore = -nullMoveResult.Value;
-            board.UndoNullMove(); 
-            if (!nullMoveResult.Completed) 
-                return SearchFlag.Abort; 
-            
-            if (nullScore >= beta)
-            {
-                _statistics.NullMoveReductions++; // immediate fail-high cutoff — return the probe value (or beta)
-                return new SearchFlag(true, nullMoveResult.Value);
-            }
-        }
-
-
         Evaluator.SortMoves(moves, ttMove, _killerMoves, ply);
 
         Move bestMove = default;
@@ -288,7 +269,7 @@ public class Engine
             if (!Referee.MoveIsLegal(move, board)) continue;
             legalMoveCount++;
             board.ApplyMove(move);
-            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1, true);
+            var child = AlphaBeta(depth - 1, -beta, -alpha, board, timed, ply + 1, false);
             board.UndoMove(move);
 
             if (!child.Completed)
@@ -430,16 +411,6 @@ public class Engine
 
         searchFlag = default;
         return false;
-    }
-
-    private static bool HasNonPawnMaterial(Board board)
-    {
-        var nonPawnWhite = board.Bitboards.OccupancyByColour(false) &
-                           ~(board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.WK));
-        var nonPawnBlack = board.Bitboards.OccupancyByColour(true) &
-                           ~(board.Bitboards.OccupancyByPiece(Piece.BP) | board.Bitboards.OccupancyByPiece(Piece.BK));
-
-        return board.WhiteToMove ? nonPawnWhite != 0 : nonPawnBlack != 0;
     }
 
     internal readonly struct SearchFlag(bool completed, int value)
