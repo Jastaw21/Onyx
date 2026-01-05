@@ -55,10 +55,16 @@ public class Engine
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
+    private int _maxThreads = 5;
 
     public Engine()
     {
         _timeManager = new TimeManager(this);
+        var procCount = Environment.ProcessorCount;
+        for (var t = 0; t < _maxThreads; t++)
+        {
+            _workers.Add(new Searcher(this));
+        }
     }
 
     // UCI Interface methods
@@ -77,6 +83,10 @@ public class Engine
         Position = new Position();
         StopwatchManager = new StopwatchManager();
         _workers.Clear();
+        for (var t = 0; t < _maxThreads; t++)
+        {
+            _workers.Add(new Searcher(this));
+        }
     }
 
     public SearchResults Search(SearchParameters searchParameters)
@@ -110,14 +120,7 @@ public class Engine
             ct = cts.Token
         };
 
-        var threadCount = Math.Max(1, Environment.ProcessorCount - 1);
-        for (var t = 0; t < threadCount; t++)
-        {
-            _workers.Add(new Searcher(this));
-        }
-
-        List<Thread> searchThreads = [];
-
+        Thread mainSearcher = null;
         var searcherCount = 0;
         foreach (var worker in _workers)
         {
@@ -127,8 +130,9 @@ public class Engine
                 IsBackground = true,
                 Name = $"Searcher {searcherCount}"
             };
-            searchThreads.Add(t);
             t.Start();
+            if (searcherCount == 0)
+                mainSearcher = t;
             searcherCount++;
         }
 
@@ -144,8 +148,10 @@ public class Engine
         }
         
         cts.Cancel();
-        searchThreads[0].Join();
+        mainSearcher.Join();
+        Console.WriteLine($"Finished {StopwatchManager.Elapsed}");
         StopwatchManager.Reset();
+
         return _workers[0].SearchResults;
     }
 }
