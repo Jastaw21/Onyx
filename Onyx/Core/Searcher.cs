@@ -10,30 +10,36 @@ public struct SearcherInstructions
     public int MaxDepth = 128;
     public int StartDepth = 1;
     public int DepthInterval = 1;
+    public CancellationToken ct;
 
-    public SearcherInstructions(bool isTimed, long timeLimit, int maxDepth, int startDepth, int depthInterval)
+    public SearcherInstructions(bool isTimed, long timeLimit, int maxDepth, int startDepth, int depthInterval,
+        CancellationToken ct_)
     {
-        this.IsTimed = isTimed;
-        this.TimeLimit = timeLimit;
-        this.MaxDepth = maxDepth;
-        this.StartDepth = startDepth;
-        this.DepthInterval = depthInterval;
+        IsTimed = isTimed;
+        TimeLimit = timeLimit;
+        MaxDepth = maxDepth;
+        StartDepth = startDepth;
+        DepthInterval = depthInterval;
+        ct = ct_;
     }
 }
-public class Searcher(Engine engine)
+
+public class Searcher(Engine engine, int searcherId = 0)
 {
     // internals
     private Engine _engine = engine;
-    private Move?[,] _killerMoves = new Move?[128, 2];
+    private readonly Move?[,] _killerMoves = new Move?[128, 2];
     private SearchStatistics _statistics;
-    private Move[,] _pvTable = new Move[128, 128];
-    private int[] _pvLength = new int[128];
-    
+    private readonly Move[,] _pvTable = new Move[128, 128];
+    private readonly int[] _pvLength = new int[128];
+    private CancellationToken ct;
+    private int _searcherId = searcherId;
+
     // used by the search manager
-    public bool stopFlag = false;
+    public volatile bool stopFlag = false;
     public SearchResults SearchResults { get; private set; } = new SearchResults();
     public bool IsFinished;
-    
+
     public void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position _position)
     {
         _statistics = new SearchStatistics();
@@ -43,20 +49,27 @@ public class Searcher(Engine engine)
         List<Move> pv = [];
         Move bestMove = default;
         var bestScore = 0;
+        IsFinished = false;
+        ct = searchParameters.ct;
 
-        for (var depth = searchParameters.StartDepth;
+        // some vague diversification stuff
+        var startDepth = _searcherId == 0 ? 1 : _searcherId % 2 == 0 ? 1 : 2;
+        var depthInterval = _searcherId == 0 ? 1 : Math.Max(_searcherId % 3, 1);
+
+
+        for (var depth = startDepth;
              depth < searchParameters.MaxDepth;
-             depth += searchParameters.DepthInterval)
+             depth += depthInterval)
         {
-            var searchResult = ExecuteSearch(depth,_position);
+            var searchResult = ExecuteSearch(depth, _position);
             if (!searchResult.completed) continue;
-            if (stopFlag)
+            if (stopFlag || ct.IsCancellationRequested)
                 break;
 
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             pv.Clear();
-            
+
             Fen.BuildPVString(_pvTable, _pvLength, out pv);
             _statistics.Depth = depth;
 
@@ -68,13 +81,14 @@ public class Searcher(Engine engine)
         }
 
         {
-            IsFinished = true;
+            _statistics.RunTime = _engine.StopwatchManager.Elapsed;
             SearchResults = new SearchResults
                 { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
+            IsFinished = true;
         }
     }
-    
-    private (bool completed, Move bestMove, int score) ExecuteSearch(int depth,Position _position)
+
+    private (bool completed, Move bestMove, int score) ExecuteSearch(int depth, Position _position)
     {
         Span<Move> moveBuffer = stackalloc Move[256];
         var moveCount = MoveGenerator.GetMoves(_position, moveBuffer);
@@ -109,19 +123,19 @@ public class Searcher(Engine engine)
 
                 _pvLength[0] = _pvLength[1];
             }
-            
+
             alpha = Math.Max(alpha, score);
         }
 
         return (true, bestMove, bestScore);
     }
-    
+
     private SearchFlag AlphaBeta(int depth, int alpha, int beta, Position _position, int ply,
         bool nullMoveAllowed = false)
     {
         _pvLength[ply] = ply;
-        if ((_statistics.Nodes & 2047) == 0 && stopFlag)
-                return SearchFlag.Abort;
+        if ((_statistics.Nodes & 2047) == 0 && (stopFlag || ct.IsCancellationRequested))
+            return SearchFlag.Abort;
 
         _statistics.Nodes++;
 
@@ -133,7 +147,7 @@ public class Searcher(Engine engine)
         // Early exit if found the TTMove at a greater depth
         var hash = _position.Zobrist.HashValue;
         var TTResult = _engine.TranspositionTable.Retrieve(hash);
-        if (TtEntry.TtResultUsable(alpha, beta, depth, TTResult))
+        if (TTResult.HasValue && TTResult.Value.ShouldUseEntry(alpha, beta, depth, hash))
         {
             _statistics.TtHits++;
             return new SearchFlag(true, TTResult!.Value.Eval);
@@ -180,9 +194,9 @@ public class Searcher(Engine engine)
 
 
         // ---- main loop ----
-        
+
         Move bestMove = default;
-        var legalMoveCount = 0;       
+        var legalMoveCount = 0;
         foreach (var move in moves)
         {
             if (!Referee.MoveIsLegal(move, _position)) continue;
@@ -253,15 +267,14 @@ public class Searcher(Engine engine)
         _engine.TranspositionTable.Store(hash, bestValue, depth, _engine.CurrentSearchId, flag, bestMove, boardState);
         _statistics.TtStores++;
 
-        
+
         return new SearchFlag(true, bestValue);
     }
 
     private SearchFlag QuiescenceSearch(int alpha, int beta, Position _position, int ply)
     {
-
         // make sure we can handle timing out in quiescence search
-        if (stopFlag)
+        if (stopFlag || ct.IsCancellationRequested)
             return SearchFlag.Abort;
 
         // seb lague does this - not sure if it's needed though
@@ -292,6 +305,7 @@ public class Searcher(Engine engine)
             if (eval >= beta) return new SearchFlag(true, beta);
             if (eval > alpha) alpha = eval;
         }
+
         return new SearchFlag(true, alpha);
     }
 
@@ -302,7 +316,7 @@ public class Searcher(Engine engine)
 
         public static SearchFlag Abort => new(false, 0);
     }
-    
+
     private void StoreKillerMove(Move move, int ply)
     {
         var existingMove = _killerMoves[ply, 0];

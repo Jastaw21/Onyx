@@ -19,32 +19,28 @@ public struct TtEntry
     public Move BestMove;
     public BoardStatus BoardStatus;
 
-    public static bool TtResultUsable(int alpha, int beta, int depth, TtEntry? entry)
+    public bool ShouldUseEntry(int alpha, int beta, int depth, ulong hash)
     {
         // Checks if the transposition table entry can be used to cut off search based on the bounds etc
-
-
-        if (!entry.HasValue)
+        if (hash != Hash)
             return false;
-
-        var entryValue = entry.Value;
-
+        
         // only use if depth is sufficient
-        if (entryValue.Depth < depth)
+        if (Depth < depth)
             return false;
 
-        switch (entryValue.BoundFlag)
+        switch (BoundFlag)
         {
             case BoundFlag.Exact:
                 return true;
             case BoundFlag.Upper:
                 // we at least know we're better than alpha
-                if (entryValue.Eval <= alpha)
+                if (Eval <= alpha)
                     return true;
                 break;
             case BoundFlag.Lower:
                 // basically a beta cutoff?
-                if (entryValue.Eval >= beta)
+                if (Eval >= beta)
                     return true;
                 break;
         }

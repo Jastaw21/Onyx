@@ -107,10 +107,6 @@ public class UciInterface
 
                 Console.WriteLine(infoString);
                 Console.WriteLine($"bestmove {move.BestMove}");
-
-
-                //Logger.Log(LogType.UCISent, result);
-                //Logger.Log(LogType.UCISent, infoString);
             }
 
             catch (OperationCanceledException)
@@ -118,8 +114,6 @@ public class UciInterface
                 Console.WriteLine("search cancelled");
             }
         });
-
-
         _engineThread.Start();
     }
 
@@ -146,7 +140,7 @@ public class UciInterface
     private void StopSearch()
     {
         _searchCTS?.Cancel();
-        _engineThread?.Join(1000);
+        _engineThread?.Join(10);
     }
 
     private static string MovesToString(List<Move>? moves)

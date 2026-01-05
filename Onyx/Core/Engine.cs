@@ -43,31 +43,27 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.8.4";
+    public static string Version => "0.9.0";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
-    private StopwatchManager StopwatchManager { get; set; } = new();
-    public int MateScore { get; } = 30000;
+    public StopwatchManager StopwatchManager { get; set; } = new();
+    public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
 
     // search members
     public int CurrentSearchId { get; private set; }
-    private bool _loggingEnabled;
     private readonly TimeManager _timeManager;
-    private Searcher _searcher;
-    private Thread _searchThread;
+    private readonly List<Searcher> _workers = [];
 
     public Engine()
     {
         _timeManager = new TimeManager(this);
-        _searcher = new Searcher(this);
     }
 
     // UCI Interface methods
     public void SetLogging(bool enabled)
     {
-        _loggingEnabled = enabled;
         Evaluator.LoggingEnabled = enabled;
     }
 
@@ -80,7 +76,7 @@ public class Engine
     {
         Position = new Position();
         StopwatchManager = new StopwatchManager();
-        _searcher.Reset();
+        _workers.Clear();
     }
 
     public SearchResults Search(SearchParameters searchParameters)
@@ -101,28 +97,55 @@ public class Engine
             timeLimit = _timeManager.TimeBudgetPerMove(searchParameters.TimeControl.Value);
             isTimed = true;
         }
-        var depthLimit = searchParameters.MaxDepth ?? 100;
-        _searchThread = new Thread((() =>
-                _searcher.IterativeDeepeningSearch(
-                    new SearcherInstructions
-                        { IsTimed = isTimed, MaxDepth = depthLimit, StartDepth = 1, DepthInterval = 1 }
-                    , Position))
-        );
-        
-        _searchThread.Name = $"Search {CurrentSearchId}";
-        _searcher.IsFinished = false;
-        _searchThread.Start();
-        StopwatchManager.Start(timeLimit);
-        
 
-        while (!_searcher.IsFinished)
+        CancellationTokenSource cts = new();
+
+        var depthLimit = searchParameters.MaxDepth ?? 100;
+        var searchInstructions = new SearcherInstructions
         {
-            if (_ct.IsCancellationRequested)
-                _searcher.stopFlag = true;
-            if (isTimed && StopwatchManager.ShouldStop)
-                _searcher.stopFlag = true;
+            IsTimed = isTimed,
+            MaxDepth = depthLimit,
+            StartDepth = 1,
+            DepthInterval = 1,
+            ct = cts.Token
+        };
+
+        var threadCount = Math.Max(1, Environment.ProcessorCount - 1);
+        for (var t = 0; t < threadCount; t++)
+        {
+            _workers.Add(new Searcher(this));
         }
 
-        return _searcher.SearchResults;
+        List<Thread> searchThreads = [];
+
+        var searcherCount = 0;
+        foreach (var worker in _workers)
+        {
+            var thisPosition = Position.Clone();
+            var t = new Thread(() => worker.IterativeDeepeningSearch(searchInstructions, thisPosition))
+            {
+                IsBackground = true,
+                Name = $"Searcher {searcherCount}"
+            };
+            searchThreads.Add(t);
+            t.Start();
+            searcherCount++;
+        }
+
+
+        StopwatchManager.Start(timeLimit);
+        var stopwatchTime = 0l;
+        
+        while (!_ct.IsCancellationRequested)
+        {
+            if (isTimed && StopwatchManager.ShouldStop) break;
+            if (_workers[0].IsFinished) break;
+            Thread.Sleep(10);
+        }
+        
+        cts.Cancel();
+        searchThreads[0].Join();
+        StopwatchManager.Reset();
+        return _workers[0].SearchResults;
     }
 }
