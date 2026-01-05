@@ -25,6 +25,19 @@ public class MoveGenTests
     }
 
     [Test]
+    public void DoesntGenerateStrangeIllegalMoves()
+    {
+        var fen = "rnbq1rk1/pp2n1pp/4p3/2ppPp2/3P2Q1/P1PB4/2P2PPP/R1B1K1NR w KQ f6 0 1";
+        var board = new Position(fen);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        
+        var count = MoveGenerator.GetMoves(board, moveBuffer);
+        Assert.That(count, Is.EqualTo(44));
+            
+        
+    }
+
+    [Test]
     public void DoesntGenerateMoveToOwn()
     {
         var testBoard = new Position("8/8/8/8/8/NRBBN3/PKQBN3/8 w - - 0 1");

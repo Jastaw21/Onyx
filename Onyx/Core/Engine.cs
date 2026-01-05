@@ -147,11 +147,14 @@ public class Engine
             Thread.Sleep(10);
         }
         
+        stopwatchTime = StopwatchManager.Elapsed;
+        var searchResults = _workers[0].SearchResults;
+        searchResults.Statistics.RunTime = stopwatchTime;
         cts.Cancel();
         mainSearcher.Join();
-        Console.WriteLine($"Finished {StopwatchManager.Elapsed}");
         StopwatchManager.Reset();
 
-        return _workers[0].SearchResults;
+        
+        return searchResults;
     }
 }

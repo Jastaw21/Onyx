@@ -58,7 +58,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
 
         for (var depth = startDepth;
-             depth < searchParameters.MaxDepth;
+             depth <= searchParameters.MaxDepth;
              depth += depthInterval)
         {
             var searchResult = ExecuteSearch(depth, _position);
@@ -79,13 +79,9 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
             }
         }
-
-        {
-            _statistics.RunTime = _engine.StopwatchManager.Elapsed;
-            SearchResults = new SearchResults
-                { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
-            IsFinished = true;
-        }
+        SearchResults = new SearchResults
+            { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
+        IsFinished = true;
     }
 
     private (bool completed, Move bestMove, int score) ExecuteSearch(int depth, Position _position)

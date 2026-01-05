@@ -1,1 +1,24 @@
-﻿.\fastchess -engine cmd=..\v0.8.3\Onyx.exe name="0.8.3" -engine cmd=..\v0.8.4\Onyx.exe name="0.8.4" -engine cmd=..\v0.9.0\Onyx.exe name="0.9.0" -rounds 1 -each tc=60+0.05 -pgnout file="pgn.pgn" nodes=true nps=true -games 6 -concurrency 2 -openings file=..\Games\opening.epd format=epd order=random
+﻿.\fastchess -engine cmd=..\v0.8.4\Onyx.exe name="0.8.4" -engine cmd=..\v0.9.0\Onyx.exe name="0.9.0" -rounds 6 -each tc=30+0.05 -pgnout file="pgn2.pgn" -games 2 -concurrency 4 -openings file=..\Games\opening.epd format=epd order=random -recover
+.\fastchess -engine cmd=..\v0.9.0\Onyx.exe name="0.9.0" -engine cmd="Z:\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe" name="Stockfish" option.UCI_Elo=1390 option."Skill Level=1" -rounds 2 -each tc=30+0.05 -pgnout file="pgn3.pgn" -games 2 -concurrency 4 -openings file=..\Games\opening.epd format=epd order=random -recover
+
+
+0    1347
+1    1490
+2    1597
+3    1694
+4    1785
+5    1871
+6    1954
+7    2035
+8    2113
+9    2189
+10    2264
+11    2337
+12    2409
+13    2480
+14    2550
+15    2619
+16    2686
+17    2754
+18    2820
+19    2886
