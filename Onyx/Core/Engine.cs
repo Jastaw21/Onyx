@@ -21,7 +21,7 @@ public class TimeManager(Engine engine)
             Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
                 ? calcMovesRemaining
                 : instructedMovesRemaining;
-        var baseTime = time / movesToGo + safeInc * 0.8;
+        var baseTime = time / 20 + safeInc * 0.5;
 
         // use max of 20% remaining time
         var safeMax = time * 0.2;
@@ -43,7 +43,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.9.0";
+    public static string Version => "0.9.1";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
@@ -59,11 +59,25 @@ public class Engine
 
     public Engine()
     {
+        IsReady = false;
         _timeManager = new TimeManager(this);
-        var procCount = Environment.ProcessorCount;
-        for (var t = 0; t < _maxThreads; t++)
+        InitializeWorkerThreads();
+        IsReady = true;
+    }
+
+    private void InitializeWorkerThreads()
+    {
+        for (var workerID = 0; workerID < _maxThreads; workerID++)
         {
-            _workers.Add(new Searcher(this));
+            var worker = new Searcher(this, workerID);
+            _workers.Add(worker);
+            
+            var thread = new Thread(worker.Start) 
+            { 
+                IsBackground = true,
+                Priority = ThreadPriority.AboveNormal 
+            };
+            thread.Start();
         }
     }
 
@@ -80,14 +94,15 @@ public class Engine
 
     public void Reset()
     {
+        IsReady = false;
         Position = new Position();
         StopwatchManager = new StopwatchManager();
         _workers.Clear();
-        for (var t = 0; t < _maxThreads; t++)
-        {
-            _workers.Add(new Searcher(this));
-        }
+        InitializeWorkerThreads();
+        IsReady = true;
     }
+
+    public bool IsReady { get; set; }
 
     public SearchResults Search(SearchParameters searchParameters)
     {
@@ -120,41 +135,23 @@ public class Engine
             ct = cts.Token
         };
 
-        Thread mainSearcher = null;
-        var searcherCount = 0;
+        StopwatchManager.Start(timeLimit);
         foreach (var worker in _workers)
         {
-            var thisPosition = Position.Clone();
-            var t = new Thread(() => worker.IterativeDeepeningSearch(searchInstructions, thisPosition))
-            {
-                IsBackground = true,
-                Name = $"Searcher {searcherCount}"
-            };
-            t.Start();
-            if (searcherCount == 0)
-                mainSearcher = t;
-            searcherCount++;
+            worker.TriggerSearch(searchInstructions, Position.Clone());
         }
-
-
-        StopwatchManager.Start(timeLimit);
-        var stopwatchTime = 0l;
         
         while (!_ct.IsCancellationRequested)
         {
             if (isTimed && StopwatchManager.ShouldStop) break;
             if (_workers[0].IsFinished) break;
-            Thread.Sleep(10);
+            Thread.Sleep(1);
         }
         
-        stopwatchTime = StopwatchManager.Elapsed;
-        var searchResults = _workers[0].SearchResults;
-        searchResults.Statistics.RunTime = stopwatchTime;
-        cts.Cancel();
-        mainSearcher.Join();
+        foreach (var worker in _workers) worker.stopFlag = true;
+        var result = _workers[0].SearchResults;
+        result.Statistics.RunTime = StopwatchManager.Elapsed;
         StopwatchManager.Reset();
-
-        
-        return searchResults;
+        return result;
     }
 }

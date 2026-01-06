@@ -40,7 +40,42 @@ public class Searcher(Engine engine, int searcherId = 0)
     public SearchResults SearchResults { get; private set; } = new SearchResults();
     public bool IsFinished;
 
-    public void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position _position)
+    private readonly AutoResetEvent _startSignal = new(false);
+    private bool _isQuitting = false;
+    private SearcherInstructions _currentInstructions;
+    private Position _currentPosition;
+
+    public void Start()
+    {
+        while (!_isQuitting)
+        {
+            _startSignal.WaitOne(); // pause here waiting for engine instruction
+
+            if (_isQuitting) break;
+
+            IsFinished = false;
+            stopFlag = false;
+
+            IterativeDeepeningSearch(_currentInstructions, _currentPosition);
+
+            IsFinished = true;
+        }
+    }
+
+    public void Quit()
+    {
+        _isQuitting = true;
+        _startSignal.Set();
+    }
+
+    public void TriggerSearch(SearcherInstructions inst, Position pos)
+    {
+        _currentInstructions = inst;
+        _currentPosition = pos;
+        _startSignal.Set();
+    }
+
+    private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position _position)
     {
         _statistics = new SearchStatistics();
         Array.Clear(_pvTable);
@@ -57,9 +92,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         var depthInterval = _searcherId == 0 ? 1 : Math.Max(_searcherId % 3, 1);
 
 
-        for (var depth = startDepth;
-             depth <= searchParameters.MaxDepth;
-             depth += depthInterval)
+        for (var depth = startDepth; depth <= searchParameters.MaxDepth; depth += depthInterval)
         {
             var searchResult = ExecuteSearch(depth, _position);
             if (!searchResult.completed) continue;
@@ -69,18 +102,16 @@ public class Searcher(Engine engine, int searcherId = 0)
             bestMove = searchResult.bestMove;
             bestScore = searchResult.score;
             pv.Clear();
-
             Fen.BuildPVString(_pvTable, _pvLength, out pv);
             _statistics.Depth = depth;
-
+            SearchResults = new SearchResults { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
             // We found a way to win. No need to look deeper.
             if (bestScore > _engine.MateScore - 100)
             {
                 break;
             }
         }
-        SearchResults = new SearchResults
-            { BestMove = bestMove, Score = bestScore, Statistics = _statistics, PV = pv };
+
         IsFinished = true;
     }
 
