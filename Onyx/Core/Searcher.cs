@@ -70,8 +70,13 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     public void TriggerSearch(SearcherInstructions inst, Position pos)
     {
+        Array.Clear(_killerMoves);
+        Array.Clear(_pvTable);
+        Array.Clear(_pvLength);
+        _statistics = new SearchStatistics();
         _currentInstructions = inst;
         _currentPosition = pos;
+        SearchResults = new SearchResults();
         _startSignal.Set();
     }
 
