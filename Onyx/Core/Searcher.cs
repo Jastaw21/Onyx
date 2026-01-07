@@ -97,7 +97,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
 
             // do the search from this depth.
-            var searchResult = Search(depth, 0, int.MinValue, int.MaxValue);
+            var searchResult = Search(depth, 0, -Infinity, Infinity);
 
             // if we timed out or were stopped, we can't use the results of this depth
             if (!searchResult.Completed)
@@ -161,6 +161,22 @@ public class Searcher(Engine engine, int searcherId = 0)
         _killerMoves[ply, 1] = existingMove;
     }
 
+    private const int Infinity = 1_000_000;
+
+    private int EncodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > _engine.MateScore - 1000) return score + depthFromRoot;
+        if (score < -(_engine.MateScore - 1000)) return score - depthFromRoot;
+        return score;
+    }
+
+    private int DecodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > _engine.MateScore - 1000) return score - depthFromRoot;
+        if (score < -(_engine.MateScore - 1000)) return score + depthFromRoot;
+        return score;
+    }
+
     SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
     {
         if (stopFlag)
@@ -178,11 +194,18 @@ public class Searcher(Engine engine, int searcherId = 0)
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {
-            if (ttValue.Value.ShouldUseEntry(alpha, beta, depthFromRoot, zobristHashValue))
+            if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
             {
-                _thisIterationResults.BestMove = ttValue.Value.BestMove;
-                _thisIterationResults.Score = ttValue.Value.Eval;
-                return new SearchFlag(true, ttValue.Value.Eval);
+                var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
+                if (depthFromRoot == 0)
+                {
+                    if (ttValue.Value.BestMove.Data != 0)
+                    {
+                        _thisIterationResults.BestMove = ttValue.Value.BestMove;
+                    }
+                    _thisIterationResults.Score = ttEval;
+                }
+                return new SearchFlag(true, ttEval);
             }
         }
         
@@ -200,7 +223,6 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
             return SearchFlag.Zero;
         }
-        
 
         // leaf node
         if (depthRemaining == 0)
@@ -220,7 +242,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             // make, search recursively, then undo the move
             _currentPosition.ApplyMove(move);
-            var childResult = Search(depthRemaining - 1, depthFromRoot + 1, -beta, alpha);
+            var childResult = Search(depthRemaining - 1, depthFromRoot + 1, -beta, -alpha);
             _currentPosition.UndoMove(move);
 
             // timed out in a child node
@@ -236,7 +258,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 _statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
-                _engine.TranspositionTable.Store(zobristHashValue, beta, depthFromRoot, _engine.CurrentSearchId,
+                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining, _engine.CurrentSearchId,
                     BoundFlag.Lower, move);
 
                 // the best we can get in this chain is beta, since the opponent will avoid it - exit now
@@ -259,7 +281,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _engine.TranspositionTable.Store(zobristHashValue, alpha, depthFromRoot, _engine.CurrentSearchId, storingFlag,
+        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), depthRemaining, _engine.CurrentSearchId, storingFlag,
             bestMove);
 
         return new SearchFlag(true, alpha);
