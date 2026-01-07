@@ -13,7 +13,7 @@ public class TranspositionTableTests
 
         var hash = startingHashZob.HashValue;
         
-        transpositionTable.Store(hash, 1, 1, 1, BoundFlag.Exact, default, BoardStatus.Normal);
+        transpositionTable.Store(hash, 1, 1, 1, BoundFlag.Exact, default);
         var retrieved = transpositionTable.Retrieve(hash);
         Assert.Multiple(() =>
         {

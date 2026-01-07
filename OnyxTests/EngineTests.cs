@@ -91,7 +91,7 @@ public class EngineTests
         for (int i = 2; i < 4; i++)
         {
             var timedSearch = engine.Search(new SearchParameters { MaxDepth = i, TimeLimit = 2000 });
-            var depthReached = timedSearch.Statistics.Depth;
+            var depthReached = engine._statistics.Depth;
             var directResult = engine.Search(new SearchParameters { MaxDepth = depthReached+2 });
             var match = timedSearch.BestMove.Notation == directResult.BestMove.Notation;
             var passString = match ? "passes" : $"fails with {timedSearch.BestMove}";
@@ -106,7 +106,7 @@ public class EngineTests
         var feb = "6k1/7p/7B/5pp1/8/4bP1P/1q3PK1/5Q2 w - - 0 1";
         var engine = new Engine();
         engine.SetPosition(feb);
-        var move = engine.Search(new SearchParameters { MaxDepth = 3, TimeLimit = 600 });
+        var move = engine.Search(new SearchParameters { MaxDepth = 3 });
         Assert.That(move.BestMove.Notation, Is.EqualTo("f1c4"));
 
         engine.SetPosition("6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1");

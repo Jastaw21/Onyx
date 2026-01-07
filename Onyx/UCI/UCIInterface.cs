@@ -95,18 +95,16 @@ public class UciInterface
         {   
             try
             {
-                var move = _player.Search(new SearchParameters
+                var searchResults = _player.Search(new SearchParameters
                 {
                     CancellationToken = _searchCTS.Token,
                     MaxDepth = depth,
                     TimeControl = command.TimeControl
                 });
-
-                var result = $"bestmove {move.BestMove}";
-                var infoString = GetSearchInfoString(move);
+                var infoString = GetSearchInfoString(searchResults,_player._statistics);
 
                 Console.WriteLine(infoString);
-                Console.WriteLine($"bestmove {move.BestMove}");
+                Console.WriteLine($"bestmove {searchResults.BestMove}");
             }
 
             catch (OperationCanceledException)
@@ -156,9 +154,8 @@ public class UciInterface
         return sb.ToString();
     }
 
-    private static string GetSearchInfoString(SearchResults results)
+    private static string GetSearchInfoString(SearchResults results, SearchStatistics stats)
     {
-        var stats = results.Statistics;
         var pv = results.PV;
         var nps = 0;
         if (stats.RunTime > 0)

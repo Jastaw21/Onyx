@@ -9,20 +9,22 @@ public enum BoardStatus
     Checkmate,
     Stalemate
 }
+
 public static class Referee
 {
-    public static bool MoveIsLegal(Move move, Position position, bool alreadyKnowBoardInCheck = false, bool isAlreadyInCheck = false)
+    public static bool MoveIsLegal(Move move, Position position, bool alreadyKnowBoardInCheck = false,
+        bool isAlreadyInCheck = false)
     {
         var isWhite = Piece.IsWhite(move.PieceMoved);
         var type = Piece.PieceType(move.PieceMoved);
         if (type == Piece.King)
             return FullLegalityCheck(move, position);
-        
+
 
         var haveToTestForCheck = !alreadyKnowBoardInCheck;
         var isInCheck = false;
         if (haveToTestForCheck)
-            isInCheck = IsInCheck(position.WhiteToMove , position);
+            isInCheck = IsInCheck(position.WhiteToMove, position);
         else
             isInCheck = isAlreadyInCheck;
 
@@ -32,10 +34,10 @@ public static class Referee
             var relevantKing = isWhite ? Piece.WK : Piece.BK;
             var kingBoard = position.Bitboards.OccupancyByPiece(relevantKing);
             var kingSquare = (int)ulong.TrailingZeroCount(kingBoard);
-            
+
             // Should not happen in a valid game, but for safety in tests
             if (kingSquare == 64) return FullLegalityCheck(move, position);
-            
+
             return !IsPinnedToKing(move.From, kingSquare, isWhite, position, move.To);
         }
 
@@ -101,10 +103,10 @@ public static class Referee
     {
         var relevantKing = Piece.MakePiece(Piece.King, isWhite);
         var kingBitBoard = position.Bitboards.OccupancyByPiece(relevantKing);
-        
+
         var square = ulong.TrailingZeroCount(kingBitBoard);
         if (square == 64) return false; // no king on the board 
-        
+
         return IsSquareAttacked((int)square, position, !isWhite);
     }
 
@@ -136,7 +138,8 @@ public static class Referee
         var whiteState = IsCheckmate(true, position);
         var blackState = IsCheckmate(false, position);
         if (whiteState.isCheckmate || blackState.isCheckmate) return BoardStatus.Checkmate;
-        if (whiteState.boardState == BoardStatus.Check || blackState.boardState == BoardStatus.Check) return BoardStatus.Check;
+        if (whiteState.boardState == BoardStatus.Check || blackState.boardState == BoardStatus.Check)
+            return BoardStatus.Check;
         return BoardStatus.Normal;
     }
 
@@ -211,13 +214,13 @@ public static class Referee
     {
         var history = board.History; // The span of historical states
         var currentHash = board.Zobrist.HashValue;
-        int matches = 0;
-    
-        // We only need to check back as far as the HalfMoves rule allows
-        int startSearch = history.Length - 1;
-        int endSearch = Math.Max(0, history.Length - board.HalfMoves);
+        var matches = 0;
 
-        for (int i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
+        // We only need to check back as far as the HalfMoves rule allows
+        var startSearch = history.Length - 1;
+        var endSearch = Math.Max(0, history.Length - board.HalfMoves);
+
+        for (var i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
         {
             if (history[i].Hash == currentHash)
             {
@@ -225,6 +228,26 @@ public static class Referee
                 if (matches >= 2) return true;
             }
         }
+
+        return false;
+    }
+
+    public static bool IsRepetition(Position board)
+    {
+        var history = board.History; // The span of historical states
+        var currentHash = board.Zobrist.HashValue;
+        var matches = 0;
+
+        // We only need to check back as far as the HalfMoves rule allows
+        var startSearch = history.Length - 1;
+        var endSearch = Math.Max(0, history.Length - board.HalfMoves);
+
+        for (var i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
+        {
+            if (history[i].Hash == currentHash)
+                return true;
+        }
+
         return false;
     }
 }

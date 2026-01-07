@@ -66,7 +66,7 @@ public class Position
     public ReadOnlySpan<PositionState> History => HistoryBuffer.AsSpan(0, HistoryStackPointer+1);
 
     private PositionState[] HistoryBuffer = new PositionState[1024];
-    private int HistoryStackPointer = 0;
+    private int HistoryStackPointer;
     
     
    

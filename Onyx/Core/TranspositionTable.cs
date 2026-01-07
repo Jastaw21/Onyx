@@ -17,7 +17,6 @@ public struct TtEntry
     public int Age;
     public BoundFlag BoundFlag;
     public Move BestMove;
-    public BoardStatus BoardStatus;
 
     public bool ShouldUseEntry(int alpha, int beta, int depth, ulong hash)
     {
@@ -61,7 +60,7 @@ public class TranspositionTable
     }
 
 
-    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove, BoardStatus boardStatus)
+    public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
     {
         var index = hash % (ulong)_entries.Length;
 
@@ -76,8 +75,7 @@ public class TranspositionTable
                 Depth = depth,
                 Age = age,
                 BoundFlag = boundFlag,
-                BestMove =  bestMove,
-                BoardStatus = boardStatus
+                BestMove =  bestMove
             };
         }
     }

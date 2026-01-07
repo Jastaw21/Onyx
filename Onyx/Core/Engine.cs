@@ -56,6 +56,7 @@ public class Engine
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
     private int _maxThreads = 5;
+    public SearchStatistics _statistics;
 
     public Engine()
     {
@@ -67,7 +68,7 @@ public class Engine
 
     private void InitializeWorkerThreads()
     {
-        for (var workerID = 0; workerID < _maxThreads; workerID++)
+        for (var workerID = 0; workerID < 2; workerID++)
         {
             var worker = new Searcher(this, workerID);
             _workers.Add(worker);
@@ -75,7 +76,8 @@ public class Engine
             var thread = new Thread(worker.Start) 
             { 
                 IsBackground = true,
-                Priority = ThreadPriority.AboveNormal 
+                Priority = ThreadPriority.AboveNormal,
+                Name = $"Worker {workerID}"
             };
             thread.Start();
         }
@@ -123,7 +125,7 @@ public class Engine
             isTimed = true;
         }
 
-        CancellationTokenSource cts = new();
+
 
         var depthLimit = searchParameters.MaxDepth ?? 100;
         var searchInstructions = new SearcherInstructions
@@ -131,8 +133,7 @@ public class Engine
             IsTimed = isTimed,
             MaxDepth = depthLimit,
             StartDepth = 1,
-            DepthInterval = 1,
-            ct = cts.Token
+            DepthInterval = 1
         };
 
         StopwatchManager.Start(timeLimit);
@@ -149,8 +150,8 @@ public class Engine
         }
         
         foreach (var worker in _workers) worker.stopFlag = true;
-        var result = _workers[0].SearchResults;
-        result.Statistics.RunTime = StopwatchManager.Elapsed;
+        var result = _workers[0]._searchResults;
+        _statistics = _workers[0]._statistics;
         StopwatchManager.Reset();
         return result;
     }
