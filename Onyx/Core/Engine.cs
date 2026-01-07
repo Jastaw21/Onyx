@@ -68,7 +68,7 @@ public class Engine
 
     private void InitializeWorkerThreads()
     {
-        for (var workerID = 0; workerID < 2; workerID++)
+        for (var workerID = 0; workerID < _maxThreads; workerID++)
         {
             var worker = new Searcher(this, workerID);
             _workers.Add(worker);
@@ -125,8 +125,6 @@ public class Engine
             isTimed = true;
         }
 
-
-
         var depthLimit = searchParameters.MaxDepth ?? 100;
         var searchInstructions = new SearcherInstructions
         {
@@ -152,6 +150,7 @@ public class Engine
         foreach (var worker in _workers) worker.stopFlag = true;
         var result = _workers[0]._searchResults;
         _statistics = _workers[0]._statistics;
+        _statistics.RunTime = StopwatchManager.Elapsed;
         StopwatchManager.Reset();
         return result;
     }

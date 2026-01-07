@@ -76,6 +76,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
         _statistics = new SearchStatistics();
+        _thisIterationResults = new SearchResults();
         _currentInstructions = inst;
         _currentPosition = pos;
         _searchResults = new SearchResults();
@@ -104,14 +105,13 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
             
             _searchResults = _thisIterationResults;
+            _statistics.Depth = depth;
 
             // We found a way to win. No need to look deeper.
             if (_thisIterationResults.Score > _engine.MateScore - 100)
             {
                 break;
             }
-
-            
         }
 
         // didn't find a move
@@ -196,6 +196,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
             {
+                _statistics.TtHits++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
                 if (depthFromRoot == 0)
                 {
@@ -208,6 +209,8 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return new SearchFlag(true, ttEval);
             }
         }
+        
+        _statistics.Nodes++;
         
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
