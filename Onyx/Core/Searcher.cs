@@ -115,7 +115,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         // didn't find a move
-        if (_thisIterationResults.BestMove.Data == 0)
+        if (_searchResults.BestMove.Data == 0)
         {
             Span<Move> moveBuffer = stackalloc Move[256];
             MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
@@ -177,7 +177,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         return score;
     }
 
-    SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
+    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
     {
         if (stopFlag)
             return SearchFlag.Abort;
@@ -212,6 +212,13 @@ public class Searcher(Engine engine, int searcherId = 0)
         
         _statistics.Nodes++;
         
+        // leaf node
+        if (depthRemaining == 0)
+        {
+            var evaluation = Evaluator.Evaluate(_currentPosition);
+            return new SearchFlag(true, evaluation);
+        }
+        
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
         var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
@@ -226,14 +233,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
             return SearchFlag.Zero;
         }
-
-        // leaf node
-        if (depthRemaining == 0)
-        {
-            var evaluation = Evaluator.Evaluate(_currentPosition);
-            return new SearchFlag(true, evaluation);
-        }
-
+        
         // order the moves
         Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
 

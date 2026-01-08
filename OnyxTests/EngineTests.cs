@@ -12,13 +12,13 @@ public class EngineTests
         var fen = "rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 1";
         var engine = new Engine();
         engine.SetPosition(fen);
-        var bestMove = engine.Search(new SearchParameters { MaxDepth = 1 });
+        var bestMove = engine.Search(new SearchParameters { TimeLimit = 1000 });
         Assert.Multiple(() =>
         {
             //Assert.That(bestMove.score, Is.EqualTo(30000));
             Assert.That(bestMove.BestMove.Notation, Is.EqualTo("d8h4"));
         });
-        var timed = engine.Search(new SearchParameters { MaxDepth = 1, TimeLimit = 1000 });
+        var timed = engine.Search(new SearchParameters {TimeLimit = 1000 });
         Assert.Multiple(() => { Assert.That(timed.BestMove.Notation, Is.EqualTo("d8h4")); });
     }
 
@@ -54,12 +54,7 @@ public class EngineTests
         foreach (var startingPosition in startingPositions)
         {
             engine.SetPosition(startingPosition);
-            var parameters = new SearchParameters
-            {
-                TimeControl = new TimeControl { Wtime = 32000, Btime = 32000, movesToGo = 3},
-                CancellationToken = new CancellationToken(false)
-            };
-            var bestMove = engine.Search(parameters);
+            var bestMove = engine.Search(new SearchParameters{MaxDepth = 10});
             engine.Position.ApplyMove(bestMove.BestMove);
             Assert.Multiple(() =>
             {
@@ -77,7 +72,7 @@ public class EngineTests
         var engine = new Engine();
         engine.SetPosition(fen);
         engine.SetPosition("Q2NQQQQ/8/8/8/8/8/5K2/1k6 w - - 5 104");
-        var bestMove = engine.Search(new SearchParameters { MaxDepth = 3 });
+        var bestMove = engine.Search(new SearchParameters { MaxDepth = 10 });
         Assert.Multiple(() => { Assert.That(bestMove.Score, Is.GreaterThan(20000)); });
     }
 
@@ -106,7 +101,7 @@ public class EngineTests
         var feb = "6k1/7p/7B/5pp1/8/4bP1P/1q3PK1/5Q2 w - - 0 1";
         var engine = new Engine();
         engine.SetPosition(feb);
-        var move = engine.Search(new SearchParameters { MaxDepth = 3 });
+        var move = engine.Search(new SearchParameters { MaxDepth = 6 });
         Assert.That(move.BestMove.Notation, Is.EqualTo("f1c4"));
 
         engine.SetPosition("6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1");
@@ -151,5 +146,20 @@ public class EngineTests
         sw.Stop();
 
         Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(900).And.LessThanOrEqualTo(1100));
+    }
+
+    [Test]
+    public void TimeManagerHandlesZeroMovesToGo()
+    {
+        var engine = new Engine();
+        var tc = new TimeControl
+        {
+            Wtime = 1000,
+            Btime = 1000,
+            movesToGo = 0
+        };
+        // Should not throw DivideByZeroException
+        var result = engine.Search(new SearchParameters { TimeControl = tc });
+        Assert.That(result.BestMove.Notation, Is.Not.Null);
     }
 }

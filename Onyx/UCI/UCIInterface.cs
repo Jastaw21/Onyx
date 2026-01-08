@@ -107,8 +107,15 @@ public class UciInterface
                 Console.WriteLine($"bestmove {searchResults.BestMove}");
             }
 
-            catch (OperationCanceledException)
+            catch (OperationCanceledException oce)
             {
+                Logger.Log(LogType.EngineLog, $"{oce.Message}");
+                Console.WriteLine("search cancelled");
+            }
+
+            catch (Exception ex)
+            {
+                Logger.Log(LogType.EngineLog, $"{ex.Message}");
                 Console.WriteLine("search cancelled");
             }
         });

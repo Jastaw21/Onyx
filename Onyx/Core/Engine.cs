@@ -21,7 +21,10 @@ public class TimeManager(Engine engine)
             Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
                 ? calcMovesRemaining
                 : instructedMovesRemaining;
-        var baseTime = time / 20 + safeInc * 0.5;
+
+        if (movesToGo <= 0) movesToGo = calcMovesRemaining;
+        
+        var baseTime = time / movesToGo + safeInc * 0.5;
 
         // use max of 20% remaining time
         var safeMax = time * 0.2;
