@@ -135,10 +135,10 @@ public class Searcher(Engine engine, int searcherId = 0)
         IsFinished = false;
     }
 
-    internal readonly struct SearchFlag(bool completed, int value)
+    internal readonly struct SearchFlag(bool completed, int score)
     {
         public bool Completed { get; } = completed;
-        public int Value { get; } = value;
+        public int Score { get; } = score;
 
         public static SearchFlag Abort => new(false, 0);
         public static SearchFlag Zero => new(true, 0);
@@ -215,7 +215,10 @@ public class Searcher(Engine engine, int searcherId = 0)
         // leaf node
         if (depthRemaining == 0)
         {
-            return new SearchFlag(true, Evaluator.Evaluate(_currentPosition));
+            var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
+            if (!qEval.Completed)
+                return SearchFlag.Abort;
+            return new SearchFlag(true, qEval.Score);
         }
         
         // get the moves
@@ -252,7 +255,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return SearchFlag.Abort;
 
 
-            var eval = -childResult.Value;
+            var eval = -childResult.Score;
 
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
@@ -286,6 +289,46 @@ public class Searcher(Engine engine, int searcherId = 0)
         _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), depthRemaining, _engine.CurrentSearchId, storingFlag,
             bestMove);
 
+        return new SearchFlag(true, alpha);
+    }
+    
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Position _position, int depthFromRoot)
+    {
+        if (stopFlag)
+            return SearchFlag.Abort;
+        
+        var eval = Evaluator.Evaluate(_position);
+        if (eval >= beta) return new SearchFlag(true, beta);
+        if (eval > alpha) alpha = eval;
+        
+        _statistics.QuiescencePlyReached = depthFromRoot;
+        _statistics.Nodes++;
+        
+        Span<Move> moveBuffer = stackalloc Move[128];
+        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,capturesOnly: true);
+        
+        var moves = moveBuffer[..moveCount];
+
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
+        
+        foreach (var move in moves)
+        {
+            _currentPosition.ApplyMove(move);
+            var child = QuiescenceSearch(-beta, -alpha, _currentPosition, depthFromRoot + 1);
+            _currentPosition.UndoMove(move);
+            if (!child.Completed) return SearchFlag.Abort;
+            eval = -child.Score;
+
+            // beta cutoff - the opponent won't let it get here
+            if (eval >= beta) return new SearchFlag(true, beta);
+            
+            if (eval > alpha)
+                alpha = eval;
+               
+            
+        }
+        
         return new SearchFlag(true, alpha);
     }
 }
