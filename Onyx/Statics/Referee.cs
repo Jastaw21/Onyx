@@ -213,7 +213,7 @@ public static class Referee
     public static bool IsThreeFoldRepetition(Position board)
     {
         var history = board.History; // The span of historical states
-        var currentHash = board.Zobrist.HashValue;
+        var currentHash = board.ZobristState;
         var matches = 0;
 
         // We only need to check back as far as the HalfMoves rule allows
@@ -235,7 +235,7 @@ public static class Referee
     public static bool IsRepetition(Position board)
     {
         var history = board.History; // The span of historical states
-        var currentHash = board.Zobrist.HashValue;
+        var currentHash = board.ZobristState;
         var matches = 0;
 
         // We only need to check back as far as the HalfMoves rule allows

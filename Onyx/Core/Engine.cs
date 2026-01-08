@@ -109,7 +109,7 @@ public class Engine
 
     public bool IsReady { get; set; }
 
-    public SearchResults Search(SearchParameters searchParameters)
+    public virtual SearchResults Search(SearchParameters searchParameters)
     {
         CurrentSearchId++;
         _ct = searchParameters.CancellationToken;

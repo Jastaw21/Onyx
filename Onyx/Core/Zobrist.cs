@@ -1,48 +1,42 @@
 ﻿namespace Onyx.Core;
 
-public class Zobrist
+public static class Zobrist
 {
-    private readonly int _seed = 123111;
-    private Random _random;
+    private static readonly int _seed = 123111;
+    private static Random _random;
 
-    private readonly ulong[] _whitePawn = new ulong[64];
-    private readonly ulong[] _whiteRook = new ulong[64];
-    private readonly ulong[] _whiteBishop = new ulong[64];
-    private readonly ulong[] _whiteKnight = new ulong[64];
-    private readonly ulong[] _whiteQueen = new ulong[64];
-    private readonly ulong[] _whiteKing = new ulong[64];
+    private static readonly ulong[] _whitePawn = new ulong[64];
+    private static readonly ulong[] _whiteRook = new ulong[64];
+    private static readonly ulong[] _whiteBishop = new ulong[64];
+    private static readonly ulong[] _whiteKnight = new ulong[64];
+    private static readonly ulong[] _whiteQueen = new ulong[64];
+    private static readonly ulong[] _whiteKing = new ulong[64];
 
-    private readonly ulong[] _blackPawn = new ulong[64];
-    private readonly ulong[] _blackRook = new ulong[64];
-    private readonly ulong[] _blackBishop = new ulong[64];
-    private readonly ulong[] _blackKnight = new ulong[64];
-    private readonly ulong[] _blackQueen = new ulong[64];
-    private readonly ulong[] _blackKing = new ulong[64];
+    private static readonly ulong[] _blackPawn = new ulong[64];
+    private static readonly ulong[] _blackRook = new ulong[64];
+    private static readonly ulong[] _blackBishop = new ulong[64];
+    private static readonly ulong[] _blackKnight = new ulong[64];
+    private static readonly ulong[] _blackQueen = new ulong[64];
+    private static readonly ulong[] _blackKing = new ulong[64];
 
-    private ulong _whiteToMove;
-    public ulong HashValue { get; private set; }
+    private static ulong _whiteToMove;
 
-    public Zobrist(string fen)
+    static Zobrist()
     {
         _random = new Random(_seed);
         InitZobrist();
-        BuildZobristFromFen(fen);
     }
 
-    public void LoadFen(string fen)
+    public static ulong MakeNullMove(ulong HashValue)
     {
-        BuildZobristFromFen(fen);
+        var newValue = HashValue;
+        newValue^= _whiteToMove;
+        return newValue;
     }
-
-    public void MakeNullMove()
-    {
-        HashValue ^= _whiteToMove;       
-    }
-
-    private void BuildZobristFromFen(string fen)
+    public static ulong FromFen(string fen)
     {
         var fenDetails = Fen.FromString(fen);
-        HashValue = 0;
+        var HashValue = 0ul;
         if (fenDetails.WhiteToMove)
             HashValue ^= _whiteToMove;
 
@@ -76,10 +70,13 @@ public class Zobrist
 
             i++;
         }
+        
+        return HashValue;
     }
 
-    public void ApplyMove(Move move, sbyte? capturedPiece = null, int? capturedOnSquare = null)
+    public static ulong ApplyMove(Move move, ulong hashIn, sbyte? capturedPiece = null, int? capturedOnSquare = null)
     {
+        var HashValue = hashIn;
         var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
         var movedPieceArray = GetArrayFromChar(movedPieceChar);
         var movedPieceToRand = movedPieceArray[move.To];
@@ -133,9 +130,11 @@ public class Zobrist
         }
 
         HashValue ^= _whiteToMove;
+        
+        return HashValue;
     }
 
-    private void InitZobrist()
+    private static void InitZobrist()
     {
         FillRandomArray(_whitePawn);
         FillRandomArray(_whiteRook);
@@ -156,7 +155,7 @@ public class Zobrist
         _whiteToMove = NextUlong();
     }
 
-    private void FillRandomArray(ulong[] array)
+    private static void FillRandomArray(ulong[] array)
     {
         for (var i = 0; i < array.Length; i++)
         {
@@ -164,14 +163,14 @@ public class Zobrist
         }
     }
 
-    private ulong NextUlong()
+    private static ulong NextUlong()
     {
         var buffer = new byte[8];
         _random.NextBytes(buffer);
         return BitConverter.ToUInt64(buffer, 0);
     }
 
-    private ulong[] GetArrayFromChar(char c)
+    private static ulong[] GetArrayFromChar(char c)
     {
         return c switch
         {

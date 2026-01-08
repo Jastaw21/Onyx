@@ -21,6 +21,8 @@ public struct TtEntry
     public bool ShouldUseEntry(int alpha, int beta, int depth, ulong hash)
     {
         // Checks if the transposition table entry can be used to cut off search based on the bounds etc
+        
+        // might have been "torn" with multiple read/writes
         if (hash != Hash)
             return false;
         

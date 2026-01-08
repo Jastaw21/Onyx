@@ -7,17 +7,17 @@ public class ZobristTests
     [Test]
     public void MultipleInitsGiveSameValue()
     {
-        var zob1 = new Zobrist(Fen.DefaultFen);
-        var zob2 = new Zobrist(Fen.DefaultFen);
-        Assert.That(zob2.HashValue, Is.EqualTo(zob1.HashValue));
+        var zob1 = Zobrist.FromFen(Fen.DefaultFen);
+        var zob2 = Zobrist.FromFen(Fen.DefaultFen);
+        Assert.That(zob2, Is.EqualTo(zob1));
     }
 
     [Test]
     public void DifferentInitsGiveDifferentValue()
     {
-        var zob1 = new Zobrist(Fen.DefaultFen);
-        var zob2 = new Zobrist(Fen.KiwiPeteFen);
-        Assert.That(zob2.HashValue, Is.Not.EqualTo(zob1.HashValue));
+        var zob1 = Zobrist.FromFen(Fen.DefaultFen);
+        var zob2 = Zobrist.FromFen(Fen.KiwiPeteFen);
+        Assert.That(zob2, Is.Not.EqualTo(zob1));
     }
 
     [Test]
@@ -64,10 +64,10 @@ public class ZobristTests
         for (int i = 0; i < startingFen.Count; i++)
         {
             var board = new Position(startingFen[i]);
-            var zobFromFen = new Zobrist(PositionsAfter[i]);
+            var zobFromFen = Zobrist.FromFen(PositionsAfter[i]);
             var move = moves[i];
             board.ApplyMove(move);
-            Assert.That(board.Zobrist.HashValue, Is.EqualTo(zobFromFen.HashValue));
+            Assert.That(board.ZobristState, Is.EqualTo(zobFromFen));
         }
     }
     
@@ -103,22 +103,22 @@ public class ZobristTests
         for (int i = 0; i < startingFen.Count; i++)
         {
             var board = new Position(startingFen[i]);
-            var hashPre = board.Zobrist.HashValue;
+            var hashPre = board.ZobristState;
             var move = moves[i];
             board.ApplyMove(move);
             board.UndoMove(move);
-            Assert.That(board.Zobrist.HashValue, Is.EqualTo(hashPre));
+            Assert.That(board.ZobristState, Is.EqualTo(hashPre));
         }
     }
     [Test]
     public void ZobristHashIsStableWithRepeatedMoves()
     {
         var board = new Position("8/8/8/2k2b2/8/1B1pK3/2pB4/8 b - - 23 69");
-        var hashPre = board.Zobrist.HashValue;
+        var hashPre = board.ZobristState;
         board.ApplyMove(new Move(Piece.BB, "f5g6"));
         board.ApplyMove(new Move(Piece.WB, "b3a2"));
         board.ApplyMove(new Move(Piece.BB, "g6f5"));
         board.ApplyMove(new Move(Piece.WB, "a2b3"));
-        Assert.That(board.Zobrist.HashValue, Is.EqualTo(hashPre));
+        Assert.That(board.ZobristState, Is.EqualTo(hashPre));
     }
 }

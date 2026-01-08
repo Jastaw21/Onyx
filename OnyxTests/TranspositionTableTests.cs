@@ -9,12 +9,11 @@ public class TranspositionTableTests
     public void EntriesStoredAndRetrieved()
     {
         var transpositionTable = new TranspositionTable();
-        var startingHashZob = new Zobrist(Fen.DefaultFen);
+        var startingHashZob = Zobrist.FromFen(Fen.DefaultFen);
 
-        var hash = startingHashZob.HashValue;
-        
-        transpositionTable.Store(hash, 1, 1, 1, BoundFlag.Exact, default);
-        var retrieved = transpositionTable.Retrieve(hash);
+
+        transpositionTable.Store(startingHashZob, 1, 1, 1, BoundFlag.Exact, default);
+        var retrieved = transpositionTable.Retrieve(startingHashZob);
         Assert.Multiple(() =>
         {
             Assert.That(retrieved.HasValue);
@@ -23,16 +22,12 @@ public class TranspositionTableTests
                 Assert.That(retrieved.Value.Age, Is.EqualTo(1));
                 Assert.That(retrieved.Value.Depth, Is.EqualTo(1));
                 Assert.That(retrieved.Value.Eval, Is.EqualTo(1));
-                Assert.That(retrieved.Value.Hash, Is.EqualTo(hash));
+                Assert.That(retrieved.Value.Hash, Is.EqualTo(startingHashZob));
             }
         });
 
-        var otherZob = new Zobrist(Fen.KiwiPeteFen);
-        var otherHash = otherZob.HashValue;
-
-        var retrievedOther = transpositionTable.Retrieve(otherHash);
-        Assert.That(retrievedOther.HasValue,Is.False);
-
-
+        var otherZob = Zobrist.FromFen(Fen.KiwiPeteFen);
+        var retrievedOther = transpositionTable.Retrieve(otherZob);
+        Assert.That(retrievedOther.HasValue, Is.False);
     }
 }

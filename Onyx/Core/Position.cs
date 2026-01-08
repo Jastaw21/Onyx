@@ -56,7 +56,7 @@ public class Position
 
     public readonly Bitboards Bitboards;
     public bool WhiteToMove;
-    public Zobrist Zobrist { get; private set; }
+    public ulong ZobristState { get; private set; }
 
     // bit field - from the lowest bit in this order White : K, Q, Black K,Q
     public int CastlingRights { get; private set; }
@@ -74,12 +74,12 @@ public class Position
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
-        Zobrist = new Zobrist(fen);
+        ZobristState = Zobrist.FromFen(fen);
         for (int i=0; i<HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
        
         var startingState = new PositionState
         {
-            Hash = Zobrist.HashValue, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
+            Hash = ZobristState, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
             HalfMove = HalfMoves, FullMove = FullMoves
         };
        
@@ -92,13 +92,13 @@ public class Position
        
         Bitboards.LoadFen(fen);
         ApplyBoardStateFromFen(fen);
-        Zobrist.LoadFen(fen);
+        ZobristState =  Zobrist.FromFen(fen);
 
         for (int i = 0; i < HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
 
         var startingState = new PositionState
         {
-            Hash = Zobrist.HashValue,
+            Hash = ZobristState,
             CastlingRights = CastlingRights,
             EnPassantSquare = EnPassantSquare,
             HalfMove = HalfMoves,
@@ -112,7 +112,7 @@ public class Position
     private void UpdateHistoryState()
     {
         var state = HistoryBuffer[HistoryStackPointer];
-        state.Hash = Zobrist.HashValue;
+        state.Hash = ZobristState;
         state.CastlingRights = CastlingRights;
         state.EnPassantSquare = EnPassantSquare;
         state.HalfMove = HalfMoves;
@@ -165,7 +165,7 @@ public class Position
         HistoryBuffer[HistoryStackPointer].CastlingRights = CastlingRights;
         HistoryBuffer[HistoryStackPointer].HalfMove = HalfMoves;
         HistoryBuffer[HistoryStackPointer].FullMove = FullMoves;
-        Zobrist.MakeNullMove();       
+        ZobristState = Zobrist.MakeNullMove(ZobristState);     
         EnPassantSquare = null;
         SwapTurns();
         if (!WhiteToMove)
@@ -181,7 +181,7 @@ public class Position
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;
         FullMoves = state.FullMove;
-        Zobrist.MakeNullMove();
+        ZobristState = Zobrist.MakeNullMove(ZobristState);  
         SwapTurns();
     }
 
@@ -213,7 +213,7 @@ public class Position
         
         if (fullApplyMove)
         {
-            Zobrist.ApplyMove(move, capturedPiece, capturedSquare);
+            ZobristState = Zobrist.ApplyMove(move, ZobristState, capturedPiece, capturedSquare);
         }
         // get rid of the captured piece
         if (capturedPiece.HasValue)
@@ -339,7 +339,7 @@ public class Position
 
         if (fullUndoMove)
         {
-            Zobrist.ApplyMove(move, state.CapturedPiece, capturedOn);
+            ZobristState = Zobrist.ApplyMove(move, ZobristState, state.CapturedPiece, capturedOn);
         }
 
 

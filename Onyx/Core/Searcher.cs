@@ -190,7 +190,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         // see if we have already evaluated this to at least the same depth, and that bounds are OK
-        var zobristHashValue = _currentPosition.Zobrist.HashValue;
+        var zobristHashValue = _currentPosition.ZobristState;
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {

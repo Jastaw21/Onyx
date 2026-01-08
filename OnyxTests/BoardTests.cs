@@ -436,7 +436,7 @@ public class BoardTests
             Assert.That(board.Bitboards.Boards, Is.EqualTo(boardFromFen.Bitboards.Boards));
 
             // zobrist equal
-            Assert.That(board.Zobrist.HashValue, Is.EqualTo(boardFromFen.Zobrist.HashValue));
+            Assert.That(board.ZobristState, Is.EqualTo(boardFromFen.ZobristState));
         });
 
     }
