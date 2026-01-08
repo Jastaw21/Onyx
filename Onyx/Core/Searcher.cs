@@ -215,8 +215,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         // leaf node
         if (depthRemaining == 0)
         {
-            var evaluation = Evaluator.Evaluate(_currentPosition);
-            return new SearchFlag(true, evaluation);
+            return new SearchFlag(true, Evaluator.Evaluate(_currentPosition));
         }
         
         // get the moves

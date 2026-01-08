@@ -144,8 +144,8 @@ public class EngineTests
         var sw = Stopwatch.StartNew();
         var unused = engine.Search(new SearchParameters { MaxDepth = 10, TimeLimit = 1000 });
         sw.Stop();
-
-        Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(900).And.LessThanOrEqualTo(1100));
+        
+        Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(980).And.LessThanOrEqualTo(1000));
     }
 
     [Test]

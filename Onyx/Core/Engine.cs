@@ -137,7 +137,8 @@ public class Engine
             DepthInterval = 1
         };
 
-        StopwatchManager.Start(timeLimit);
+        // take off some buffer time
+        StopwatchManager.Start(timeLimit - 20);
         foreach (var worker in _workers)
         {
             worker.TriggerSearch(searchInstructions, Position.Clone());
