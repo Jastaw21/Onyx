@@ -102,7 +102,9 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // if we timed out or were stopped, we can't use the results of this depth
             if (!searchResult.Completed)
+            {
                 break;
+            }
             
             _searchResults = _thisIterationResults;
             _statistics.Depth = depth;
@@ -118,11 +120,15 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (_searchResults.BestMove.Data == 0)
         {
             Span<Move> moveBuffer = stackalloc Move[256];
-            MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
-            _searchResults.BestMove = moveBuffer[0];
+            var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
+            if (legalMoveCount > 0)
+            {
+                _searchResults.BestMove = moveBuffer[0];
+            }
         }
-
+        
         IsFinished = true;
+        _startSignal.Reset();
     }
 
     private void Reset()

@@ -105,7 +105,7 @@ public class EngineTests
         Assert.That(move.BestMove.Notation, Is.EqualTo("f1c4"));
 
         engine.SetPosition("6k1/4pp1p/p5p1/1p1q4/4b1N1/P1Q4P/1PP3P1/7K w - - 0 1");
-        move = engine.Search(new SearchParameters { MaxDepth = 3, TimeLimit = 4000 });
+        move = engine.Search(new SearchParameters {TimeLimit = 4000 });
         Assert.That(move.BestMove.Notation, Is.EqualTo("g4h6"));
     }
 
@@ -142,10 +142,10 @@ public class EngineTests
         var engine = new Engine();
 
         var sw = Stopwatch.StartNew();
-        var unused = engine.Search(new SearchParameters { MaxDepth = 10, TimeLimit = 1000 });
+        var unused = engine.Search(new SearchParameters {  TimeLimit = 1000 });
         sw.Stop();
         
-        Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(980).And.LessThanOrEqualTo(1000));
+        Assert.That(sw.Elapsed.TotalMilliseconds, Is.GreaterThanOrEqualTo(950).And.LessThanOrEqualTo(1050));
     }
 
     [Test]

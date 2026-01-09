@@ -138,7 +138,7 @@ public class Engine
         };
 
         // take off some buffer time
-        StopwatchManager.Start(timeLimit - 20);
+        StopwatchManager.Start(timeLimit - 30);
         foreach (var worker in _workers)
         {
             worker.TriggerSearch(searchInstructions, Position.Clone());
@@ -152,6 +152,12 @@ public class Engine
         }
         
         foreach (var worker in _workers) worker.stopFlag = true;
+
+        // Need to wait for the main worker to come back to root
+        while (!_workers[0].IsFinished)
+        {
+            Thread.Sleep(1);
+        }
         
         var result = _workers[0]._searchResults;
         _statistics = _workers[0]._statistics;
