@@ -265,6 +265,9 @@ public class Searcher(Engine engine, int searcherId = 0)
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
                 _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining, _engine.CurrentSearchId,
                     BoundFlag.Lower, move);
+                
+                if (move.CapturedPiece == 0)
+                    StoreKillerMove(move, depthFromRoot);
 
                 // the best we can get in this chain is beta, since the opponent will avoid it - exit now
                 return new SearchFlag(true, beta);

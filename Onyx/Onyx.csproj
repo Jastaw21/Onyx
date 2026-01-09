@@ -7,4 +7,17 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Compile Remove="Builds\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Builds\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Builds\**" />
+      <None Remove="config.json" />
+    </ItemGroup>
+
 </Project>

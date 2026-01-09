@@ -46,7 +46,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.10.0";
+    public static string Version => "0.10.3";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
@@ -152,6 +152,7 @@ public class Engine
         }
         
         foreach (var worker in _workers) worker.stopFlag = true;
+        
         var result = _workers[0]._searchResults;
         _statistics = _workers[0]._statistics;
         _statistics.RunTime = StopwatchManager.Elapsed;
