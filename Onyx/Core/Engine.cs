@@ -23,7 +23,7 @@ public class TimeManager(Engine engine)
                 : instructedMovesRemaining;
 
         if (movesToGo <= 0) movesToGo = calcMovesRemaining;
-        
+
         var baseTime = time / movesToGo + safeInc * 0.5;
 
         // use max of 20% remaining time
@@ -75,9 +75,9 @@ public class Engine
         {
             var worker = new Searcher(this, workerID);
             _workers.Add(worker);
-            
-            var thread = new Thread(worker.Start) 
-            { 
+
+            var thread = new Thread(worker.Start)
+            {
                 IsBackground = true,
                 Priority = ThreadPriority.AboveNormal,
                 Name = $"Worker {workerID}"
@@ -143,14 +143,14 @@ public class Engine
         {
             worker.TriggerSearch(searchInstructions, Position.Clone());
         }
-        
+
         while (!_ct.IsCancellationRequested)
         {
             if (isTimed && StopwatchManager.ShouldStop) break;
             if (_workers[0].IsFinished) break;
             Thread.Sleep(1);
         }
-        
+
         foreach (var worker in _workers) worker.stopFlag = true;
 
         // Need to wait for the main worker to come back to root
@@ -158,7 +158,7 @@ public class Engine
         {
             Thread.Sleep(1);
         }
-        
+
         var result = _workers[0]._searchResults;
         _statistics = _workers[0]._statistics;
         _statistics.RunTime = StopwatchManager.Elapsed;

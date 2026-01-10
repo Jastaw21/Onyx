@@ -78,7 +78,7 @@ public class UciInterface
     {
         StopSearch();
         _searchCTS = new CancellationTokenSource();
-        var depth = command.Depth ?? null; // Default to 5 if not specified
+        var depth = command.Depth ?? null;
         if (command.IsPerft && depth != null)
         {
             HandlePerft(command, depth);
@@ -144,8 +144,14 @@ public class UciInterface
 
     private void StopSearch()
     {
+        if (_engineThread == null) return;
+        
         _searchCTS?.Cancel();
-        _engineThread?.Join(10);
+        _engineThread.Join();
+        
+        _searchCTS?.Dispose();
+        _searchCTS = null;
+        _engineThread = null;
     }
 
     private static string MovesToString(List<Move>? moves)
