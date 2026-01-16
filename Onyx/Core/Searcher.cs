@@ -117,6 +117,11 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
             _searchResults = _thisIterationResults;
+            _searchResults.PV = [];
+            for (var i = 0; i < _pvLength[0]; i++)
+            {
+                _searchResults.PV.Add(_pvTable[0, i]);
+            }
             _statistics.Depth = depth;
             _statistics.RunTime = _engine.StopwatchManager.Elapsed;
 
@@ -201,6 +206,8 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
     {
+        _pvLength[depthFromRoot] = depthFromRoot;
+
         if (_statistics.Nodes % 2047 == 0 && stopFlag)
             return SearchFlag.Abort;
 
@@ -211,7 +218,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return SearchFlag.Zero;
         }
 
-        // see if we have already evaluated this to at least the same depth, and that bounds are OK
+        // if we have already evaluated this to at least the same depth, and that bounds are OK
         var zobristHashValue = _currentPosition.ZobristState;
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
@@ -230,6 +237,21 @@ public class Searcher(Engine engine, int searcherId = 0)
                     _thisIterationResults.Score = ttEval;
                 }
 
+                if (ttValue.Value.BestMove.Data != 0)
+                {
+                    _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
+                    
+                    _currentPosition.ApplyMove(ttValue.Value.BestMove);
+                    var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
+                    _currentPosition.UndoMove(ttValue.Value.BestMove);
+                    
+                    for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                    {
+                        _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                    }
+                    _pvLength[depthFromRoot] = nextPlyDepth;
+                }
+
                 return new SearchFlag(true, ttEval);
             }
         }
@@ -242,6 +264,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
             if (!qEval.Completed)
                 return SearchFlag.Abort;
+            
+            _pvLength[depthFromRoot] = _pvLength[depthFromRoot]; 
             return new SearchFlag(true, qEval.Score);
         }
 
@@ -262,7 +286,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         // order the moves
-        Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
 
         var storingFlag = BoundFlag.Upper;
         Move bestMove = default;
@@ -307,6 +332,15 @@ public class Searcher(Engine engine, int searcherId = 0)
                 bestMove = move;
                 storingFlag = BoundFlag.Exact; // exact bound
 
+                _pvTable[depthFromRoot, depthFromRoot] = move;
+                var nextPlyDepth = _pvLength[depthFromRoot + 1];
+                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                {
+                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                }
+
+                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+
                 if (depthFromRoot == 0)
                 {
                     _thisIterationResults.BestMove = bestMove;
@@ -325,14 +359,48 @@ public class Searcher(Engine engine, int searcherId = 0)
         return new SearchFlag(true, alpha);
     }
 
+    private int GetPvFromTt(int depthFromRoot, int depthRemaining)
+    {
+        _pvLength[depthFromRoot] = depthFromRoot;
+        if (depthRemaining <= 0) return depthFromRoot;
+
+        var ttValue = _engine.TranspositionTable.Retrieve(_currentPosition.ZobristState);
+        if (ttValue.HasValue && ttValue.Value.BestMove.Data != 0)
+        {
+            var move = ttValue.Value.BestMove;
+            _pvTable[depthFromRoot, depthFromRoot] = move;
+            
+            _currentPosition.ApplyMove(move);
+            var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
+            _currentPosition.UndoMove(move);
+
+            for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+            {
+                _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+            }
+            return nextPlyDepth;
+        }
+
+        return depthFromRoot;
+    }
+
     private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
     {
+        _pvLength[depthFromRoot] = depthFromRoot;
+
         if (stopFlag)
             return SearchFlag.Abort;
 
         var eval = Evaluator.Evaluate(position);
-        if (eval >= beta) return new SearchFlag(true, beta);
-        if (eval > alpha) alpha = eval;
+        if (eval >= beta)
+        {
+            return new SearchFlag(true, beta);
+        }
+
+        if (eval > alpha)
+        {
+            alpha = eval;
+        }
 
         _statistics.QuiescencePlyReached = depthFromRoot;
         _statistics.Nodes++;
@@ -357,7 +425,18 @@ public class Searcher(Engine engine, int searcherId = 0)
             if (eval >= beta) return new SearchFlag(true, beta);
 
             if (eval > alpha)
+            {
                 alpha = eval;
+
+                _pvTable[depthFromRoot, depthFromRoot] = move;
+                var nextPlyDepth = _pvLength[depthFromRoot + 1];
+                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                {
+                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                }
+
+                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+            }
         }
 
         return new SearchFlag(true, alpha);
