@@ -7,244 +7,138 @@ namespace Onyx.UCI;
 public class UciInterface
 {
     private readonly Engine _player = new();
-    private Thread _engineThread;
-    private CancellationTokenSource _searchCTS;
-    private Options _options = new Options();
     private readonly UciParser _parser = new();
+    private readonly Options _options = new();
     private readonly object _lock = new();
+
+    private Thread _searchThread;
+    private CancellationTokenSource _searchCts;
+
     public Engine Player => _player;
 
     public UciInterface()
     {
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
-        _player.OnSearchInfoUpdate += (info) =>
-        {
-            Console.WriteLine(info);
-            Console.Out.Flush();
-        };
+        _player.OnSearchInfoUpdate += Console.WriteLine;
     }
 
     public void HandleCommand(string commandString)
     {
-        //Logger.Log(LogType.UCIReceived, commandString);
-
-        Command command;
-        try
-        {
-            command = _parser.Parse(commandString);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error parsing command {commandString}: {ex.Message}");
-            return;
-        }
-
-        if (command is null)
-        {
-            Console.WriteLine($"Unknown command {commandString}");
-            return;
-        }
+        var command = _parser.Parse(commandString);
+        if (command == null) return;
 
         lock (_lock)
         {
-            try
+            switch (command)
             {
-                DispatchCommand(command);
+                case UciCommand:
+                    Console.WriteLine($"id name Onyx {Engine.Version}");
+                    Console.WriteLine("id author JackWeddell");
+                    _options.PrintOptions();
+                    Console.WriteLine("uciok");
+                    break;
+
+                case IsReadyCommand:
+                    Console.WriteLine("readyok");
+                    break;
+
+                case UciNewGameCommand:
+                    StopSearch();
+                    _player.Reset();
+                    break;
+
+                case PositionCommand pos:
+                    StopSearch();
+                    if (pos.FenString != null) _player.Position.SetFen(pos.FenString);
+                    _player.Position.ApplyMoves(pos.Moves);
+                    break;
+
+                case GoCommand go:
+                    StartSearch(go);
+                    break;
+
+                case StopCommand:
+                    StopSearch();
+                    break;
+
+                case SetOptionCommand opt:
+                    _options.SetOption(opt.Name, int.Parse(opt.Value));
+                    break;
+
+                case DebugCommand:
+                    Console.WriteLine(_player.Position.GetFen());
+                    break;
+
+                case EvaluateCommand:
+                    Console.WriteLine($"Score: {Evaluator.Evaluate(_player.Position)}");
+                    break;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error dispatching command {commandString}: {ex.Message}");
-            }
+            Console.Out.Flush();
         }
     }
 
-    private void DispatchCommand(Command command)
-    {
-        switch (command)
-        {
-            case UciCommand:
-                List<string> lines = [$"id name Onyx {Engine.Version}", "id author JackWeddell", "uciok"];
-                foreach (var line in lines)
-                {
-                    Console.WriteLine(line);
-                }
-
-                Console.WriteLine();
-                _options.PrintOptions();
-
-                break;
-            case GoCommand goCommand:
-                DispatchGoCommand(goCommand);
-                break;
-            case PositionCommand positionCommand:
-                HandlePosition(positionCommand);
-                break;
-            case UciNewGameCommand:
-                StopSearch();
-                _player.Reset();
-                break;
-            case IsReadyCommand:
-                Console.WriteLine("readyok");
-                break;
-            case DebugCommand:
-                Console.WriteLine(_player.Position.GetFen());
-                break;
-            case StopCommand:
-                StopSearch();
-                break;
-            case EvaluateCommand:
-                var turnToMoveSocre = Evaluator.Evaluate(_player.Position);
-                Console.WriteLine($"Score: {turnToMoveSocre}");
-                break;
-            case SetLoggingOn:
-                _player.SetLogging(true);
-                break;
-            case SetOptionCommand optionCommand:
-                HandleOptionCommand(optionCommand);
-                break;
-        }
-
-        Console.Out.Flush();
-    }
-
-    private void HandleOptionCommand(SetOptionCommand command)
-    {
-        _options.SetOption(command.Name, int.Parse(command.Value));
-    }
-
-    private void HandlePosition(PositionCommand positionCommand)
+    private void StartSearch(GoCommand command)
     {
         StopSearch();
-        if (positionCommand.FenString != null) _player.Position.SetFen(positionCommand.FenString);
-        _player.Position.ApplyMoves(positionCommand.Moves);
-    }
 
-    private void DispatchGoCommand(GoCommand command)
-    {
-        StopSearch();
-        lock (_lock)
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        if (command.IsPerft)
         {
-            if (_engineThread != null)
-            {
-                 Console.WriteLine("info string Engine is already searching. Ignoring go command.");
-                 return;
-            }
-            
-            _searchCTS = new CancellationTokenSource();
-            var depth = command.Depth ?? null;
-            if (command.IsPerft && depth != null)
-            {
-                HandlePerft(command, depth);
-            }
-            else
-            {
-                HandleGo(command, depth);
-            }
+            HandlePerft(command);
+            return;
         }
-    }
 
-    private void HandleGo(GoCommand command, int? depth)
-    {
-        var token = _searchCTS.Token;
-        _engineThread = new Thread(() =>
+        _searchThread = new Thread(() =>
         {
             try
             {
-                var searchResults = _player.Search(new SearchParameters
+                var result = _player.Search(new SearchParameters
                 {
                     CancellationToken = token,
-                    MaxDepth = depth,
+                    MaxDepth = command.Depth,
                     TimeControl = command.TimeControl
                 });
 
-                if (!token.IsCancellationRequested)
-                {
-                    Console.WriteLine($"bestmove {searchResults.BestMove}");
+                
+                    Console.WriteLine($"bestmove {result.BestMove}");
                     Console.Out.Flush();
-                }
+                
             }
-
-            catch (OperationCanceledException)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // Normal cancellation, no action needed
+                Logger.Log(LogType.EngineLog, $"Search error: {ex}");
             }
+        }) { IsBackground = true, Name = "SearchThread" };
 
-            catch (Exception ex)
-            {
-                try
-                {
-                    Logger.Log(LogType.EngineLog, $"Unhandled exception in search thread: {ex}");
-                }
-                catch
-                {
-                    // Ignore logger errors if process is crashing
-                }
-            }
-        })
-        {
-            IsBackground = true,
-            Name = "SearchThread"
-        };
-        _engineThread.Start();
+        _searchThread.Start();
     }
 
-    private void HandlePerft(GoCommand command, int? depth)
+    private void StopSearch()
     {
+        _searchCts?.Cancel();
+        if (_searchThread != null && _searchThread.IsAlive)
+        {
+            _searchThread.Join(500); // Short timeout to keep it responsive
+        }
+        _searchCts?.Dispose();
+        _searchCts = null;
+        _searchThread = null;
+    }
+
+    private void HandlePerft(GoCommand command)
+    {
+        var depth = command.Depth ?? 1;
         if (command.IsPerftDivide)
         {
-            PerftSearcher.PerftDivide(_player.Position, depth.Value);
+            PerftSearcher.PerftDivide(_player.Position, depth);
         }
         else
         {
             for (var i = 1; i <= depth; i++)
             {
-                var perftResult = PerftSearcher.GetPerftResults(_player.Position, i);
-                Console.WriteLine($"Depth {i} :  {perftResult}");
-            }
-        }
-    }
-
-    private void StopSearch()
-    {
-        Thread threadToJoin = null;
-        lock (_lock)
-        {
-            if (_engineThread == null) return;
-
-            _searchCTS?.Cancel();
-            threadToJoin = _engineThread;
-            _engineThread = null;
-        }
-
-        // Join outside the lock to prevent deadlocks
-        if (threadToJoin != null)
-        {
-            try
-            {
-                if (!threadToJoin.Join(2000))
-                {
-                    Logger.Log(LogType.EngineLog, "Warning: Search thread did not terminate in time.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log(LogType.EngineLog, $"Error joining search thread: {ex}");
-            }
-        }
-
-        lock (_lock)
-        {
-            if (_searchCTS != null)
-            {
-                try
-                {
-                    _searchCTS.Dispose();
-                }
-                catch
-                {
-                    // Ignore disposal errors
-                }
-                _searchCTS = null;
+                Console.WriteLine($"Depth {i} :  {PerftSearcher.GetPerftResults(_player.Position, i)}");
             }
         }
     }
