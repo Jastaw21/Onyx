@@ -46,7 +46,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.10.3";
+    public static string Version => "0.10.4";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
@@ -58,7 +58,7 @@ public class Engine
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
-    private int _maxThreads = 5;
+    public int MaxThreads = 5;
     public SearchStatistics _statistics;
 
     public Engine()
@@ -71,7 +71,7 @@ public class Engine
 
     private void InitializeWorkerThreads()
     {
-        for (var workerID = 0; workerID < _maxThreads; workerID++)
+        for (var workerID = 0; workerID < MaxThreads; workerID++)
         {
             var worker = new Searcher(this, workerID);
             _workers.Add(worker);

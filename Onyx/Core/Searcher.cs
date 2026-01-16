@@ -105,7 +105,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 break;
             }
-            
+
             _searchResults = _thisIterationResults;
             _statistics.Depth = depth;
 
@@ -126,7 +126,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 _searchResults.BestMove = moveBuffer[0];
             }
         }
-        
+
         IsFinished = true;
         _startSignal.Reset();
     }
@@ -185,7 +185,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
     {
-        if (stopFlag)
+        if (_statistics.Nodes % 2047 == 0 && stopFlag)
             return SearchFlag.Abort;
 
         if (depthFromRoot > 0)
@@ -210,14 +210,16 @@ public class Searcher(Engine engine, int searcherId = 0)
                     {
                         _thisIterationResults.BestMove = ttValue.Value.BestMove;
                     }
+
                     _thisIterationResults.Score = ttEval;
                 }
+
                 return new SearchFlag(true, ttEval);
             }
         }
-        
+
         _statistics.Nodes++;
-        
+
         // leaf node
         if (depthRemaining == 0)
         {
@@ -226,12 +228,12 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return SearchFlag.Abort;
             return new SearchFlag(true, qEval.Score);
         }
-        
+
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
         var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
         var moves = moveBuffer[..legalMoveCount];
-       
+
         // no legal moves left - decide if its checkmate or stalemate
         if (legalMoveCount == 0)
         {
@@ -239,9 +241,10 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 return new SearchFlag(true, -(_engine.MateScore - depthFromRoot));
             }
+
             return SearchFlag.Zero;
         }
-        
+
         // order the moves
         Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
 
@@ -269,9 +272,10 @@ public class Searcher(Engine engine, int searcherId = 0)
                 _statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
-                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining, _engine.CurrentSearchId,
+                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
+                    _engine.CurrentSearchId,
                     BoundFlag.Lower, move);
-                
+
                 if (move.CapturedPiece == 0)
                     StoreKillerMove(move, depthFromRoot);
 
@@ -295,32 +299,36 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), depthRemaining, _engine.CurrentSearchId, storingFlag,
+        _engine.TranspositionTable.Store(zobristHashValue,
+            EncodeMateScore(alpha, depthFromRoot),
+            depthRemaining,
+            _engine.CurrentSearchId,
+            storingFlag,
             bestMove);
 
         return new SearchFlag(true, alpha);
     }
-    
-    private SearchFlag QuiescenceSearch(int alpha, int beta, Position _position, int depthFromRoot)
+
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
     {
         if (stopFlag)
             return SearchFlag.Abort;
-        
-        var eval = Evaluator.Evaluate(_position);
+
+        var eval = Evaluator.Evaluate(position);
         if (eval >= beta) return new SearchFlag(true, beta);
         if (eval > alpha) alpha = eval;
-        
+
         _statistics.QuiescencePlyReached = depthFromRoot;
         _statistics.Nodes++;
-        
+
         Span<Move> moveBuffer = stackalloc Move[128];
-        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,capturesOnly: true);
-        
+        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);
+
         var moves = moveBuffer[..moveCount];
 
         if (moves.Length > 1)
             Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
-        
+
         foreach (var move in moves)
         {
             _currentPosition.ApplyMove(move);
@@ -331,13 +339,11 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // beta cutoff - the opponent won't let it get here
             if (eval >= beta) return new SearchFlag(true, beta);
-            
+
             if (eval > alpha)
                 alpha = eval;
-               
-            
         }
-        
+
         return new SearchFlag(true, alpha);
     }
 }

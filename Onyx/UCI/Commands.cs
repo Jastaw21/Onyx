@@ -7,6 +7,7 @@ public record UciCommand : Command;
 public record DebugCommand : Command;
 public record StopCommand : Command;
 public record EvaluateCommand : Command;
+
 public struct TimeControl
 {
     public int? Wtime;
@@ -24,9 +25,16 @@ public record GoCommand : Command
     public bool IsPerftDivide;
 }
 
+public record SetOptionCommand : Command
+{
+    public string Name;
+    public string Value;
+}
+
 public record UciNewGameCommand : Command;
 public record IsReadyCommand : Command;
 public record SetLoggingOn : Command;
+
 public record PositionCommand : Command
 {
     public bool IsStartpos { get; }

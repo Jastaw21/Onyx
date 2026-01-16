@@ -76,7 +76,12 @@ public class Tokeniser
             type = TokenType.SetLoggingOn;
         else if (builtToken == "evaluate")
             type = TokenType.Evaluate;
-        
+        else if (builtToken == "setoption")
+            type = TokenType.SetOption;
+        else if (builtToken == "name")
+            type = TokenType.Name;
+        else if (builtToken == "value")
+            type = TokenType.Value;
         else if (int.TryParse(builtToken, out _))
             type = TokenType.IntLiteral;
 
@@ -146,6 +151,11 @@ public class Tokeniser
 
         if (builtToken.Length is 2 && char.IsLetter(builtToken[0]) && char.IsNumber(builtToken[1]))
             return TokenType.EnPassantString;
+
+        var charCount = builtToken.Count(char.IsLetter);
+
+        if (charCount == builtToken.Length)
+            return TokenType.StringLiteral;
 
         return null;
     }

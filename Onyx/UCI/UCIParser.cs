@@ -15,7 +15,8 @@ public class UciParser
     }
 
     private Token Consume()
-    {if (_tokeniser is null)
+    {
+        if (_tokeniser is null)
             return new Token();
         return _tokeniser.Tokens[_currentToken++];
     }
@@ -40,6 +41,8 @@ public class UciParser
                     return ParsePositionCommand();
                 case TokenType.Go:
                     return ParseGoCommand();
+                case TokenType.SetOption:
+                    return ParseSetOptionCommand();
                 case TokenType.Quit:
                     Environment.Exit(0);
                     break;
@@ -67,8 +70,8 @@ public class UciParser
         while (Peek().Type != TokenType.Eof)
         {
             var token = Peek();
-            
-            
+
+
             switch (token.Type)
             {
                 case TokenType.Depth:
@@ -85,6 +88,7 @@ public class UciParser
                         command.IsPerftDivide = true;
                         Consume();
                     }
+
                     if (Peek().Type == TokenType.IntLiteral)
                         command.Depth = int.Parse(Consume().Value);
                     break;
@@ -189,5 +193,26 @@ public class UciParser
         positionCommand.Moves = moves;
 
         return positionCommand;
+    }
+
+    private SetOptionCommand? ParseSetOptionCommand()
+    {
+        if (Peek().Type != TokenType.Name)
+            return null;
+        Consume();
+
+        if (Peek().Type != TokenType.StringLiteral)
+            return null;
+        var name = Consume().Value;
+
+        if (Peek().Type != TokenType.Value)
+            return null;
+        Consume();
+
+        if (Peek().Type != TokenType.IntLiteral)
+            return null;
+        var value = Consume().Value;
+
+        return new SetOptionCommand { Name = name, Value = value };
     }
 }

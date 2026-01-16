@@ -9,8 +9,14 @@ public class UciInterface
     private readonly Engine _player = new();
     private Thread _engineThread;
     private CancellationTokenSource _searchCTS;
-    
+    private Options _options = new Options();
+    private readonly UciParser _parser = new();
     public Engine Player => _player;
+
+    public UciInterface()
+    {
+        _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
+    }
 
     public void HandleCommand(string commandString)
     {
@@ -22,6 +28,7 @@ public class UciInterface
             Console.WriteLine($"Unknown command {commandString}");
             return;
         }
+
         DispatchCommand(command);
     }
 
@@ -33,9 +40,11 @@ public class UciInterface
                 List<string> lines = [$"id name Onyx {Engine.Version}", "id author JackWeddell", "uciok"];
                 foreach (var line in lines)
                 {
-                    //Logger.Log(LogType.UCISent, line);
                     Console.WriteLine(line);
                 }
+
+                Console.WriteLine();
+                _options.PrintOptions();
 
                 break;
             case GoCommand goCommand:
@@ -63,9 +72,17 @@ public class UciInterface
             case SetLoggingOn:
                 _player.SetLogging(true);
                 break;
+            case SetOptionCommand optionCommand:
+                HandleOptionCommand(optionCommand);
+                break;
         }
 
         Console.Out.Flush();
+    }
+
+    private void HandleOptionCommand(SetOptionCommand command)
+    {
+        _options.SetOption(command.Name, int.Parse(command.Value));
     }
 
     private void HandlePosition(PositionCommand positionCommand)
@@ -92,7 +109,7 @@ public class UciInterface
     private void HandleGo(GoCommand command, int? depth)
     {
         _engineThread = new Thread(() =>
-        {   
+        {
             try
             {
                 var searchResults = _player.Search(new SearchParameters
@@ -101,7 +118,7 @@ public class UciInterface
                     MaxDepth = depth,
                     TimeControl = command.TimeControl
                 });
-                var infoString = GetSearchInfoString(searchResults,_player._statistics);
+                var infoString = GetSearchInfoString(searchResults, _player._statistics);
 
                 Console.WriteLine(infoString);
                 Console.WriteLine($"bestmove {searchResults.BestMove}");
@@ -126,14 +143,13 @@ public class UciInterface
     {
         if (command.IsPerftDivide)
         {
-            PerftSearcher.PerftDivide(_player.Position, depth.Value);           
+            PerftSearcher.PerftDivide(_player.Position, depth.Value);
         }
         else
         {
             for (var i = 1; i <= depth; i++)
             {
-
-                var perftResult = PerftSearcher.GetPerftResults(_player.Position,i);
+                var perftResult = PerftSearcher.GetPerftResults(_player.Position, i);
 
                 var result = $"Depth {i} :  {perftResult}";
                 //Logger.Log(LogType.UCISent, result);
@@ -145,10 +161,10 @@ public class UciInterface
     private void StopSearch()
     {
         if (_engineThread == null) return;
-        
+
         _searchCTS?.Cancel();
         _engineThread.Join();
-        
+
         _searchCTS?.Dispose();
         _searchCTS = null;
         _engineThread = null;
@@ -163,6 +179,7 @@ public class UciInterface
             sb.Append(move.Notation);
             sb.Append(' ');
         }
+
         sb.Remove(sb.Length - 1, 1); // remove last space
         return sb.ToString();
     }
@@ -173,8 +190,12 @@ public class UciInterface
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
-        return $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
+        return
+            $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
     }
 
-    private readonly UciParser _parser = new();
+    private void SetThreads(int threads)
+    {
+        _player.MaxThreads = threads;
+    }
 }

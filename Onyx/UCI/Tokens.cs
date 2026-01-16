@@ -30,7 +30,10 @@ public enum TokenType
     Divide,
     SetLoggingOn,
     DebugBoard,
-    Evaluate
+    Evaluate,
+    SetOption,
+    Name,
+    Value
 }
 
 public struct Token
