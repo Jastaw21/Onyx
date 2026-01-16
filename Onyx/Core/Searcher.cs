@@ -28,7 +28,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private Engine _engine = engine;
     public volatile bool stopFlag;
     public SearchResults _searchResults;
-    private SearchResults _thisIterationResults;
+    public SearchResults _thisIterationResults;
     public SearchStatistics _statistics;
     public bool IsFinished;
 
@@ -83,6 +83,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         _startSignal.Set();
     }
 
+    public event Action<SearchResults, SearchStatistics> OnDepthFinished;
+
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position _position)
     {
         Reset();
@@ -98,16 +100,30 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
 
             // do the search from this depth.
-            var searchResult = Search(depth, 0, -Infinity, Infinity);
+            SearchFlag searchFlag;
+            try
+            {
+                searchFlag = Search(depth, 0, -Infinity, Infinity);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
 
             // if we timed out or were stopped, we can't use the results of this depth
-            if (!searchResult.Completed)
+            if (!searchFlag.Completed)
             {
                 break;
             }
 
             _searchResults = _thisIterationResults;
             _statistics.Depth = depth;
+            _statistics.RunTime = _engine.StopwatchManager.Elapsed;
+
+            if (_searcherId == 0)
+            {
+                OnDepthFinished?.Invoke(_searchResults, _statistics);
+            }
 
             // We found a way to win. No need to look deeper.
             if (_thisIterationResults.Score > _engine.MateScore - 100)

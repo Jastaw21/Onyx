@@ -11,25 +11,51 @@ public class UciInterface
     private CancellationTokenSource _searchCTS;
     private Options _options = new Options();
     private readonly UciParser _parser = new();
+    private readonly object _lock = new();
     public Engine Player => _player;
 
     public UciInterface()
     {
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
+        _player.OnSearchInfoUpdate += (info) =>
+        {
+            Console.WriteLine(info);
+            Console.Out.Flush();
+        };
     }
 
     public void HandleCommand(string commandString)
     {
         //Logger.Log(LogType.UCIReceived, commandString);
 
-        var command = _parser.Parse(commandString);
+        Command command;
+        try
+        {
+            command = _parser.Parse(commandString);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing command {commandString}: {ex.Message}");
+            return;
+        }
+
         if (command is null)
         {
             Console.WriteLine($"Unknown command {commandString}");
             return;
         }
 
-        DispatchCommand(command);
+        lock (_lock)
+        {
+            try
+            {
+                DispatchCommand(command);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error dispatching command {commandString}: {ex.Message}");
+            }
+        }
     }
 
     private void DispatchCommand(Command command)
@@ -54,6 +80,7 @@ public class UciInterface
                 HandlePosition(positionCommand);
                 break;
             case UciNewGameCommand:
+                StopSearch();
                 _player.Reset();
                 break;
             case IsReadyCommand:
@@ -87,6 +114,7 @@ public class UciInterface
 
     private void HandlePosition(PositionCommand positionCommand)
     {
+        StopSearch();
         if (positionCommand.FenString != null) _player.Position.SetFen(positionCommand.FenString);
         _player.Position.ApplyMoves(positionCommand.Moves);
     }
@@ -94,48 +122,69 @@ public class UciInterface
     private void DispatchGoCommand(GoCommand command)
     {
         StopSearch();
-        _searchCTS = new CancellationTokenSource();
-        var depth = command.Depth ?? null;
-        if (command.IsPerft && depth != null)
+        lock (_lock)
         {
-            HandlePerft(command, depth);
-        }
-        else
-        {
-            HandleGo(command, depth);
+            if (_engineThread != null)
+            {
+                 Console.WriteLine("info string Engine is already searching. Ignoring go command.");
+                 return;
+            }
+            
+            _searchCTS = new CancellationTokenSource();
+            var depth = command.Depth ?? null;
+            if (command.IsPerft && depth != null)
+            {
+                HandlePerft(command, depth);
+            }
+            else
+            {
+                HandleGo(command, depth);
+            }
         }
     }
 
     private void HandleGo(GoCommand command, int? depth)
     {
+        var token = _searchCTS.Token;
         _engineThread = new Thread(() =>
         {
             try
             {
                 var searchResults = _player.Search(new SearchParameters
                 {
-                    CancellationToken = _searchCTS.Token,
+                    CancellationToken = token,
                     MaxDepth = depth,
                     TimeControl = command.TimeControl
                 });
-                var infoString = GetSearchInfoString(searchResults, _player._statistics);
 
-                Console.WriteLine(infoString);
-                Console.WriteLine($"bestmove {searchResults.BestMove}");
+                if (!token.IsCancellationRequested)
+                {
+                    Console.WriteLine($"bestmove {searchResults.BestMove}");
+                    Console.Out.Flush();
+                }
             }
 
-            catch (OperationCanceledException oce)
+            catch (OperationCanceledException)
             {
-                Logger.Log(LogType.EngineLog, $"{oce.Message}");
-                Console.WriteLine("search cancelled");
+                // Normal cancellation, no action needed
             }
 
             catch (Exception ex)
             {
-                Logger.Log(LogType.EngineLog, $"{ex.Message}");
-                Console.WriteLine("search cancelled");
+                try
+                {
+                    Logger.Log(LogType.EngineLog, $"Unhandled exception in search thread: {ex}");
+                }
+                catch
+                {
+                    // Ignore logger errors if process is crashing
+                }
             }
-        });
+        })
+        {
+            IsBackground = true,
+            Name = "SearchThread"
+        };
         _engineThread.Start();
     }
 
@@ -150,9 +199,6 @@ public class UciInterface
             for (var i = 1; i <= depth; i++)
             {
                 var perftResult = PerftSearcher.GetPerftResults(_player.Position, i);
-
-                var result = $"Depth {i} :  {perftResult}";
-                //Logger.Log(LogType.UCISent, result);
                 Console.WriteLine($"Depth {i} :  {perftResult}");
             }
         }
@@ -160,42 +206,52 @@ public class UciInterface
 
     private void StopSearch()
     {
-        if (_engineThread == null) return;
-
-        _searchCTS?.Cancel();
-        _engineThread.Join();
-
-        _searchCTS?.Dispose();
-        _searchCTS = null;
-        _engineThread = null;
-    }
-
-    private static string MovesToString(List<Move>? moves)
-    {
-        var sb = new StringBuilder();
-        if (moves == null || moves.Count == 0) return sb.ToString();
-        foreach (var move in moves)
+        Thread threadToJoin = null;
+        lock (_lock)
         {
-            sb.Append(move.Notation);
-            sb.Append(' ');
+            if (_engineThread == null) return;
+
+            _searchCTS?.Cancel();
+            threadToJoin = _engineThread;
+            _engineThread = null;
         }
 
-        sb.Remove(sb.Length - 1, 1); // remove last space
-        return sb.ToString();
-    }
+        // Join outside the lock to prevent deadlocks
+        if (threadToJoin != null)
+        {
+            try
+            {
+                if (!threadToJoin.Join(2000))
+                {
+                    Logger.Log(LogType.EngineLog, "Warning: Search thread did not terminate in time.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(LogType.EngineLog, $"Error joining search thread: {ex}");
+            }
+        }
 
-    private static string GetSearchInfoString(SearchResults results, SearchStatistics stats)
-    {
-        var pv = results.PV;
-        var nps = 0;
-        if (stats.RunTime > 0)
-            nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
-        return
-            $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
+        lock (_lock)
+        {
+            if (_searchCTS != null)
+            {
+                try
+                {
+                    _searchCTS.Dispose();
+                }
+                catch
+                {
+                    // Ignore disposal errors
+                }
+                _searchCTS = null;
+            }
+        }
     }
 
     private void SetThreads(int threads)
     {
+        StopSearch();
         _player.MaxThreads = threads;
     }
 }

@@ -1,4 +1,5 @@
-﻿using Onyx.Statics;
+﻿using System.Text;
+using Onyx.Statics;
 using Onyx.UCI;
 
 
@@ -53,7 +54,7 @@ public class Engine
     public StopwatchManager StopwatchManager { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
-
+    public event Action<string> OnSearchInfoUpdate;
     // search members
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
@@ -66,6 +67,7 @@ public class Engine
         IsReady = false;
         _timeManager = new TimeManager(this);
         InitializeWorkerThreads();
+        _workers[0].OnDepthFinished += (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
         IsReady = true;
     }
 
@@ -144,19 +146,25 @@ public class Engine
             worker.TriggerSearch(searchInstructions, Position.Clone());
         }
 
-        while (!_ct.IsCancellationRequested)
+        try
         {
-            if (isTimed && StopwatchManager.ShouldStop) break;
-            if (_workers[0].IsFinished) break;
-            Thread.Sleep(1);
+            while (!_ct.IsCancellationRequested)
+            {
+                if (isTimed && StopwatchManager.ShouldStop) break;
+                if (_workers[0].IsFinished) break;
+                
+                Thread.Sleep(1);
+            }
         }
-
-        foreach (var worker in _workers) worker.stopFlag = true;
-
-        // Need to wait for the main worker to come back to root
-        while (!_workers[0].IsFinished)
+        finally
         {
-            Thread.Sleep(1);
+            foreach (var worker in _workers) worker.stopFlag = true;
+
+            // Need to wait for the main worker to come back to root
+            while (!_workers[0].IsFinished)
+            {
+                Thread.Sleep(1);
+            }
         }
 
         var result = _workers[0]._searchResults;
@@ -164,5 +172,31 @@ public class Engine
         _statistics.RunTime = StopwatchManager.Elapsed;
         StopwatchManager.Reset();
         return result;
+    }
+
+    
+
+    private static string MovesToString(List<Move>? moves)
+    {
+        var sb = new StringBuilder();
+        if (moves == null || moves.Count == 0) return sb.ToString();
+        foreach (var move in moves)
+        {
+            sb.Append(move.Notation);
+            sb.Append(' ');
+        }
+
+        sb.Remove(sb.Length - 1, 1); // remove last space
+        return sb.ToString();
+    }
+
+    private static string GetSearchInfoString(SearchResults results, SearchStatistics stats)
+    {
+        var pv = results.PV;
+        var nps = 0;
+        if (stats.RunTime > 0)
+            nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
+        return
+            $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
     }
 }
