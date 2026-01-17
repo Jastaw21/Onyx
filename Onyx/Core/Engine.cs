@@ -104,8 +104,10 @@ public class Engine
         IsReady = false;
         Position = new Position();
         StopwatchManager = new StopwatchManager();
-        _workers.Clear();
-        InitializeWorkerThreads();
+        foreach (var worker in _workers)
+        {
+            worker.ResetState();
+        }
         IsReady = true;
     }
 
@@ -133,7 +135,6 @@ public class Engine
         var depthLimit = searchParameters.MaxDepth ?? 100;
         var searchInstructions = new SearcherInstructions
         {
-            IsTimed = isTimed,
             MaxDepth = depthLimit,
             StartDepth = 1,
             DepthInterval = 1
@@ -141,9 +142,12 @@ public class Engine
 
         // take off some buffer time
         StopwatchManager.Start(timeLimit - 30);
+        var depthCount = 1;
         foreach (var worker in _workers)
         {
+            //searchInstructions.StartDepth = depthCount;
             worker.TriggerSearch(searchInstructions, Position.Clone());
+            depthCount++;
         }
 
         try
@@ -190,13 +194,29 @@ public class Engine
         return sb.ToString();
     }
 
-    private static string GetSearchInfoString(SearchResults results, SearchStatistics stats)
+    private string GetSearchInfoString(SearchResults results, SearchStatistics stats)
     {
         var pv = results.PV;
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
+
+        string scoreString = "";
+        
+        // is a mating score
+        if (Math.Abs(results.Score) > 29000)
+        {
+            var plyToMate = MateScore - Math.Abs(results.Score);
+            var mateString = plyToMate * Math.Sign(results.Score);
+            scoreString = $"score mate {mateString}";
+        }
+        else
+        {
+            scoreString = $"score cp {results.Score}";
+        }
+        
+        
         return
-            $"info depth {stats.Depth} multipv 1 score cp {results.Score} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
+            $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
     }
 }

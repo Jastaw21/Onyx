@@ -5,8 +5,6 @@ namespace Onyx.Core;
 
 public struct SearcherInstructions
 {
-    public bool IsTimed = true;
-    public long TimeLimit = 0;
     public int MaxDepth = 128;
     public int StartDepth = 1;
     public int DepthInterval = 1;
@@ -14,8 +12,6 @@ public struct SearcherInstructions
 
     public SearcherInstructions(bool isTimed, long timeLimit, int maxDepth, int startDepth, int depthInterval)
     {
-        IsTimed = isTimed;
-        TimeLimit = timeLimit;
         MaxDepth = maxDepth;
         StartDepth = startDepth;
         DepthInterval = depthInterval;
@@ -72,15 +68,22 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     public void TriggerSearch(SearcherInstructions inst, Position pos)
     {
+        ResetState();
+        _currentInstructions = inst;
+        _currentPosition = pos;
+        _searchResults = new SearchResults();
+        _startSignal.Set();
+    }
+
+    public void ResetState()
+    {
         Array.Clear(_killerMoves);
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
         _statistics = new SearchStatistics();
         _thisIterationResults = new SearchResults();
-        _currentInstructions = inst;
-        _currentPosition = pos;
         _searchResults = new SearchResults();
-        _startSignal.Set();
+        IsFinished = false;
     }
 
     public event Action<SearchResults, SearchStatistics> OnDepthFinished;
