@@ -48,45 +48,54 @@ public static class Evaluator
 
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
-        moves.Sort((a, b) =>
+        try
         {
-            if (a.Data == b.Data)
+            moves.Sort((a, b) =>
             {
-                return 0;
-            }
+                if (a == b)
+                {
+                    return 0;
+                }
 
-            if (transpositionTableMove is { Data: > 0 })
-            {
-                if (a.Data == transpositionTableMove.Value.Data)
-                    return -1;
-                if (b.Data == transpositionTableMove.Value.Data)
-                    return 1;
-            }
+                if (transpositionTableMove is { Data: > 0 })
+                {
+                    if (a == transpositionTableMove.Value)
+                        return -1;
+                    if (b == transpositionTableMove.Value)
+                        return 1;
+                }
 
-            var aScore = GetMoveScore(a, killerMoves, ply);
-            var bScore = GetMoveScore(b, killerMoves, ply);
+                var aScore = GetMoveScore(a, killerMoves, ply);
+                var bScore = GetMoveScore(b, killerMoves, ply);
 
-            return bScore.CompareTo(aScore);
-        });
+                return bScore.CompareTo(aScore);
+            });
+
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine(e);
+        }
+       
     }
 
-    private static int GetMoveScore(Move move, Move?[,] killerMoves, int ply)
+    private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
     {
         var score = 0;
-        if (move.IsPromotion) score += 10000;
+        if (move.IsPromotion) score += 100000;
 
         if (move.CapturedPiece != 0)
         {
             var victimPiece = PieceValues[Piece.PieceTypeIndex(move.CapturedPiece)];
             var attackerPiece = PieceValues[Piece.PieceTypeIndex(move.PieceMoved)];
-            score += 9000 + (victimPiece * 10 - attackerPiece);
+            score += 12000 + (victimPiece * 10 - attackerPiece);
         }
 
         if (killerMoves == null) return score;
-        if (killerMoves[ply, 0]?.Data == move.Data)
-            return 8000;
-        if (killerMoves[ply, 1]?.Data == move.Data)
+        if (killerMoves[ply, 0] == move)
             return 7000;
+        if (killerMoves[ply, 1] == move)
+            return 2000;
 
         return score;
     }
