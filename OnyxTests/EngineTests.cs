@@ -412,10 +412,9 @@ public class EngineTests
             }
             uciInterface.HandleCommand(command);
             var stopwatch = Stopwatch.StartNew();
-            string output = "";
             while (stopwatch.ElapsedMilliseconds < 1000)
             {
-                output = sw.ToString();
+                var output = sw.ToString();
                 if (output.Contains("bestmove"))
                     break;
                 Thread.Sleep(100);

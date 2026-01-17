@@ -145,7 +145,6 @@ public class UciInterface
 
     private void SetThreads(int threads)
     {
-        StopSearch();
-        _player.MaxThreads = threads;
+        return;
     }
 }
