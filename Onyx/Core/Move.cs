@@ -1,4 +1,7 @@
-﻿namespace Onyx.Core;
+﻿using System.Text;
+
+
+namespace Onyx.Core;
 
 public static class MoveFlags
 {
@@ -129,5 +132,22 @@ public struct Move : IEquatable<Move>
     public override string ToString()
     {
         return Notation;
+    }
+}
+
+public static class MoveHelpers
+{
+    public static string MovesToString(List<Move>? moves)
+    {
+        var sb = new StringBuilder();
+        if (moves == null || moves.Count == 0) return sb.ToString();
+        foreach (var move in moves)
+        {
+            sb.Append(move.Notation);
+            sb.Append(' ');
+        }
+
+        sb.Remove(sb.Length - 1, 1); // remove last space
+        return sb.ToString();
     }
 }

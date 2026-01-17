@@ -2,6 +2,7 @@
 using Onyx.Core;
 using Onyx.Statics;
 using Onyx.UCI;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 
 namespace OnyxTests;
@@ -88,7 +89,7 @@ public class EngineTests
         for (int i = 2; i < 4; i++)
         {
             var timedSearch = engine.Search(new SearchParameters { MaxDepth = i, TimeLimit = 2000 });
-            var depthReached = engine._statistics.Depth;
+            var depthReached = engine.Statistics.Depth;
             var directResult = engine.Search(new SearchParameters { MaxDepth = depthReached + 2 });
             var match = timedSearch.BestMove.Notation == directResult.BestMove.Notation;
             var passString = match ? "passes" : $"fails with {timedSearch.BestMove}";

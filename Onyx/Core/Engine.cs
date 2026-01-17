@@ -1,97 +1,35 @@
-﻿using System.Text;
-using Onyx.Statics;
-using Onyx.UCI;
+﻿using Onyx.Statics;
 
 
 namespace Onyx.Core;
 
-public class TimeManager(Engine engine)
-{
-    public int TimeBudgetPerMove(TimeControl timeControl)
-    {
-        var time = engine.Position.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-        var increment = engine.Position.WhiteToMove ? timeControl.Winc : timeControl.Binc;
-
-        var safeInc = increment ?? 0;
-
-        var calcMovesRemaining = MovesRemaining(engine.Position);
-        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
-
-        // if moves remaining feels nonsense, use our own calc
-        var movesToGo =
-            Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
-                ? calcMovesRemaining
-                : instructedMovesRemaining;
-
-        if (movesToGo <= 0) movesToGo = calcMovesRemaining;
-
-        var baseTime = time / movesToGo + safeInc * 0.5;
-
-        // use max of 20% remaining time
-        var safeMax = time * 0.2;
-        var finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
-
-        var timeBudgetPerMove = Math.Max(finalBudget, 50);
-        return timeBudgetPerMove;
-    }
-
-    private static int MovesRemaining(Position position)
-    {
-        var ply = position.FullMoves * 2;
-
-        if (ply < 20) return 40; // opening
-        if (ply < 60) return 30; // middlegame
-        return 20; // endgame
-    }
-}
-
-public class Engine
+public sealed class Engine
 {
     public static string Version => "0.10.4";
-    // data members
-    public Position Position = new();
-    public TranspositionTable TranspositionTable { get; } = new();
-    public StopwatchManager StopwatchManager { get; set; } = new();
-    public int MateScore { get; private set; } = 30000;
-    private CancellationToken _ct; // for threading
-    public event Action<string> OnSearchInfoUpdate;
-    // search members
-    public int CurrentSearchId { get; private set; }
-    private readonly TimeManager _timeManager;
-    private readonly List<Searcher> _workers = [];
-    public int MaxThreads = 5;
-    public SearchStatistics _statistics;
+
+    private static int MateScore => 30000;
+    private const int Infinity = 1_000_000;
+
+    public Position Position;
+    public TranspositionTable TranspositionTable { get; }
+    private readonly Move?[,] _killerMoves = new Move?[128, 2];
+    private readonly Move[,] _pvTable = new Move[128, 128];
+    private readonly int[] _pvLength = new int[128];
+
+    private readonly Stopwatch _stopwatch;
+
+    public SearchStatistics Statistics;
+    private int _currentSearchId = 0;
+    public volatile bool stopFlag;
+    
+    
 
     public Engine()
     {
-        IsReady = false;
-        _timeManager = new TimeManager(this);
-        InitializeWorkerThreads();
-        _workers[0].OnDepthFinished += (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
-        IsReady = true;
-    }
-
-    private void InitializeWorkerThreads()
-    {
-        for (var workerID = 0; workerID < MaxThreads; workerID++)
-        {
-            var worker = new Searcher(this, workerID);
-            _workers.Add(worker);
-
-            var thread = new Thread(worker.Start)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.AboveNormal,
-                Name = $"Worker {workerID}"
-            };
-            thread.Start();
-        }
-    }
-
-    // UCI Interface methods
-    public void SetLogging(bool enabled)
-    {
-        Evaluator.LoggingEnabled = enabled;
+        Statistics = new SearchStatistics();
+        Position = new Position();
+        TranspositionTable = new TranspositionTable();
+        _stopwatch = new Stopwatch();
     }
 
     public void SetPosition(string fen)
@@ -99,110 +37,25 @@ public class Engine
         Position.SetFen(fen);
     }
 
-    public void Reset()
+    public void Reset(string fen = Fen.DefaultFen)
     {
-        IsReady = false;
-        Position = new Position();
-        StopwatchManager = new StopwatchManager();
-        foreach (var worker in _workers)
-        {
-            worker.ResetState();
-        }
-        IsReady = true;
-    }
-
-    public bool IsReady { get; set; }
-
-    public virtual SearchResults Search(SearchParameters searchParameters)
-    {
-        CurrentSearchId++;
-        _ct = searchParameters.CancellationToken;
-
-        var timeLimit = long.MaxValue;
-        var isTimed = false;
-        if (searchParameters.TimeLimit.HasValue)
-        {
-            timeLimit = searchParameters.TimeLimit.Value;
-            isTimed = true;
-        }
-
-        else if (searchParameters.TimeControl.HasValue)
-        {
-            timeLimit = _timeManager.TimeBudgetPerMove(searchParameters.TimeControl.Value);
-            isTimed = true;
-        }
-
-        var depthLimit = searchParameters.MaxDepth ?? 100;
-        var searchInstructions = new SearcherInstructions
-        {
-            MaxDepth = depthLimit,
-            StartDepth = 1,
-            DepthInterval = 1
-        };
-
-        // take off some buffer time
-        StopwatchManager.Start(timeLimit - 30);
-        var depthCount = 1;
-        foreach (var worker in _workers)
-        {
-            //searchInstructions.StartDepth = depthCount;
-            worker.TriggerSearch(searchInstructions, Position.Clone());
-            depthCount++;
-        }
-
-        try
-        {
-            while (!_ct.IsCancellationRequested)
-            {
-                if (isTimed && StopwatchManager.ShouldStop) break;
-                if (_workers[0].IsFinished) break;
-                
-                Thread.Sleep(1);
-            }
-        }
-        finally
-        {
-            foreach (var worker in _workers) worker.stopFlag = true;
-
-            // Need to wait for the main worker to come back to root
-            while (!_workers[0].IsFinished)
-            {
-                Thread.Sleep(1);
-            }
-        }
-
-        var result = _workers[0]._searchResults;
-        _statistics = _workers[0]._statistics;
-        _statistics.RunTime = StopwatchManager.Elapsed;
-        StopwatchManager.Reset();
-        return result;
-    }
-
-    
-
-    private static string MovesToString(List<Move>? moves)
-    {
-        var sb = new StringBuilder();
-        if (moves == null || moves.Count == 0) return sb.ToString();
-        foreach (var move in moves)
-        {
-            sb.Append(move.Notation);
-            sb.Append(' ');
-        }
-
-        sb.Remove(sb.Length - 1, 1); // remove last space
-        return sb.ToString();
+        Position = new Position(fen);
+        _stopwatch.Reset();
+        Statistics = new SearchStatistics();
+        Array.Clear(_killerMoves);
+        Array.Clear(_pvTable);
+        Array.Clear(_pvLength);
     }
 
     private string GetSearchInfoString(SearchResults results, SearchStatistics stats)
     {
-        var pv = results.PV;
+        List<Move> pv = results.PV;
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
 
-        string scoreString = "";
-        
+        var scoreString = "";
+
         // is a mating score
         if (Math.Abs(results.Score) > 29000)
         {
@@ -214,9 +67,302 @@ public class Engine
         {
             scoreString = $"score cp {results.Score}";
         }
-        
-        
+
+
         return
-            $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
+            $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MoveHelpers.MovesToString(pv)} ";
+    }
+
+    private void IterativeDeepeningSearch(SearchParameters parameters)
+    {
+        for (var depth = 1; depth <= parameters.MaxDepth; depth += 1)
+        {
+            // dont even enter the search if we need to exit
+            if (stopFlag ||)
+                break;
+
+            // do the search from this depth.
+
+            SearchFlag searchFlag = Search(depth, 0, -Infinity, Infinity);
+
+
+            // if we timed out or were stopped, we can't use the results of this depth
+            if (!searchFlag.Completed)
+            {
+                break;
+            }
+
+            _searchResults = _thisIterationResults;
+            _searchResults.PV = [];
+            for (var i = 0; i < _pvLength[0]; i++)
+            {
+                _searchResults.PV.Add(_pvTable[0, i]);
+            }
+
+            Statistics.Depth = depth;
+            Statistics.RunTime = _engine.StopwatchManager.Elapsed;
+
+            if (_searcherId == 0)
+            {
+                OnDepthFinished?.Invoke(_searchResults, Statistics);
+            }
+
+            // We found a way to win. No need to look deeper.
+            if (_thisIterationResults.Score > MateScore - 100)
+            {
+                break;
+            }
+        }
+
+        // didn't find a move
+        if (SearchResults.BestMove.Data == 0)
+        {
+            Span<Move> moveBuffer = stackalloc Move[256];
+            var legalMoveCount = MoveGenerator.GetLegalMoves(Position, moveBuffer);
+            if (legalMoveCount > 0)
+            {
+                SearchResults.BestMove = moveBuffer[0];
+            }
+        }
+
+        IsFinished = true;
+        _startSignal.Reset();
+    }
+
+    internal readonly struct SearchFlag(bool completed, int score)
+    {
+        public bool Completed { get; } = completed;
+        public int Score { get; } = score;
+
+        public static SearchFlag Abort => new(false, 0);
+        public static SearchFlag Zero => new(true, 0);
+    }
+
+    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
+    {
+        _pvLength[depthFromRoot] = depthFromRoot;
+
+        if (Statistics.Nodes % 2047 == 0 && stopFlag)
+            return SearchFlag.Abort;
+
+        if (depthFromRoot > 0)
+        {
+            // dont try to draw
+            if (_currentPosition.HalfMoves >= 50 || Referee.IsThreeFoldRepetition(_currentPosition))
+                return SearchFlag.Zero;
+        }
+
+        // if we have already evaluated this to at least the same depth, and that bounds are OK
+        var zobristHashValue = _currentPosition.ZobristState;
+        var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
+        if (ttValue.HasValue)
+        {
+            if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
+            {
+                Statistics.TtHits++;
+                var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
+                if (depthFromRoot == 0)
+                {
+                    if (ttValue.Value.BestMove.Data != 0)
+                    {
+                        _thisIterationResults.BestMove = ttValue.Value.BestMove;
+                    }
+
+                    _thisIterationResults.Score = ttEval;
+                }
+
+                if (ttValue.Value.BestMove.Data != 0)
+                {
+                    _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
+
+                    _currentPosition.ApplyMove(ttValue.Value.BestMove);
+                    var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
+                    _currentPosition.UndoMove(ttValue.Value.BestMove);
+
+                    for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                    {
+                        _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                    }
+
+                    _pvLength[depthFromRoot] = nextPlyDepth;
+                }
+
+                return new SearchFlag(true, ttEval);
+            }
+        }
+
+        Statistics.Nodes++;
+
+        // leaf node
+        if (depthRemaining == 0)
+        {
+            var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
+            if (!qEval.Completed)
+                return SearchFlag.Abort;
+
+            _pvLength[depthFromRoot] = _pvLength[depthFromRoot];
+            return new SearchFlag(true, qEval.Score);
+        }
+
+        // get the moves
+        Span<Move> moveBuffer = stackalloc Move[256];
+        var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
+        var moves = moveBuffer[..legalMoveCount];
+
+        // no legal moves left - decide if its checkmate or stalemate
+        if (legalMoveCount == 0)
+        {
+            if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
+            {
+                return new SearchFlag(true, -(_engine.MateScore - depthFromRoot));
+            }
+
+            return SearchFlag.Zero;
+        }
+
+        // order the moves
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
+
+        var storingFlag = BoundFlag.Upper;
+        Move bestMove = default;
+
+        // start to search through each of them
+        foreach (var move in moves)
+        {
+            // make, search recursively, then undo the move
+            _currentPosition.ApplyMove(move);
+            var childResult = Search(depthRemaining - 1, depthFromRoot + 1, -beta, -alpha);
+            _currentPosition.UndoMove(move);
+
+            // timed out in a child node
+            if (!childResult.Completed)
+                return SearchFlag.Abort;
+
+
+            var eval = -childResult.Score;
+
+            // move was too good, opponent will avoid it as had a better move available earlier.
+            if (eval >= beta)
+            {
+                Statistics.BetaCutoffs++;
+
+                // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
+                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
+                    _engine.CurrentSearchId,
+                    BoundFlag.Lower, move);
+
+                if (move.CapturedPiece == 0)
+                    StoreKillerMove(move, depthFromRoot);
+
+                // the best we can get in this chain is beta, since the opponent will avoid it - exit now
+                return new SearchFlag(true, beta);
+            }
+
+
+            // we've bettered our previous best
+            if (eval > alpha)
+            {
+                alpha = eval;
+                bestMove = move;
+                storingFlag = BoundFlag.Exact; // exact bound
+
+                _pvTable[depthFromRoot, depthFromRoot] = move;
+                var nextPlyDepth = _pvLength[depthFromRoot + 1];
+                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                {
+                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                }
+
+                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+
+                if (depthFromRoot == 0)
+                {
+                    _thisIterationResults.BestMove = bestMove;
+                    _thisIterationResults.Score = alpha;
+                }
+            }
+        }
+
+        TranspositionTable.Store(zobristHashValue,
+            EncodeMateScore(alpha, depthFromRoot),
+            depthRemaining,
+            _currentSearchId,
+            storingFlag,
+            bestMove);
+
+        return new SearchFlag(true, alpha);
+    }
+
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
+    {
+        _pvLength[depthFromRoot] = depthFromRoot;
+
+        if (stopFlag)
+            return SearchFlag.Abort;
+
+        var eval = Evaluator.Evaluate(position);
+        if (eval >= beta)
+        {
+            return new SearchFlag(true, beta);
+        }
+
+        if (eval > alpha)
+        {
+            alpha = eval;
+        }
+
+        Statistics.QuiescencePlyReached = depthFromRoot;
+        Statistics.Nodes++;
+
+        Span<Move> moveBuffer = stackalloc Move[128];
+        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);
+
+        var moves = moveBuffer[..moveCount];
+
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
+
+        foreach (var move in moves)
+        {
+            _currentPosition.ApplyMove(move);
+            var child = QuiescenceSearch(-beta, -alpha, _currentPosition, depthFromRoot + 1);
+            _currentPosition.UndoMove(move);
+            if (!child.Completed) return SearchFlag.Abort;
+            eval = -child.Score;
+
+            // beta cutoff - the opponent won't let it get here
+            if (eval >= beta) return new SearchFlag(true, beta);
+
+            if (eval > alpha)
+            {
+                alpha = eval;
+
+                _pvTable[depthFromRoot, depthFromRoot] = move;
+                var nextPlyDepth = _pvLength[depthFromRoot + 1];
+                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                {
+                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                }
+
+                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+            }
+        }
+
+        return new SearchFlag(true, alpha);
+    }
+
+    private int EncodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > MateScore - 1000) return score + depthFromRoot;
+        if (score < -(MateScore - 1000)) return score - depthFromRoot;
+        return score;
+    }
+
+    private int DecodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > MateScore - 1000) return score - depthFromRoot;
+        if (score < -(MateScore - 1000)) return score + depthFromRoot;
+        return score;
     }
 }

@@ -7,6 +7,7 @@ namespace Onyx.UCI;
 public class UciInterface
 {
     private readonly Engine _player = new();
+    private Searcher _searcher = new Searcher();
     private readonly UciParser _parser = new();
     private readonly Options _options = new();
     private readonly object _lock = new();
@@ -146,6 +147,5 @@ public class UciInterface
     private void SetThreads(int threads)
     {
         StopSearch();
-        _player.MaxThreads = threads;
     }
 }
