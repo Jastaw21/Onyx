@@ -9,7 +9,6 @@ public struct SearcherInstructions
     public int StartDepth = 1;
     public int DepthInterval = 1;
 
-
     public SearcherInstructions(bool isTimed, long timeLimit, int maxDepth, int startDepth, int depthInterval)
     {
         MaxDepth = maxDepth;
@@ -38,10 +37,8 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
 
-
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition;
-
 
     public void Start()
     {
@@ -125,8 +122,9 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 _searchResults.PV.Add(_pvTable[0, i]);
             }
+
             _statistics.Depth = depth;
-            _statistics.RunTime = _engine.StopwatchManager.Elapsed;
+            _statistics.RunTime = _engine.Stopwatch.Elapsed;
 
             if (_searcherId == 0)
             {
@@ -165,14 +163,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         IsFinished = false;
     }
 
-    internal readonly struct SearchFlag(bool completed, int score)
-    {
-        public bool Completed { get; } = completed;
-        public int Score { get; } = score;
-
-        public static SearchFlag Abort => new(false, 0);
-        public static SearchFlag Zero => new(true, 0);
-    }
+   
 
     private void StoreKillerMove(Move move, int ply)
     {
@@ -243,15 +234,16 @@ public class Searcher(Engine engine, int searcherId = 0)
                 if (ttValue.Value.BestMove.Data != 0)
                 {
                     _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
-                    
+
                     _currentPosition.ApplyMove(ttValue.Value.BestMove);
                     var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
                     _currentPosition.UndoMove(ttValue.Value.BestMove);
-                    
+
                     for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
                     {
                         _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
                     }
+
                     _pvLength[depthFromRoot] = nextPlyDepth;
                 }
 
@@ -267,8 +259,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
             if (!qEval.Completed)
                 return SearchFlag.Abort;
-            
-            _pvLength[depthFromRoot] = _pvLength[depthFromRoot]; 
+
+            _pvLength[depthFromRoot] = _pvLength[depthFromRoot];
             return new SearchFlag(true, qEval.Score);
         }
 
@@ -372,7 +364,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             var move = ttValue.Value.BestMove;
             _pvTable[depthFromRoot, depthFromRoot] = move;
-            
+
             _currentPosition.ApplyMove(move);
             var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
             _currentPosition.UndoMove(move);
@@ -381,6 +373,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
             }
+
             return nextPlyDepth;
         }
 
@@ -396,14 +389,11 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         var eval = Evaluator.Evaluate(position);
         if (eval >= beta)
-        {
             return new SearchFlag(true, beta);
-        }
+
 
         if (eval > alpha)
-        {
             alpha = eval;
-        }
 
         _statistics.QuiescencePlyReached = depthFromRoot;
         _statistics.Nodes++;
@@ -437,11 +427,9 @@ public class Searcher(Engine engine, int searcherId = 0)
                 {
                     _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
                 }
-
                 _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
             }
         }
-
         return new SearchFlag(true, alpha);
     }
 }

@@ -1,6 +1,4 @@
-﻿using Onyx.Statics;
-
-namespace Onyx.Core;
+﻿namespace Onyx.Core;
 
 public enum BoundFlag
 {

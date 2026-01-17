@@ -1,49 +1,10 @@
 ﻿using System.Text;
 using Onyx.Statics;
-using Onyx.UCI;
 
 
 namespace Onyx.Core;
 
-public class TimeManager(Engine engine)
-{
-    public int TimeBudgetPerMove(TimeControl timeControl)
-    {
-        var time = engine.Position.WhiteToMove ? timeControl.Wtime : timeControl.Btime;
-        var increment = engine.Position.WhiteToMove ? timeControl.Winc : timeControl.Binc;
 
-        var safeInc = increment ?? 0;
-
-        var calcMovesRemaining = MovesRemaining(engine.Position);
-        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
-
-        // if moves remaining feels nonsense, use our own calc
-        var movesToGo =
-            Math.Abs(instructedMovesRemaining - calcMovesRemaining) > 5
-                ? calcMovesRemaining
-                : instructedMovesRemaining;
-
-        if (movesToGo <= 0) movesToGo = calcMovesRemaining;
-
-        var baseTime = time / movesToGo + safeInc * 0.5;
-
-        // use max of 20% remaining time
-        var safeMax = time * 0.2;
-        var finalBudget = (int)Math.Min(baseTime!.Value, safeMax!.Value);
-
-        var timeBudgetPerMove = Math.Max(finalBudget, 50);
-        return timeBudgetPerMove;
-    }
-
-    private static int MovesRemaining(Position position)
-    {
-        var ply = position.FullMoves * 2;
-
-        if (ply < 20) return 40; // opening
-        if (ply < 60) return 30; // middlegame
-        return 20; // endgame
-    }
-}
 
 public class Engine
 {
@@ -51,27 +12,28 @@ public class Engine
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
-    public StopwatchManager StopwatchManager { get; set; } = new();
+    public Stopwatch Stopwatch { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
     public event Action<string> OnSearchInfoUpdate;
     // search members
     public int CurrentSearchId { get; private set; }
-    private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
-    public int MaxThreads = 5;
+    public int MaxThreads = 1;
     public SearchStatistics _statistics;
+    private readonly Move?[,] _killerMoves = new Move?[128, 2];
+    private readonly Move[,] _pvTable = new Move[128, 128];
+    private readonly int[] _pvLength = new int[128];
 
     public Engine()
     {
         IsReady = false;
-        _timeManager = new TimeManager(this);
         InitializeWorkerThreads();
         _workers[0].OnDepthFinished += (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
         IsReady = true;
     }
 
-    private void InitializeWorkerThreads()
+    public void InitializeWorkerThreads()
     {
         for (var workerID = 0; workerID < MaxThreads; workerID++)
         {
@@ -88,12 +50,7 @@ public class Engine
         }
     }
 
-    // UCI Interface methods
-    public void SetLogging(bool enabled)
-    {
-        Evaluator.LoggingEnabled = enabled;
-    }
-
+    
     public void SetPosition(string fen)
     {
         Position.SetFen(fen);
@@ -103,7 +60,7 @@ public class Engine
     {
         IsReady = false;
         Position = new Position();
-        StopwatchManager = new StopwatchManager();
+        Stopwatch = new Stopwatch();
         foreach (var worker in _workers)
         {
             worker.ResetState();
@@ -128,7 +85,7 @@ public class Engine
 
         else if (searchParameters.TimeControl.HasValue)
         {
-            timeLimit = _timeManager.TimeBudgetPerMove(searchParameters.TimeControl.Value);
+            timeLimit = TimeManager.TimeBudgetPerMove(this,searchParameters.TimeControl.Value);
             isTimed = true;
         }
 
@@ -141,7 +98,7 @@ public class Engine
         };
 
         // take off some buffer time
-        StopwatchManager.Start(timeLimit - 30);
+        Stopwatch.Start(timeLimit - 30);
         var depthCount = 1;
         foreach (var worker in _workers)
         {
@@ -154,7 +111,7 @@ public class Engine
         {
             while (!_ct.IsCancellationRequested)
             {
-                if (isTimed && StopwatchManager.ShouldStop) break;
+                if (isTimed && Stopwatch.ShouldStop) break;
                 if (_workers[0].IsFinished) break;
                 
                 Thread.Sleep(1);
@@ -173,25 +130,9 @@ public class Engine
 
         var result = _workers[0]._searchResults;
         _statistics = _workers[0]._statistics;
-        _statistics.RunTime = StopwatchManager.Elapsed;
-        StopwatchManager.Reset();
+        _statistics.RunTime = Stopwatch.Elapsed;
+        Stopwatch.Reset();
         return result;
-    }
-
-    
-
-    private static string MovesToString(List<Move>? moves)
-    {
-        var sb = new StringBuilder();
-        if (moves == null || moves.Count == 0) return sb.ToString();
-        foreach (var move in moves)
-        {
-            sb.Append(move.Notation);
-            sb.Append(' ');
-        }
-
-        sb.Remove(sb.Length - 1, 1); // remove last space
-        return sb.ToString();
     }
 
     private string GetSearchInfoString(SearchResults results, SearchStatistics stats)
@@ -217,6 +158,103 @@ public class Engine
         
         
         return
-            $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
+            $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {Helpers.MovesToString(pv)} ";
+    }
+    
+    
+    
+    private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot, bool timed)
+    {
+        _pvLength[depthFromRoot] = depthFromRoot;
+
+        if (_ct.IsCancellationRequested || (timed && Stopwatch.ShouldStop))
+            return SearchFlag.Abort;
+
+        var eval = Evaluator.Evaluate(position);
+        if (eval >= beta)
+            return new SearchFlag(true, beta);
+
+
+        if (eval > alpha)
+            alpha = eval;
+
+        _statistics.QuiescencePlyReached = depthFromRoot;
+        _statistics.Nodes++;
+
+        Span<Move> moveBuffer = stackalloc Move[128];
+        var moveCount = MoveGenerator.GetLegalMoves(Position, moveBuffer, capturesOnly: true);
+
+        var moves = moveBuffer[..moveCount];
+
+        if (moves.Length > 1)
+            Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
+
+        foreach (var move in moves)
+        {
+            Position.ApplyMove(move);
+            var child = QuiescenceSearch(-beta, -alpha, Position, depthFromRoot + 1, timed);
+            Position.UndoMove(move);
+            if (!child.Completed) return SearchFlag.Abort;
+            eval = -child.Score;
+
+            // beta cutoff - the opponent won't let it get here
+            if (eval >= beta) return new SearchFlag(true, beta);
+
+            if (eval > alpha)
+            {
+                alpha = eval;
+
+                _pvTable[depthFromRoot, depthFromRoot] = move;
+                var nextPlyDepth = _pvLength[depthFromRoot + 1];
+                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+                {
+                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+                }
+                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+            }
+        }
+        return new SearchFlag(true, alpha);
+    }
+    
+    internal readonly struct SearchFlag(bool completed, int score)
+    {
+        public bool Completed { get; } = completed;
+        public int Score { get; } = score;
+
+        public static SearchFlag Abort => new(false, 0);
+        public static SearchFlag Zero => new(true, 0);
+    }
+    
+    private void StoreKillerMove(Move move, int ply)
+    {
+        var existingMove = _killerMoves[ply, 0];
+        if (existingMove == null)
+        {
+            _killerMoves[ply, 0] = move;
+            return;
+        }
+
+        // don't store the same move twice
+        if (existingMove!.Value.Data == move.Data)
+            return;
+
+        _killerMoves[ply, 0] = move;
+        _killerMoves[ply, 1] = existingMove;
+    }
+
+    private const int Infinity = 1_000_000;
+
+    private int EncodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > MateScore - 1000) return score + depthFromRoot;
+        if (score < -(MateScore - 1000)) return score - depthFromRoot;
+        return score;
+    }
+
+    private int DecodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > MateScore - 1000) return score - depthFromRoot;
+        if (score < -(MateScore - 1000)) return score + depthFromRoot;
+        return score;
     }
 }

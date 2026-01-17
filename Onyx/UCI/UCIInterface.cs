@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Onyx.Core;
+﻿using Onyx.Core;
 using Onyx.Statics;
 
 namespace Onyx.UCI;

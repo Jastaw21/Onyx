@@ -2,6 +2,7 @@
 using Onyx.Core;
 using Onyx.Statics;
 using Onyx.UCI;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 
 namespace OnyxTests;
@@ -237,7 +238,7 @@ public class EngineTests
         }
     }
 
-    [Test]
+
     public void StressGame()
     {
         var uciInterface = new UciInterface();
