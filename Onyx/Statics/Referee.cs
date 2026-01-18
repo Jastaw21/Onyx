@@ -180,7 +180,7 @@ public static class Referee
 
         // check pawn attacks
         var attackingPiece = byWhite ? Piece.WP : Piece.BP;
-        var pawnsBB = board.Bitboards.OccupancyByPiece(attackingPiece);
+        var pawnsBb = board.Bitboards.OccupancyByPiece(attackingPiece);
 
         var fileIndex = RankAndFile.FileIndex(square);
         if (fileIndex > 0)
@@ -188,7 +188,7 @@ public static class Referee
             var targetIndex = byWhite ? square - 9 : square + 7;
             if ((uint)targetIndex < 64)
             {
-                if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;
+                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
             }
         }
 
@@ -197,7 +197,7 @@ public static class Referee
             var targetIndex = byWhite ? square - 7 : square + 9;
             if ((uint)targetIndex < 64)
             {
-                if (((1UL << targetIndex) & pawnsBB) != 0UL) return true;
+                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
             }
         }
 

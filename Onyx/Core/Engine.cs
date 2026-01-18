@@ -15,7 +15,7 @@ public class TimeManager(Engine engine)
         var safeInc = increment ?? 0;
 
         var calcMovesRemaining = MovesRemaining(engine.Position);
-        var instructedMovesRemaining = timeControl.movesToGo ?? 0;
+        var instructedMovesRemaining = timeControl.MovesToGo ?? 0;
 
         // if moves remaining feels nonsense, use our own calc
         var movesToGo =
@@ -60,7 +60,7 @@ public class Engine
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
     public int MaxThreads = 1;
-    public SearchStatistics _statistics;
+    public SearchStatistics Statistics;
 
     public Engine()
     {
@@ -73,16 +73,16 @@ public class Engine
 
     private void InitializeWorkerThreads()
     {
-        for (var workerID = 0; workerID < MaxThreads; workerID++)
+        for (var workerId = 0; workerId < MaxThreads; workerId++)
         {
-            var worker = new Searcher(this, workerID);
+            var worker = new Searcher(this, workerId);
             _workers.Add(worker);
 
             var thread = new Thread(worker.Start)
             {
                 IsBackground = true,
                 Priority = ThreadPriority.AboveNormal,
-                Name = $"Worker {workerID}"
+                Name = $"Worker {workerId}"
             };
             thread.Start();
         }
@@ -162,7 +162,7 @@ public class Engine
         }
         finally
         {
-            foreach (var worker in _workers) worker.stopFlag = true;
+            foreach (var worker in _workers) worker.StopFlag = true;
 
             // Need to wait for the main worker to come back to root
             while (!_workers[0].IsFinished)
@@ -171,9 +171,9 @@ public class Engine
             }
         }
 
-        var result = _workers[0]._searchResults;
-        _statistics = _workers[0]._statistics;
-        _statistics.RunTime = StopwatchManager.Elapsed;
+        var result = _workers[0].SearchResults;
+        Statistics = _workers[0].Statistics;
+        Statistics.RunTime = StopwatchManager.Elapsed;
         StopwatchManager.Reset();
         return result;
     }
@@ -196,7 +196,7 @@ public class Engine
 
     private string GetSearchInfoString(SearchResults results, SearchStatistics stats)
     {
-        var pv = results.PV;
+        var pv = results.Pv;
         var nps = 0;
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;

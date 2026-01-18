@@ -16,7 +16,7 @@ public enum LogType
 
 public static class Logger
 {
-    public static string timeString;
+    public static string TimeString;
 
     public static void Log(LogType type, string message)
     {
@@ -32,7 +32,7 @@ public static class Logger
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logEntry = $"[{timestamp}] [{logFile}] {message}";
 
-        var finalLog = "uci_log" + timeString + ".log";
+        var finalLog = "uci_log" + TimeString + ".log";
         File.AppendAllText(finalLog, logEntry + Environment.NewLine);
     }
 
@@ -50,7 +50,7 @@ public static class Logger
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logEntry = $"[{timestamp}] [{logFile}] {loggable.Get()}";
         Console.Error.WriteLine(logEntry);
-        var finalLog = "uci_log" + timeString + ".log";
+        var finalLog = "uci_log" + TimeString + ".log";
         File.AppendAllText(finalLog, logEntry + Environment.NewLine);
     }
 }

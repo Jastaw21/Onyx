@@ -63,10 +63,10 @@ public class Position
     public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
-    public ReadOnlySpan<PositionState> History => HistoryBuffer.AsSpan(0, HistoryStackPointer+1);
+    public ReadOnlySpan<PositionState> History => _historyBuffer.AsSpan(0, _historyStackPointer+1);
 
-    private PositionState[] HistoryBuffer = new PositionState[1024];
-    private int HistoryStackPointer;
+    private PositionState[] _historyBuffer = new PositionState[1024];
+    private int _historyStackPointer;
     
     
    
@@ -75,7 +75,7 @@ public class Position
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         ZobristState = Zobrist.FromFen(fen);
-        for (int i=0; i<HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
+        for (int i=0; i<_historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
        
         var startingState = new PositionState
         {
@@ -83,8 +83,8 @@ public class Position
             HalfMove = HalfMoves, FullMove = FullMoves
         };
        
-        HistoryStackPointer = 0;
-        HistoryBuffer[HistoryStackPointer] = startingState;
+        _historyStackPointer = 0;
+        _historyBuffer[_historyStackPointer] = startingState;
     }
 
     public void SetFen(string fen)
@@ -94,7 +94,7 @@ public class Position
         ApplyBoardStateFromFen(fen);
         ZobristState =  Zobrist.FromFen(fen);
 
-        for (int i = 0; i < HistoryBuffer.Length; i++) HistoryBuffer[i] = new PositionState();
+        for (int i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
 
         var startingState = new PositionState
         {
@@ -105,13 +105,13 @@ public class Position
             FullMove = FullMoves
         };
 
-        HistoryStackPointer = 0;
-        HistoryBuffer[HistoryStackPointer] = startingState;
+        _historyStackPointer = 0;
+        _historyBuffer[_historyStackPointer] = startingState;
     }
     
     private void UpdateHistoryState()
     {
-        var state = HistoryBuffer[HistoryStackPointer];
+        var state = _historyBuffer[_historyStackPointer];
         state.Hash = ZobristState;
         state.CastlingRights = CastlingRights;
         state.EnPassantSquare = EnPassantSquare;
@@ -158,13 +158,13 @@ public class Position
     }
     public void MakeNullMove()
     {
-        HistoryStackPointer++;
-        HistoryBuffer[HistoryStackPointer].LastMoveFlags = 0;
-        HistoryBuffer[HistoryStackPointer].CapturedPiece = null;
-        HistoryBuffer[HistoryStackPointer].EnPassantSquare = EnPassantSquare;
-        HistoryBuffer[HistoryStackPointer].CastlingRights = CastlingRights;
-        HistoryBuffer[HistoryStackPointer].HalfMove = HalfMoves;
-        HistoryBuffer[HistoryStackPointer].FullMove = FullMoves;
+        _historyStackPointer++;
+        _historyBuffer[_historyStackPointer].LastMoveFlags = 0;
+        _historyBuffer[_historyStackPointer].CapturedPiece = null;
+        _historyBuffer[_historyStackPointer].EnPassantSquare = EnPassantSquare;
+        _historyBuffer[_historyStackPointer].CastlingRights = CastlingRights;
+        _historyBuffer[_historyStackPointer].HalfMove = HalfMoves;
+        _historyBuffer[_historyStackPointer].FullMove = FullMoves;
         ZobristState = Zobrist.MakeNullMove(ZobristState);     
         EnPassantSquare = null;
         SwapTurns();
@@ -175,8 +175,8 @@ public class Position
     }
     public void UndoNullMove()
     {
-        HistoryStackPointer--;
-        var state = HistoryBuffer[HistoryStackPointer];
+        _historyStackPointer--;
+        var state = _historyBuffer[_historyStackPointer];
         EnPassantSquare = state.EnPassantSquare;
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;
@@ -207,9 +207,9 @@ public class Position
             else capturedPiece = null;
             capturedSquare = move.To;
         }
-        HistoryBuffer[HistoryStackPointer].LastMoveFlags = move.Data;
-        HistoryBuffer[HistoryStackPointer].CapturedPiece = capturedPiece;
-        HistoryStackPointer++;
+        _historyBuffer[_historyStackPointer].LastMoveFlags = move.Data;
+        _historyBuffer[_historyStackPointer].CapturedPiece = capturedPiece;
+        _historyStackPointer++;
         
         if (fullApplyMove)
         {
@@ -283,8 +283,8 @@ public class Position
 
     public void UndoMove(Move move, bool fullUndoMove = true)
     {
-        HistoryStackPointer--;
-        var state = HistoryBuffer[HistoryStackPointer];
+        _historyStackPointer--;
+        var state = _historyBuffer[_historyStackPointer];
         EnPassantSquare = state.EnPassantSquare;
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;

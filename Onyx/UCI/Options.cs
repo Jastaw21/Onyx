@@ -20,11 +20,11 @@ public class Option
 
 public class Options
 {
-    private readonly List<Option> options = [];
+    private readonly List<Option> _options = [];
 
     public void AddOption(string name, string type, string defaultValue, string min, string max, Action<int> onApply)
     {
-        options.Add(new Option
+        _options.Add(new Option
         {
             Name = name,
             Type = type,
@@ -37,7 +37,7 @@ public class Options
 
     public void SetOption(string name, int value)
     {
-        var thisOption = options.First(o => o.Name == name);
+        var thisOption = _options.First(o => o.Name == name);
         if (thisOption == null) return;
 
         if (value < int.Parse(thisOption.Min) || value > int.Parse(thisOption.Max))
@@ -50,7 +50,7 @@ public class Options
     
     public void PrintOptions()
     {
-        foreach (var option in options)
+        foreach (var option in _options)
         {
             Console.WriteLine(option.OptionString());
         }

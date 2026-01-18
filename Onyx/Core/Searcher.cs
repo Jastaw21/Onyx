@@ -21,13 +21,13 @@ public class Searcher(Engine engine, int searcherId = 0)
 {
     // engine interaction
     private Engine _engine = engine;
-    public volatile bool stopFlag;
-    public SearchResults _searchResults;
-    public SearchResults _thisIterationResults;
-    public SearchStatistics _statistics;
+    public volatile bool StopFlag;
+    public SearchResults SearchResults;
+    private SearchResults ThisIterationResults;
+    public SearchStatistics Statistics;
     public bool IsFinished;
 
-    private int _searcherId = searcherId;
+    private readonly int _searcherId = searcherId;
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
 
@@ -40,7 +40,8 @@ public class Searcher(Engine engine, int searcherId = 0)
     private int _extensions = 0;
 
     private SearcherInstructions _currentInstructions;
-    private Position _currentPosition;
+    private Position _currentPosition = new();
+    public event Action<SearchResults, SearchStatistics> OnDepthFinished;
 
     public void Start()
     {
@@ -51,7 +52,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             if (_isQuitting) break;
 
             IsFinished = false;
-            stopFlag = false;
+            StopFlag = false;
 
             IterativeDeepeningSearch(_currentInstructions, _currentPosition);
 
@@ -78,16 +79,16 @@ public class Searcher(Engine engine, int searcherId = 0)
         Array.Clear(_killerMoves);
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
-        _statistics = new SearchStatistics();
-        _thisIterationResults = new SearchResults();
-        _searchResults = new SearchResults();
+        Statistics = new SearchStatistics();
+        ThisIterationResults = new SearchResults();
+        SearchResults = new SearchResults();
         IsFinished = false;
         _extensions = 0;
     }
 
-    public event Action<SearchResults, SearchStatistics> OnDepthFinished;
+    
 
-    private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position _position)
+    private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position position)
     {
         Reset();
 
@@ -98,7 +99,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         for (var depth = startDepth; depth <= searchParameters.MaxDepth; depth += depthInterval)
         {
             // dont even enter the search if we need to exit
-            if (stopFlag)
+            if (StopFlag)
                 break;
 
             // do the search from this depth.
@@ -119,36 +120,36 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
             }
 
-            _searchResults = _thisIterationResults;
-            _searchResults.PV = [];
+            SearchResults = ThisIterationResults;
+            SearchResults.Pv = [];
             for (var i = 0; i < _pvLength[0]; i++)
             {
-                _searchResults.PV.Add(_pvTable[0, i]);
+                SearchResults.Pv.Add(_pvTable[0, i]);
             }
 
-            _statistics.Depth = depth;
-            _statistics.RunTime = _engine.StopwatchManager.Elapsed;
+            Statistics.Depth = depth;
+            Statistics.RunTime = _engine.StopwatchManager.Elapsed;
 
             if (_searcherId == 0)
             {
-                OnDepthFinished?.Invoke(_searchResults, _statistics);
+                OnDepthFinished?.Invoke(SearchResults, Statistics);
             }
 
             // We found a way to win. No need to look deeper.
-            if (_thisIterationResults.Score > _engine.MateScore - 100)
+            if (ThisIterationResults.Score > _engine.MateScore - 100)
             {
                 break;
             }
         }
 
         // didn't find a move
-        if (_searchResults.BestMove.Data == 0)
+        if (SearchResults.BestMove.Data == 0)
         {
             Span<Move> moveBuffer = stackalloc Move[256];
             var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
             if (legalMoveCount > 0)
             {
-                _searchResults.BestMove = moveBuffer[0];
+                SearchResults.BestMove = moveBuffer[0];
             }
         }
 
@@ -158,11 +159,11 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private void Reset()
     {
-        _statistics = new SearchStatistics();
+        Statistics = new SearchStatistics();
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
         Array.Clear(_killerMoves);
-        _thisIterationResults = new SearchResults();
+        ThisIterationResults = new SearchResults();
         IsFinished = false;
     }
 
@@ -212,7 +213,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
-        if (_statistics.Nodes % 2047 == 0 && stopFlag)
+        if (Statistics.Nodes % 2047 == 0 && StopFlag)
             return SearchFlag.Abort;
 
         if (depthFromRoot > 0)
@@ -229,16 +230,16 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
             {
-                _statistics.TtHits++;
+                Statistics.TtHits++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
                 if (depthFromRoot == 0)
                 {
                     if (ttValue.Value.BestMove.Data != 0)
                     {
-                        _thisIterationResults.BestMove = ttValue.Value.BestMove;
+                        ThisIterationResults.BestMove = ttValue.Value.BestMove;
                     }
 
-                    _thisIterationResults.Score = ttEval;
+                    ThisIterationResults.Score = ttEval;
                 }
 
                 if (ttValue.Value.BestMove.Data != 0)
@@ -261,7 +262,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _statistics.Nodes++;
+        Statistics.Nodes++;
 
         // leaf node
         if (depthRemaining == 0)
@@ -302,9 +303,9 @@ public class Searcher(Engine engine, int searcherId = 0)
         foreach (var move in moves)
         {
             moveCount++;
-            // make, search recursively, then undo the move
             _currentPosition.ApplyMove(move);
 
+            // extend in scenarios it'd be beneficial
             var extension = 0;
             if (_extensions < MaxExtensions)
             {
@@ -314,8 +315,22 @@ public class Searcher(Engine engine, int searcherId = 0)
                     extension = 1;
                 }
             }
-
-            var childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha);
+            
+            
+            var needsFullSearch = true;
+            SearchFlag childResult = new SearchFlag(false, 0);
+            
+            // reduce later moves as the best ones should be up front
+            if (moveCount >= 5 && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
+            {
+                const int reduction = -1;
+                childResult = Search(depthRemaining - 1 + reduction, depthFromRoot + 1, -alpha - 1, -alpha);
+                if (-childResult.Score > alpha)
+                    needsFullSearch = true;
+            }
+            if (needsFullSearch)
+                childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha);
+            
             _currentPosition.UndoMove(move);
 
             // timed out in a child node
@@ -328,7 +343,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
             {
-                _statistics.BetaCutoffs++;
+                Statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
                 _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
@@ -361,8 +376,8 @@ public class Searcher(Engine engine, int searcherId = 0)
 
                 if (depthFromRoot == 0)
                 {
-                    _thisIterationResults.BestMove = bestMove;
-                    _thisIterationResults.Score = alpha;
+                    ThisIterationResults.BestMove = bestMove;
+                    ThisIterationResults.Score = alpha;
                 }
             }
         }
@@ -407,7 +422,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
-        if (stopFlag)
+        if (StopFlag)
             return SearchFlag.Abort;
 
         var eval = Evaluator.Evaluate(position);
@@ -421,8 +436,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             alpha = eval;
         }
 
-        _statistics.QuiescencePlyReached = depthFromRoot;
-        _statistics.Nodes++;
+        Statistics.QuiescencePlyReached = depthFromRoot;
+        Statistics.Nodes++;
 
         Span<Move> moveBuffer = stackalloc Move[128];
         var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);

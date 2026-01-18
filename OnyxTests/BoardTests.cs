@@ -432,7 +432,7 @@ public class BoardTests
 
             // boards equal
             Assert.That(board.Bitboards.AllPieces, Is.EqualTo(boardFromFen.Bitboards.AllPieces));
-            Assert.That(board.Bitboards._whitePieces, Is.EqualTo(boardFromFen.Bitboards._whitePieces));
+            Assert.That(board.Bitboards.WhitePieces, Is.EqualTo(boardFromFen.Bitboards.WhitePieces));
             Assert.That(board.Bitboards.Boards, Is.EqualTo(boardFromFen.Bitboards.Boards));
 
             // zobrist equal

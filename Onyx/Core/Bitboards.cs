@@ -9,7 +9,7 @@ public class Bitboards
     {
         Boards = new ulong[12];
         AllPieces = 0;
-        _whitePieces = 0;
+        WhitePieces = 0;
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
     }
 
@@ -17,7 +17,7 @@ public class Bitboards
     {
         Boards = new ulong[12];
         AllPieces = 0;
-        _whitePieces = 0;
+        WhitePieces = 0;
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         LoadFen(fenString);
     }
@@ -26,7 +26,7 @@ public class Bitboards
     {
         // reset the boards
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
-        _whitePieces = 0;
+        WhitePieces = 0;
         AllPieces = 0;
 
         var rankIndex = 7; // fen starts from the top
@@ -65,7 +65,7 @@ public class Bitboards
     }
 
     public ulong AllPieces { get; private set; }
-    public ulong _whitePieces { get; private set; }
+    public ulong WhitePieces { get; private set; }
     public ulong[] Boards { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -76,9 +76,9 @@ public class Bitboards
     public ulong OccupancyByColour(bool forBlack)
     {
         if (!forBlack)
-            return _whitePieces;
+            return WhitePieces;
 
-        return AllPieces & ~_whitePieces;
+        return AllPieces & ~WhitePieces;
         //var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
         //return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
     }
@@ -92,11 +92,11 @@ public class Bitboards
     {
         Boards[Piece.BitboardIndex(piece)] = boardByPiece;
         AllPieces = 0;
-        _whitePieces = 0;
+        WhitePieces = 0;
         for (var i = 0; i < 12; i++)
         {
             if (Piece.IsWhite(Piece.AllPieces[i]))
-                _whitePieces |= Boards[i];
+                WhitePieces |= Boards[i];
             AllPieces |= Boards[i];
         }
     }
@@ -105,7 +105,7 @@ public class Bitboards
     {
         var index = 1ul << square;
         AllPieces &= ~index;
-        _whitePieces &= ~index;
+        WhitePieces &= ~index;
         for (var i = 0; i < Boards.Length; i++)
         {
             Boards[i] &= ~index;
@@ -135,7 +135,7 @@ public class Bitboards
             {
                 AllPieces &= ~bit;
                 if (Piece.IsWhite(piece))
-                    _whitePieces &= ~bit;
+                    WhitePieces &= ~bit;
             }
         }
     }
@@ -146,7 +146,7 @@ public class Bitboards
         Boards[Piece.BitboardIndex(piece)] |= index;
         AllPieces |= index;
         if (Piece.IsWhite(piece))
-            _whitePieces |= index;
+            WhitePieces |= index;
     }
 
     public bool SquareOccupied(int squareToTest)

@@ -120,7 +120,7 @@ public class UciParser
                 case TokenType.Movestogo:
                     Consume();
                     if (Peek().Type == TokenType.IntLiteral)
-                        tc.movesToGo = int.Parse(Consume().Value);
+                        tc.MovesToGo = int.Parse(Consume().Value);
                     break;
             }
         }

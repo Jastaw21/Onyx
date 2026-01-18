@@ -10,7 +10,7 @@ public static class Program
     public static void Main()
     {
         var engine = new UciInterface();
-        Logger.timeString = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+        Logger.TimeString = DateTime.Now.ToString("yyyyMMddHHmmssfff");
         var command = string.Empty;
         while (command != "quit")
         {

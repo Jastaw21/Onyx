@@ -41,5 +41,5 @@ public struct SearchResults
 {
     public Move BestMove;
     public int Score;
-    public List<Move> PV;
+    public List<Move> Pv;
 }

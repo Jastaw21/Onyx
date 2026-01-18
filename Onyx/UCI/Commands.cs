@@ -14,7 +14,7 @@ public struct TimeControl
     public int? Btime;
     public int? Binc;
     public int? Winc;
-    public int? movesToGo;
+    public int? MovesToGo;
 }
 
 public record GoCommand : Command

@@ -14,7 +14,7 @@ public struct FenDetails
 
 public static class Fen
 {
-    public static void BuildPVString(Move[,] pvTable, int[] pvLengthTable, out List<Move> moveList)
+    public static void BuildPvString(Move[,] pvTable, int[] pvLengthTable, out List<Move> moveList)
     {
         moveList = new List<Move>(pvLengthTable[0]);
         for (int i = 0; i < pvLengthTable[0]; i++)
