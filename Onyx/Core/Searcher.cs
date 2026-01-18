@@ -40,6 +40,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly int[] _pvLength = new int[128];
     private const int MaxExtensions = 16;
     private int _extensions = 0;
+    private bool searchAsWhite = false;
 
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition = new();
@@ -56,7 +57,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             IsFinished = false;
             StopFlag = false;
 
-            IterativeDeepeningSearch(_currentInstructions, _currentPosition);
+            IterativeDeepeningSearch(_currentInstructions);
 
             IsFinished = true;
         }
@@ -89,9 +90,10 @@ public class Searcher(Engine engine, int searcherId = 0)
     }
 
 
-    private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position position)
+    private void IterativeDeepeningSearch(SearcherInstructions searchParameters)
     {
         Reset();
+        searchAsWhite = _currentPosition.WhiteToMove;
 
         // some vague diversification stuff
         var startDepth = _searcherId == 0 ? 1 : _searcherId % 2 == 0 ? 1 : 2;
@@ -221,7 +223,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             // dont try to draw
             if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
-                return new SearchFlag(true, 100); // draw contempt
+            {
+                var isOurTurn = _currentPosition.WhiteToMove == searchAsWhite;
+                var drawContempt = isOurTurn ? -100 : 100;
+                return new SearchFlag(true, drawContempt); // draw contempt
+            }
         }
 
         // if we have already evaluated this to at least the same depth, and that bounds are OK
@@ -324,7 +330,6 @@ public class Searcher(Engine engine, int searcherId = 0)
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 childResult = Search(depthRemaining - 1 + Reduction, depthFromRoot + 1, -alpha - 1, -alpha);
                 needsFullSearch = -childResult.Score > alpha;
-                
             }
 
             if (needsFullSearch)
