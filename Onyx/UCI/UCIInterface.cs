@@ -18,7 +18,7 @@ public class UciInterface
     public UciInterface()
     {
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
-        _options.AddOption("lmr", "spin", "5", "2", "8", SetThreads);
+        _options.AddOption("lmrthreshold", "spin", "5", "2", "8", SetLMRValue);
         _player.OnSearchInfoUpdate += Console.WriteLine;
     }
 

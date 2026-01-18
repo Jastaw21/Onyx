@@ -61,6 +61,7 @@ public class Engine
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
+    public Searcher PrimaryWorker => _workers[0];
     public int MaxThreads = 1;
     public SearchStatistics Statistics;
 

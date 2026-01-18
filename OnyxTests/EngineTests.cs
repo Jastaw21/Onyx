@@ -182,4 +182,12 @@ public class EngineTests
         result = player.Player.Search(new SearchParameters { MaxDepth = 3 });
         Assert.That(result.BestMove.Notation, Is.Not.EqualTo("c8f8"), "Shouldnt go down a drawing route");
     }
+
+    [Test]
+    public void SetOptionLMR()
+    {
+        var player = new UciInterface();
+        player.HandleCommand("setoption name lmrthreshold value 3");
+        Assert.That(player.Player.PrimaryWorker.LMRThreshold, Is.EqualTo(3));
+    }
 }
