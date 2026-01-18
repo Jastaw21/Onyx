@@ -2,15 +2,14 @@
 
 public class Option
 {
-    public string Name { get; set; }
-    public string Type { get; set; }
-    public string Default { get; set; }
-    public string Min { get; set; }
-    public string Max { get; set; }
+    public string Name = "";
+    public string Type = "";
+    public string Default = "";
+    public string Min = "";
+    public string Max = "";
+    public int Value;
 
-    public int Value { get; set; }
-
-    public Action<int> OnApply { get; set; }
+    public required Action<int> OnApply { get; set; }
     
     public string OptionString()
     {
