@@ -86,7 +86,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         _extensions = 0;
     }
 
-    
 
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters, Position position)
     {
@@ -309,28 +308,27 @@ public class Searcher(Engine engine, int searcherId = 0)
             var extension = 0;
             if (_extensions < MaxExtensions)
             {
-                // extend in promotion moves
                 if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
-                {
                     extension = 1;
-                }
             }
-            
-            
+
+
             var needsFullSearch = true;
             SearchFlag childResult = new SearchFlag(false, 0);
-            
+
             // reduce later moves as the best ones should be up front
             if (moveCount >= 5 && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
             {
                 const int reduction = -1;
                 childResult = Search(depthRemaining - 1 + reduction, depthFromRoot + 1, -alpha - 1, -alpha);
-                if (-childResult.Score > alpha)
-                    needsFullSearch = true;
+                
+                needsFullSearch = -childResult.Score > alpha;
+                
             }
+
             if (needsFullSearch)
                 childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha);
-            
+
             _currentPosition.UndoMove(move);
 
             // timed out in a child node
