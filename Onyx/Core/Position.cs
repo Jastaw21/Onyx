@@ -309,7 +309,7 @@ public class Position
         {
             if (!move.IsEnPassant)
             {
-                Bitboards.SetOn(state.CapturedPiece.Value, move.To);
+                Bitboards.SetOn(state.CapturedPiece!.Value, move.To);
                 capturedOn = move.To;
             }
         }
@@ -379,7 +379,7 @@ public class Position
             if ((Bitboards.AllPieces & (1ul << move.To)) != 0)
             {
                 var pieceAtSquare = Bitboards.PieceAtSquare(move.To);
-                move.CapturedPiece = pieceAtSquare.Value;
+                move.CapturedPiece = pieceAtSquare!.Value;
             }
             // en passant capture
             else if (move.IsEnPassant)
