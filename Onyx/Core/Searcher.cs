@@ -23,9 +23,11 @@ public class Searcher(Engine engine, int searcherId = 0)
     private Engine _engine = engine;
     public volatile bool StopFlag;
     public SearchResults SearchResults;
-    private SearchResults ThisIterationResults;
+    private SearchResults _thisIterationResults;
     public SearchStatistics Statistics;
     public bool IsFinished;
+    private const int Reduction = -1;
+    public int LMRThreshold = 5;
 
     private readonly int _searcherId = searcherId;
     private readonly AutoResetEvent _startSignal = new(false);
@@ -80,7 +82,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
         Statistics = new SearchStatistics();
-        ThisIterationResults = new SearchResults();
+        _thisIterationResults = new SearchResults();
         SearchResults = new SearchResults();
         IsFinished = false;
         _extensions = 0;
@@ -119,7 +121,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
             }
 
-            SearchResults = ThisIterationResults;
+            SearchResults = _thisIterationResults;
             SearchResults.Pv = [];
             for (var i = 0; i < _pvLength[0]; i++)
             {
@@ -135,7 +137,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
             // We found a way to win. No need to look deeper.
-            if (ThisIterationResults.Score > _engine.MateScore - 100)
+            if (_thisIterationResults.Score > _engine.MateScore - 100)
             {
                 break;
             }
@@ -162,7 +164,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         Array.Clear(_pvTable);
         Array.Clear(_pvLength);
         Array.Clear(_killerMoves);
-        ThisIterationResults = new SearchResults();
+        _thisIterationResults = new SearchResults();
         IsFinished = false;
     }
 
@@ -235,10 +237,10 @@ public class Searcher(Engine engine, int searcherId = 0)
                 {
                     if (ttValue.Value.BestMove.Data != 0)
                     {
-                        ThisIterationResults.BestMove = ttValue.Value.BestMove;
+                        _thisIterationResults.BestMove = ttValue.Value.BestMove;
                     }
 
-                    ThisIterationResults.Score = ttEval;
+                    _thisIterationResults.Score = ttEval;
                 }
 
                 if (ttValue.Value.BestMove.Data != 0)
@@ -317,11 +319,10 @@ public class Searcher(Engine engine, int searcherId = 0)
             SearchFlag childResult = new SearchFlag(false, 0);
 
             // reduce later moves as the best ones should be up front
-            if (moveCount >= 5 && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
+            if (moveCount >= LMRThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
             {
-                const int reduction = -1;
-                childResult = Search(depthRemaining - 1 + reduction, depthFromRoot + 1, -alpha - 1, -alpha);
-                
+                // search with a super narrow window - basically only checking if any of these are better than alpha
+                childResult = Search(depthRemaining - 1 + Reduction, depthFromRoot + 1, -alpha - 1, -alpha);
                 needsFullSearch = -childResult.Score > alpha;
                 
             }
@@ -374,8 +375,8 @@ public class Searcher(Engine engine, int searcherId = 0)
 
                 if (depthFromRoot == 0)
                 {
-                    ThisIterationResults.BestMove = bestMove;
-                    ThisIterationResults.Score = alpha;
+                    _thisIterationResults.BestMove = bestMove;
+                    _thisIterationResults.Score = alpha;
                 }
             }
         }

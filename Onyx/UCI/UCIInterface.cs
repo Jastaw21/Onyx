@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Onyx.Core;
+﻿using Onyx.Core;
 using Onyx.Statics;
 
 namespace Onyx.UCI;
@@ -19,6 +18,7 @@ public class UciInterface
     public UciInterface()
     {
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
+        _options.AddOption("lmr", "spin", "5", "2", "8", SetThreads);
         _player.OnSearchInfoUpdate += Console.WriteLine;
     }
 
@@ -123,8 +123,8 @@ public class UciInterface
             _searchThread.Join(500); // Short timeout to keep it responsive
         }
         _searchCts?.Dispose();
-        _searchCts = null;
-        _searchThread = null;
+        _searchCts = null!;
+        _searchThread = null!;
     }
 
     private void HandlePerft(GoCommand command)
@@ -146,5 +146,10 @@ public class UciInterface
     private void SetThreads(int threads)
     {
         return;
+    }
+
+    private void SetLMRValue(int value)
+    {
+        _player.SetLMRThreshold(value);
     }
 }

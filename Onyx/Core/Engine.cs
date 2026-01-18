@@ -54,7 +54,9 @@ public class Engine
     public StopwatchManager StopwatchManager { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
+    public void SetLMRThreshold(int lmr) => _workers[0].LMRThreshold = lmr;
     public event Action<string> OnSearchInfoUpdate;
+
     // search members
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
@@ -67,7 +69,8 @@ public class Engine
         IsReady = false;
         _timeManager = new TimeManager(this);
         InitializeWorkerThreads();
-        _workers[0].OnDepthFinished += (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
+        _workers[0].OnDepthFinished +=
+            (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
         IsReady = true;
     }
 
@@ -108,6 +111,7 @@ public class Engine
         {
             worker.ResetState();
         }
+
         IsReady = true;
     }
 
@@ -156,7 +160,7 @@ public class Engine
             {
                 if (isTimed && StopwatchManager.ShouldStop) break;
                 if (_workers[0].IsFinished) break;
-                
+
                 Thread.Sleep(1);
             }
         }
@@ -177,8 +181,6 @@ public class Engine
         StopwatchManager.Reset();
         return result;
     }
-
-    
 
     private static string MovesToString(List<Move>? moves)
     {
@@ -202,7 +204,7 @@ public class Engine
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
 
         string scoreString = "";
-        
+
         // is a mating score
         if (Math.Abs(results.Score) > 29000)
         {
@@ -214,8 +216,8 @@ public class Engine
         {
             scoreString = $"score cp {results.Score}";
         }
-        
-        
+
+
         return
             $"info depth {stats.Depth} multipv 1 {scoreString} nodes {stats.Nodes} nps {nps} time {stats.RunTime} pv {MovesToString(pv)} ";
     }
