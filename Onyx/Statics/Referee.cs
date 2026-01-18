@@ -225,7 +225,7 @@ public static class Referee
             if (history[i].Hash == currentHash)
             {
                 matches++;
-                if (matches >= 2) return true;
+                if (matches >= 3) return true;
             }
         }
 
@@ -239,13 +239,16 @@ public static class Referee
         var matches = 0;
 
         // We only need to check back as far as the HalfMoves rule allows
-        var startSearch = history.Length - 2;
+        var startSearch = history.Length - 1;
         var endSearch = Math.Max(0, history.Length - board.HalfMoves);
 
         for (var i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
         {
             if (history[i].Hash == currentHash)
-                return true;
+            {
+                matches++;
+                if (matches >= 2) return true;
+            }
         }
 
         return false;

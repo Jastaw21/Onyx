@@ -146,7 +146,7 @@ public class Engine
         foreach (var worker in _workers)
         {
             //searchInstructions.StartDepth = depthCount;
-            worker.TriggerSearch(searchInstructions, Position.Clone());
+            worker.TriggerSearch(searchInstructions, Position);
             depthCount++;
         }
 

@@ -237,188 +237,22 @@ public class EngineTests
         }
     }
 
-    [Test]
-    public void StressGame()
-    {
-        var uciInterface = new UciInterface();
-        var testerboard = new Position();
-        var sw = new StringWriter();
-        var originalOut = Console.Out;
-        Console.SetOut(sw);
-        List<string> SentCommands =
-        [
-            "setoption name threads value 1",
-            "isready",
-            "ucinewgame",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1",
-            "isready",
-            "go wtime 12100 btime 12100 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5",
-            "isready",
-            "go wtime 11869 btime 11872 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7",
-            "isready",
-            "go wtime 11650 btime 11651 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6",
-            "isready",
-            "go wtime 11435 btime 11436 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6",
-            "isready",
-            "go wtime 11227 btime 11228 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7",
-            "isready",
-            "go wtime 11023 btime 11024 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4",
-            "isready",
-            "go wtime 10824 btime 10825 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8",
-            "isready",
-            "go wtime 10631 btime 10630 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6",
-            "isready",
-            "go wtime 10441 btime 10441 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6",
-            "isready",
-            "go wtime 10256 btime 10256 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8",
-            "isready",
-            "go wtime 9991 btime 9991 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6",
-            "isready",
-            "go wtime 9734 btime 9734 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6",
-            "isready",
-            "go wtime 9487 btime 9487 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5",
-            "isready",
-            "go wtime 9246 btime 9247 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7",
-            "isready",
-            "go wtime 9015 btime 9014 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8",
-            "isready",
-            "go wtime 8791 btime 8790 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5",
-            "isready",
-            "go wtime 8574 btime 8573 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7",
-            "isready",
-            "go wtime 8364 btime 8365 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5",
-            "isready",
-            "go wtime 8163 btime 8163 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4",
-            "isready",
-            "go wtime 7968 btime 7968 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6",
-            "isready",
-            "go wtime 7779 btime 7780 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6",
-            "isready",
-            "go wtime 7597 btime 7598 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8",
-            "isready",
-            "go wtime 7419 btime 7421 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8",
-            "isready",
-            "go wtime 7249 btime 7250 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1",
-            "isready",
-            "go wtime 7085 btime 7084 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5",
-            "isready",
-            "go wtime 6924 btime 6925 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5",
-            "isready",
-            "go wtime 6771 btime 6772 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8",
-            "isready",
-            "go wtime 6613 btime 6623 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7",
-            "isready",
-            "go wtime 6468 btime 6480 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8",
-            "isready",
-            "go wtime 6329 btime 6341 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8",
-            "isready",
-            "go wtime 6088 btime 6100 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4",
-            "isready",
-            "go wtime 5860 btime 5871 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4",
-            "isready",
-            "go wtime 5643 btime 5653 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8",
-            "isready",
-            "go wtime 5436 btime 5446 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7",
-            "isready",
-            "go wtime 5241 btime 5249 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6",
-            "isready",
-            "go wtime 5055 btime 5064 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7",
-            "isready",
-            "go wtime 4880 btime 4887 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6",
-            "isready",
-            "go wtime 4714 btime 4719 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8",
-            "isready",
-            "go wtime 4555 btime 4560 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6",
-            "isready",
-            "go wtime 4404 btime 4409 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8",
-            "isready",
-            "go wtime 4261 btime 4264 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5",
-            "isready",
-            "go wtime 4125 btime 4127 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5",
-            "isready",
-            "go wtime 3996 btime 3998 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5",
-            "isready",
-            "go wtime 3873 btime 3875 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5 g1h2 f5e4",
-            "isready",
-            "go wtime 3756 btime 3758 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5 g1h2 f5e4 e2f2 h7g8",
-            "isready",
-            "go wtime 3646 btime 3648 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5 g1h2 f5e4 e2f2 h7g8 b2a3 g7h6",
-            "isready",
-            "go wtime 3541 btime 3543 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5 g1h2 f5e4 e2f2 h7g8 b2a3 g7h6 a3c1 e4b1",
-            "isready",
-            "go wtime 3440 btime 3442 winc 100 binc 100",
-            "position fen rnq1kb1r/pbppp2p/1p3np1/5p2/8/3P1NP1/PPPNPPBP/R1BQ1RK1 w kq - 0 1 moves e2e3 d7d5 f3e5 f8g7 d2f3 b8c6 e5c6 b7c6 f3e5 c6b7 d3d4 f6e4 b2b4 c8d8 c1b2 d8d6 a2a3 e7e6 d1d3 e8g8 f2f3 e4f6 b4b5 a7a6 a3a4 a6b5 a4b5 f6d7 f3f4 f8b8 b2a3 d7e5 f4e5 d6d7 a3b4 g6g5 b4c3 g5g4 f1d1 c7c6 b5c6 d7c6 d1c1 b8c8 a1a8 c8a8 c1a1 a8a1 c3a1 b6b5 a1c3 h7h5 d3d2 c6c8 g1f1 c8c7 f1f2 g8h8 h2h3 h8g8 h3g4 f5g4 f2g1 c7c4 c3b2 g8h8 d2a5 h8h7 a5b6 b7c6 c2c3 c6d7 b6d6 c4c6 d6e7 d7e8 e7b4 c6b6 g2f1 b6d8 f1b5 e8b5 b4b5 d8g5 b5e2 g5f5 g1h2 f5e4 e2f2 h7g8 b2a3 g7h6 a3c1 e4b1 c3c4 b1c1",
-            "isready",
-            "go wtime 3345 btime 3347 winc 100 binc 100",
-            "isready",
-        ];
 
-        foreach (var command in SentCommands)
-        {
-            if (command.Contains("position"))
-            {
-                var movesStart = command.IndexOf("moves");
-                if (movesStart>0)
-                {
-                    var movesString = command[movesStart..];
-                }
-            }
-            uciInterface.HandleCommand(command);
-            var stopwatch = Stopwatch.StartNew();
-            while (stopwatch.ElapsedMilliseconds < 1000)
-            {
-                var output = sw.ToString();
-                if (output.Contains("bestmove"))
-                    break;
-                Thread.Sleep(100);
-            }
-        }
+
+    [Test]
+    public void AvoidsDrawing()
+    {
+        var player = new UciInterface();
+        player.HandleCommand("ucinewgame");
+        // continuation that drew is  c8f8 d2e2
+        player.HandleCommand("position startpos moves e2e3 b8c6 b1c3 e7e6 d1g4 g8f6 g4f3 f8c5 c3a4 c6b4 e1d1 c5d6 a2a3 b4c6 a4c3 c6e5 f3e2 f6d5 g1f3 d5c3 b2c3 e5f3 g2f3 b7b6 d2d4 c7c5 c1b2 c8b7 e3e4 c5d4 c3d4 d6f4 h1g1 e8g8 h2h3 d7d5 d1e1 h7h5 e2d3 a7a5 a3a4 d8e7 b2a3 f4d6 a3d6 e7d6 e4e5 d6e7 d3a3 e7a3 a1a3 a8c8 e1d1 c8b8 g1g5 h5h4 a3b3 b7c6 f1b5 c6b5 b3b5 f7f6 e5f6 f8f6 b5b3 b6b5 g5g4 b5b4 g4h4 b8f8 d1e2 f8c8 e2d2 c8f8 d2e2 f8c8 e2d2 c8f8");
+        Assert.That(Referee.IsThreeFoldRepetition(player.Player.Position), Is.False, "Not yet repetition");
+        var result = player.Player.Search(new SearchParameters { MaxDepth = 3 });
+        Assert.That(result.BestMove.Notation, Is.Not.EqualTo("d2e2"), "Shouldnt go down a drawing route");
+        Console.WriteLine(result.BestMove.Notation);
+        
+        player.HandleCommand("position startpos moves e2e3 b8c6 b1c3 e7e6 d1g4 g8f6 g4f3 f8c5 c3a4 c6b4 e1d1 c5d6 a2a3 b4c6 a4c3 c6e5 f3e2 f6d5 g1f3 d5c3 b2c3 e5f3 g2f3 b7b6 d2d4 c7c5 c1b2 c8b7 e3e4 c5d4 c3d4 d6f4 h1g1 e8g8 h2h3 d7d5 d1e1 h7h5 e2d3 a7a5 a3a4 d8e7 b2a3 f4d6 a3d6 e7d6 e4e5 d6e7 d3a3 e7a3 a1a3 a8c8 e1d1 c8b8 g1g5 h5h4 a3b3 b7c6 f1b5 c6b5 b3b5 f7f6 e5f6 f8f6 b5b3 b6b5 g5g4 b5b4 g4h4 b8f8 d1e2 f8c8 e2d2 c8f8 d2e2 f8c8 e2d2");
+        result = player.Player.Search(new SearchParameters { MaxDepth = 3 });
+        Assert.That(result.BestMove.Notation, Is.Not.EqualTo("c8f8"), "Shouldnt go down a drawing route");
     }
 }

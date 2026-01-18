@@ -141,6 +141,7 @@ public class RefereeTests
         
         // apply twice
         ApplyMovesInSequence();
+        ApplyMovesInSequence();
         Assert.That(Referee.IsThreeFoldRepetition(board), Is.True);
 
         void ApplyMovesInSequence()

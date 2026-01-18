@@ -1,5 +1,6 @@
 ﻿using Onyx.Core;
 
+
 namespace Onyx.Statics;
 
 internal struct MaterialEvaluation
@@ -14,7 +15,6 @@ internal struct MaterialEvaluation
     public int Knights = 0;
     public int Rooks = 0;
     public int Queens = 0;
-
 
     public MaterialEvaluation()
     {
@@ -70,13 +70,11 @@ public static class Evaluator
 
                 return bScore.CompareTo(aScore);
             });
-
         }
         catch (Exception e)
         {
             Console.Error.WriteLine(e);
         }
-       
     }
 
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
@@ -159,23 +157,18 @@ public static class Evaluator
             {
                 case Piece.Pawn:
                     materialEvaluation.Pawns += (int)pieceCount;
-                    //materialEvaluation.PawnBoard = occupancyByPiece;
                     break;
                 case Piece.Knight:
                     materialEvaluation.Knights += (int)pieceCount;
-                    //materialEvaluation.KnightBoard = occupancyByPiece;
                     break;
                 case Piece.Rook:
                     materialEvaluation.Rooks += (int)pieceCount;
-                    //materialEvaluation.RookBoard = occupancyByPiece;
                     break;
                 case Piece.Queen:
                     materialEvaluation.Queens += (int)pieceCount;
-                    //materialEvaluation.QueenBoard = occupancyByPiece;
                     break;
                 case Piece.Bishop:
                     materialEvaluation.Bishops += (int)pieceCount;
-                    //materialEvaluation.BishopBoard = occupancyByPiece;
                     break;
             }
         }
@@ -229,7 +222,7 @@ public static class Evaluator
         return GetArray(piece, endGame)[index];
     }
 
-    // tables are laid out like looking at a board from white's perspective'
+    // tables are laid out like looking at a board from white's perspective
     private static readonly int[] PawnStart =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -285,6 +278,29 @@ public static class Evaluator
         -10, 0, 5, 0, 0, 0, 0, -10,
         -20, -10, -10, -5, -5, -10, -10, -20
     ];
+    private static readonly int[] KingStart =
+    [
+        -80, -70, -70, -70, -70, -70, -70, -80,
+        -60, -60, -60, -60, -60, -60, -60, -60,
+        -40, -50, -50, -60, -60, -50, -50, -40,
+        -30, -40, -40, -50, -50, -40, -40, -30,
+        -20, -30, -30, -40, -40, -30, -30, -20,
+        -10, -20, -20, -20, -20, -20, -20, -10,
+        20, 20, -5, -5, -5, -5, 20, 20,
+        20, 30, 10, 0, 0, 10, 30, 20
+    ];
+    private static readonly int[] KingEnd =
+    [
+        -20, -10, -10, -10, -10, -10, -10, -20,
+        -5,   0,   5,   5,   5,   5,   0,  -5,
+        -10, -5,   20,  30,  30,  20,  -5, -10,
+        -15, -10,  35,  45,  45,  35, -10, -15,
+        -20, -15,  30,  40,  40,  30, -15, -20,
+        -25, -20,  20,  25,  25,  20, -20, -25,
+        -30, -25,   0,   0,   0,   0, -25, -30,
+        -50, -30, -30, -30, -30, -30, -30, -50
+    ];
+
     private static readonly int[] RookStart =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -325,11 +341,12 @@ public static class Evaluator
 
         return type switch
         {
-            Piece.Pawn => endGame ? PawnEnd : PawnStart,
+            Piece.Pawn =>  endGame ? PawnEnd:PawnStart,
             Piece.Knight => KnightScores,
             Piece.Bishop => BishopStart,
             Piece.Queen => QueenScores,
-            Piece.Rook => endGame ? RookStart : RookEnd,
+            Piece.Rook =>endGame ? RookEnd:RookStart,
+            Piece.King =>endGame ?  KingEnd:KingStart,
             _ => ZeroScores
         };
     }

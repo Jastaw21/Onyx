@@ -217,8 +217,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (depthFromRoot > 0)
         {
             // dont try to draw
-            if (_currentPosition.HalfMoves >= 50 || Referee.IsThreeFoldRepetition(_currentPosition))
-                return SearchFlag.Zero;
+            if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
+                return new SearchFlag(true, 100); // draw contempt
         }
 
         // if we have already evaluated this to at least the same depth, and that bounds are OK
@@ -296,8 +296,10 @@ public class Searcher(Engine engine, int searcherId = 0)
         Move bestMove = default;
 
         // start to search through each of them
+        var moveCount = 0;
         foreach (var move in moves)
         {
+            moveCount++;
             // make, search recursively, then undo the move
             _currentPosition.ApplyMove(move);
             var childResult = Search(depthRemaining - 1, depthFromRoot + 1, -beta, -alpha);
