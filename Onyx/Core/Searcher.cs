@@ -9,7 +9,6 @@ public struct SearcherInstructions
     public int StartDepth = 1;
     public int DepthInterval = 1;
 
-
     public SearcherInstructions(bool isTimed, long timeLimit, int maxDepth, int startDepth, int depthInterval)
     {
         MaxDepth = maxDepth;
@@ -37,11 +36,11 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move?[,] _killerMoves = new Move?[128, 2];
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
-
+    private const int MaxExtensions = 16;
+    private int _extensions = 0;
 
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition;
-
 
     public void Start()
     {
@@ -71,7 +70,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         ResetState();
         _currentInstructions = inst;
         _currentPosition = pos;
-        _searchResults = new SearchResults();
         _startSignal.Set();
     }
 
@@ -84,6 +82,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         _thisIterationResults = new SearchResults();
         _searchResults = new SearchResults();
         IsFinished = false;
+        _extensions = 0;
     }
 
     public event Action<SearchResults, SearchStatistics> OnDepthFinished;
@@ -106,6 +105,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             SearchFlag searchFlag;
             try
             {
+                _extensions = 0;
                 searchFlag = Search(depth, 0, -Infinity, Infinity);
             }
             catch (OperationCanceledException)
@@ -125,6 +125,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 _searchResults.PV.Add(_pvTable[0, i]);
             }
+
             _statistics.Depth = depth;
             _statistics.RunTime = _engine.StopwatchManager.Elapsed;
 
@@ -243,15 +244,16 @@ public class Searcher(Engine engine, int searcherId = 0)
                 if (ttValue.Value.BestMove.Data != 0)
                 {
                     _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
-                    
+
                     _currentPosition.ApplyMove(ttValue.Value.BestMove);
                     var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
                     _currentPosition.UndoMove(ttValue.Value.BestMove);
-                    
+
                     for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
                     {
                         _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
                     }
+
                     _pvLength[depthFromRoot] = nextPlyDepth;
                 }
 
@@ -267,8 +269,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
             if (!qEval.Completed)
                 return SearchFlag.Abort;
-            
-            _pvLength[depthFromRoot] = _pvLength[depthFromRoot]; 
+
+            _pvLength[depthFromRoot] = _pvLength[depthFromRoot];
             return new SearchFlag(true, qEval.Score);
         }
 
@@ -302,7 +304,18 @@ public class Searcher(Engine engine, int searcherId = 0)
             moveCount++;
             // make, search recursively, then undo the move
             _currentPosition.ApplyMove(move);
-            var childResult = Search(depthRemaining - 1, depthFromRoot + 1, -beta, -alpha);
+
+            var extension = 0;
+            if (_extensions < MaxExtensions)
+            {
+                // extend in promotion moves
+                if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
+                {
+                    extension = 1;
+                }
+            }
+
+            var childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha);
             _currentPosition.UndoMove(move);
 
             // timed out in a child node
@@ -374,7 +387,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             var move = ttValue.Value.BestMove;
             _pvTable[depthFromRoot, depthFromRoot] = move;
-            
+
             _currentPosition.ApplyMove(move);
             var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
             _currentPosition.UndoMove(move);
@@ -383,6 +396,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
             }
+
             return nextPlyDepth;
         }
 
