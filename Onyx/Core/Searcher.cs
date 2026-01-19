@@ -446,9 +446,9 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             alpha = eval;
         }
-
-        Statistics.QuiescencePlyReached = depthFromRoot;
+        
         Statistics.Nodes++;
+        Statistics.qNodes++;
 
         Span<Move> moveBuffer = stackalloc Move[128];
         var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);
