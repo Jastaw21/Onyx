@@ -60,9 +60,9 @@ public static class Evaluator
                 if (transpositionTableMove is { Data: > 0 })
                 {
                     if (a == transpositionTableMove.Value)
-                        return -1;
+                        return -99;
                     if (b == transpositionTableMove.Value)
-                        return 1;
+                        return 99;
                 }
 
                 var aScore = GetMoveScore(a, killerMoves, ply);

@@ -27,7 +27,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     public SearchStatistics Statistics;
     public bool IsFinished;
     private const int Reduction = -1;
-    public int LMRThreshold = 5;
+    public int LMRThreshold = 3;
 
     private readonly int _searcherId = searcherId;
     private readonly AutoResetEvent _startSignal = new(false);
@@ -212,7 +212,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         return score;
     }
 
-    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta)
+    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, int numExtensions = 0)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
@@ -237,7 +237,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
             {
-                Statistics.TtHits++;
+                Statistics.HashCutoffs++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
                 if (depthFromRoot == 0)
                 {
@@ -314,10 +314,13 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // extend in scenarios it'd be beneficial
             var extension = 0;
-            if (_extensions < MaxExtensions)
+            if (numExtensions < MaxExtensions)
             {
                 if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
+                {
                     extension = 1;
+                    numExtensions++;
+                }
             }
 
 
@@ -328,12 +331,16 @@ public class Searcher(Engine engine, int searcherId = 0)
             if (moveCount >= LMRThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
-                childResult = Search(depthRemaining - 1 + Reduction, depthFromRoot + 1, -alpha - 1, -alpha);
+                Statistics.ReducedSearches++;
+                var actualReduction = moveCount < 6 ? Reduction : -2; // reduce even further for later moves
+                childResult = Search(depthRemaining - 1 + actualReduction, depthFromRoot + 1, -alpha - 1, -alpha, numExtensions);
                 needsFullSearch = -childResult.Score > alpha;
+                if (needsFullSearch)
+                    Statistics.FullResearches++;
             }
 
             if (needsFullSearch)
-                childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha);
+                childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha, numExtensions);
 
             _currentPosition.UndoMove(move);
 

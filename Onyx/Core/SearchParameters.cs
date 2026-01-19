@@ -6,25 +6,27 @@ namespace Onyx.Core;
 public struct SearchStatistics : ILoggable
 {
     public int Nodes;
-    public int TtHits;
+    public int HashCutoffs;
     public int TtStores;
     public int BetaCutoffs;
     public long RunTime;
     public int Depth;
     public int NullMoveReductions;
     public int QuiescencePlyReached;
+    public int ReducedSearches;
+    public int FullResearches;
 
 
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {QuiescencePlyReached}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {QuiescencePlyReached} reduced {ReducedSearches} full {FullResearches}";
     }
 
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, TTTable hits {TtHits}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {QuiescencePlyReached}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, TTStores {TtStores}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {QuiescencePlyReached} reduced {ReducedSearches} full {FullResearches}";
     }
 }
 

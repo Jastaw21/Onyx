@@ -67,4 +67,17 @@ public class EvaluatorTests
         
         Assert.Pass();
     }
+
+    [Test]
+    public void MoveSortingChangesOrder()
+    {
+        var pos = new Position();
+        Span<Move> moveBuffer = stackalloc Move[256];
+        var legalMoveCount = MoveGenerator.GetLegalMoves(pos, moveBuffer);
+        var moves = moveBuffer[..legalMoveCount];
+        var ttMove = moves[4];
+        Assert.That(moves[0], Is.Not.EqualTo(ttMove));
+        Evaluator.SortMoves(moves, ttMove, null, 0);
+        Assert.That(moves[0], Is.EqualTo(ttMove));
+    }
 }

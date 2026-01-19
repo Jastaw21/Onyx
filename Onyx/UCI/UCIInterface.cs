@@ -103,6 +103,7 @@ public class UciInterface
 
                 
                     Console.WriteLine($"bestmove {result.BestMove}");
+                    Console.Error.WriteLine(_player.Statistics.ToString());
                     Console.Out.Flush();
                 
             }
