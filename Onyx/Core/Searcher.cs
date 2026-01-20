@@ -1,4 +1,5 @@
-﻿using Onyx.Statics;
+﻿using System.Diagnostics.CodeAnalysis;
+using Onyx.Statics;
 
 
 namespace Onyx.Core;
@@ -140,7 +141,6 @@ public class Searcher(Engine engine, int searcherId = 0)
             // We found a way to win. No need to look deeper.
             if (_thisIterationResults.Score > _engine.MateScore - 100)
                 break;
-
         }
 
         // didn't find a move - get the first legal one.
@@ -228,48 +228,41 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        // if we have already evaluated this to at least the same depth, and that bounds are OK
+        // See if this position has already been searched for
         var zobristHashValue = _currentPosition.ZobristState;
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {
-            if (_engine.TranspositionTable.PollEntry(ttValue.Value,alpha, beta, depthRemaining, zobristHashValue))
+            // it has, now check if it's usable (bounds, sufficient depth etc)
+            if (_engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, depthRemaining, zobristHashValue))
             {
-                Statistics.HashCutoffs++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
+
+                // cutoff at depth 0 - this is our new best move
                 if (depthFromRoot == 0)
                 {
                     if (ttValue.Value.BestMove.Data != 0)
-                    {
                         _thisIterationResults.BestMove = ttValue.Value.BestMove;
-                    }
-
                     _thisIterationResults.Score = ttEval;
                 }
 
+                // the value is usable
                 if (ttValue.Value.BestMove.Data != 0)
                 {
-                    _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
-
-                    _currentPosition.ApplyMove(ttValue.Value.BestMove);
-                    var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
-                    _currentPosition.UndoMove(ttValue.Value.BestMove);
-
-                    for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
-                    {
-                        _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
-                    }
-
-                    _pvLength[depthFromRoot] = nextPlyDepth;
+                    // PV extract
+                    ExtractPvData(depthRemaining, depthFromRoot, ttValue);
                 }
 
+                // cutoff with hash node
+                Statistics.HashCutoffs++;
                 return new SearchFlag(true, ttEval);
             }
         }
 
+        // we'll now be searching this node
         Statistics.Nodes++;
 
-        // leaf node
+        // leaf node - continue until the position is quiet before evaluating
         if (depthRemaining == 0)
         {
             var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
@@ -289,10 +282,9 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (legalMoveCount == 0)
         {
             if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
-            {
                 return new SearchFlag(true, -(_engine.MateScore - depthFromRoot));
-            }
 
+            // stalemate
             return SearchFlag.Zero;
         }
 
@@ -300,11 +292,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (moves.Length > 1)
             Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
 
+        // start to search through each of them
+        var moveCount = 0;
         var storingFlag = BoundFlag.Upper;
         Move bestMove = default;
 
-        // start to search through each of them
-        var moveCount = 0;
         foreach (var move in moves)
         {
             moveCount++;
@@ -322,21 +314,22 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
 
-            var needsFullSearch = true;
-            SearchFlag childResult = new SearchFlag(false, 0);
-
             // reduce later moves as the best ones should be up front
+            var needsFullSearch = true;
+            var childResult = new SearchFlag(false, 0);
             if (moveCount >= LMRThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 Statistics.ReducedSearches++;
                 var actualReduction = moveCount < 6 ? Reduction : -2; // reduce even further for later moves
-                childResult = Search(depthRemaining - 1 + actualReduction, depthFromRoot + 1, -alpha - 1, -alpha, numExtensions);
+                childResult = Search(depthRemaining - 1 + actualReduction, depthFromRoot + 1, -alpha - 1, -alpha,
+                    numExtensions);
                 needsFullSearch = -childResult.Score > alpha;
                 if (needsFullSearch)
                     Statistics.FullResearches++;
             }
 
+            // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
             if (needsFullSearch)
                 childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha, numExtensions);
 
@@ -346,14 +339,13 @@ public class Searcher(Engine engine, int searcherId = 0)
             if (!childResult.Completed)
                 return SearchFlag.Abort;
 
-
             var eval = -childResult.Score;
 
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
             {
                 if (moveCount == 1)
-                    Statistics.FMC++;
+                    Statistics.FirstMoveCutoffs++;
                 Statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
@@ -361,13 +353,13 @@ public class Searcher(Engine engine, int searcherId = 0)
                     _engine.CurrentSearchId,
                     BoundFlag.Lower, move);
 
+                // beta cutoffs need to store killer moves
                 if (move.CapturedPiece == 0)
                     StoreKillerMove(move, depthFromRoot);
 
                 // the best we can get in this chain is beta, since the opponent will avoid it - exit now
                 return new SearchFlag(true, beta);
             }
-
 
             // we've bettered our previous best
             if (eval > alpha)
@@ -393,40 +385,10 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _engine.TranspositionTable.Store(zobristHashValue,
-            EncodeMateScore(alpha, depthFromRoot),
-            depthRemaining,
-            _engine.CurrentSearchId,
-            storingFlag,
-            bestMove);
+        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot),
+            depthRemaining, _engine.CurrentSearchId, storingFlag, bestMove);
 
         return new SearchFlag(true, alpha);
-    }
-
-    private int GetPvFromTt(int depthFromRoot, int depthRemaining)
-    {
-        _pvLength[depthFromRoot] = depthFromRoot;
-        if (depthRemaining <= 0) return depthFromRoot;
-
-        var ttValue = _engine.TranspositionTable.Retrieve(_currentPosition.ZobristState);
-        if (ttValue.HasValue && ttValue.Value.BestMove.Data != 0)
-        {
-            var move = ttValue.Value.BestMove;
-            _pvTable[depthFromRoot, depthFromRoot] = move;
-
-            _currentPosition.ApplyMove(move);
-            var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
-            _currentPosition.UndoMove(move);
-
-            for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
-            {
-                _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
-            }
-
-            return nextPlyDepth;
-        }
-
-        return depthFromRoot;
     }
 
     private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
@@ -487,5 +449,45 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         return new SearchFlag(true, alpha);
+    }
+    
+    private void ExtractPvData(int depthRemaining, int depthFromRoot, [DisallowNull] TtEntry? ttValue)
+    {
+        _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
+        _currentPosition.ApplyMove(ttValue.Value.BestMove);
+        var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
+        _currentPosition.UndoMove(ttValue.Value.BestMove);
+        for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+        {
+            _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+        }
+
+        _pvLength[depthFromRoot] = nextPlyDepth;
+    }
+
+    private int GetPvFromTt(int depthFromRoot, int depthRemaining)
+    {
+        _pvLength[depthFromRoot] = depthFromRoot;
+        if (depthRemaining <= 0) return depthFromRoot;
+
+        var ttValue = _engine.TranspositionTable.Retrieve(_currentPosition.ZobristState);
+        if (ttValue.HasValue && ttValue.Value.BestMove.Data != 0)
+        {
+            var move = ttValue.Value.BestMove;
+            _pvTable[depthFromRoot, depthFromRoot] = move;
+
+            _currentPosition.ApplyMove(move);
+            var nextPlyDepth = GetPvFromTt(depthFromRoot + 1, depthRemaining - 1);
+            _currentPosition.UndoMove(move);
+
+            for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
+            {
+                _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
+            }
+
+            return nextPlyDepth;
+        }
+
+        return depthFromRoot;
     }
 }

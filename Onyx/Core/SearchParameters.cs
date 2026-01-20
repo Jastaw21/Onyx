@@ -14,19 +14,19 @@ public struct SearchStatistics : ILoggable
     public int qNodes;
     public int ReducedSearches;
     public int FullResearches;
-    public int FMC; // first move cutoffs
+    public int FirstMoveCutoffs; // first move cutoffs
 
 
     public string Get()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {qNodes} reduced {ReducedSearches} full {FullResearches} fmc {FMC}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {qNodes} reduced {ReducedSearches} full {FullResearches} fmc {FirstMoveCutoffs}";
     }
 
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {qNodes} reduced {ReducedSearches} full {FullResearches} fmc {FMC}";
+            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)} nmr {NullMoveReductions} qui {qNodes} reduced {ReducedSearches} full {FullResearches} fmc {FirstMoveCutoffs}";
     }
 }
 
