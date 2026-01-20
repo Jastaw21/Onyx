@@ -39,7 +39,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
     private const int MaxExtensions = 16;
-    private int _extensions = 0;
+
     private bool searchAsWhite = false;
 
     private SearcherInstructions _currentInstructions;
@@ -86,9 +86,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         _thisIterationResults = new SearchResults();
         SearchResults = new SearchResults();
         IsFinished = false;
-        _extensions = 0;
     }
-
 
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters)
     {
@@ -109,7 +107,6 @@ public class Searcher(Engine engine, int searcherId = 0)
             SearchFlag searchFlag;
             try
             {
-                _extensions = 0;
                 searchFlag = Search(depth, 0, -Infinity, Infinity);
             }
             catch (OperationCanceledException)
@@ -439,6 +436,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (StopFlag)
             return SearchFlag.Abort;
 
+
+        // stand pat to prevent explosion. This says that we're not necessarily forced to capture
         var eval = Evaluator.Evaluate(position);
         if (eval >= beta)
         {
