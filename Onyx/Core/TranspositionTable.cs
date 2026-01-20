@@ -156,13 +156,13 @@ public class TranspositionTable
         // if we already have this hash needs to think about a replacement scheme
         if (existingEntry.Hash == hash)
         {
-            if (existingEntry.Age < age)
+            if (existingEntry.Age != age)
             {
                 store = true;
                 TTStats.AgeReplacements++;
             }
 
-            if (existingEntry.Depth < depth)
+            if (depth > existingEntry.Depth)
             {
                 store = true;
                 TTStats.DepthReplacements++;

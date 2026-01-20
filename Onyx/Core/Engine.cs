@@ -54,7 +54,7 @@ public class Engine
     public StopwatchManager StopwatchManager { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
-    public void SetLMRThreshold(int lmr) => _workers[0].LMRThreshold = lmr;
+    public void SetLmrThreshold(int lmr) => _workers[0].LMRThreshold = lmr;
     public event Action<string> OnSearchInfoUpdate;
 
     // search members
@@ -62,7 +62,7 @@ public class Engine
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
     public Searcher PrimaryWorker => _workers[0];
-    public int MaxThreads = 1;
+    public readonly int MaxThreads = 1;
     public SearchStatistics Statistics;
 
     public Engine()
@@ -92,11 +92,6 @@ public class Engine
         }
     }
 
-    // UCI Interface methods
-    public void SetLogging(bool enabled)
-    {
-        Evaluator.LoggingEnabled = enabled;
-    }
 
     public void SetPosition(string fen)
     {

@@ -93,26 +93,24 @@ public class UciInterface
         }
 
         _searchThread = new Thread(() =>
+        {
+            try
             {
-                try
+                var result = _player.Search(new SearchParameters
                 {
-                    var result = _player.Search(new SearchParameters
-                    {
-                        CancellationToken = token,
-                        MaxDepth = command.Depth,
-                        TimeControl = command.TimeControl
-                    });
-
+                    CancellationToken = token,
+                    MaxDepth = command.Depth,
+                    TimeControl = command.TimeControl
+                });
 
                     Console.WriteLine($"bestmove {result.BestMove}");
                     Console.Out.Flush();
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    Logger.Log(LogType.EngineLog, $"Search error: {ex}");
-                }
-            })
-            { IsBackground = true, Name = "SearchThread" };
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Logger.Log(LogType.EngineLog, $"Search error: {ex}");
+            }
+        }) { IsBackground = true, Name = "SearchThread" };
 
         _searchThread.Start();
     }
@@ -124,7 +122,6 @@ public class UciInterface
         {
             _searchThread.Join(500); // Short timeout to keep it responsive
         }
-
         _searchCts?.Dispose();
         _searchCts = null!;
         _searchThread = null!;
@@ -153,6 +150,6 @@ public class UciInterface
 
     private void SetLMRValue(int value)
     {
-        _player.SetLMRThreshold(value);
+        _player.SetLmrThreshold(value);
     }
 }

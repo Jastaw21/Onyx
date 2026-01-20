@@ -196,19 +196,6 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private const int Infinity = 1_000_000;
 
-    private int EncodeMateScore(int score, int depthFromRoot)
-    {
-        if (score > _engine.MateScore - 1000) return score + depthFromRoot;
-        if (score < -(_engine.MateScore - 1000)) return score - depthFromRoot;
-        return score;
-    }
-
-    private int DecodeMateScore(int score, int depthFromRoot)
-    {
-        if (score > _engine.MateScore - 1000) return score - depthFromRoot;
-        if (score < -(_engine.MateScore - 1000)) return score + depthFromRoot;
-        return score;
-    }
 
     private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, int numExtensions = 0)
     {
@@ -219,7 +206,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         if (depthFromRoot > 0)
         {
-            // dont try to draw
+            // try not to draw
             if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
             {
                 var isOurTurn = _currentPosition.WhiteToMove == searchAsWhite;
@@ -305,14 +292,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             // extend in scenarios it'd be beneficial
             var extension = 0;
             if (numExtensions < MaxExtensions)
-            {
                 if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
-                {
                     extension = 1;
-                    numExtensions++;
-                }
-            }
-
 
             // reduce later moves as the best ones should be up front
             var needsFullSearch = true;
@@ -321,9 +302,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 Statistics.ReducedSearches++;
-                var actualReduction = moveCount < 6 ? Reduction : -2; // reduce even further for later moves
-                childResult = Search(depthRemaining - 1 + actualReduction, depthFromRoot + 1, -alpha - 1, -alpha,
-                    numExtensions);
+                childResult = Search(depthRemaining - 1 + Reduction, depthFromRoot + 1, -alpha - 1, -alpha);
                 needsFullSearch = -childResult.Score > alpha;
                 if (needsFullSearch)
                     Statistics.FullResearches++;
@@ -398,18 +377,23 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (StopFlag)
             return SearchFlag.Abort;
 
+        var zobristHashValue = position.ZobristState;
+        var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
+
+        // Use depth 0 for Q-search probing
+        if (ttValue.HasValue)
+        {
+            if (_engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, 0, zobristHashValue))
+            {
+                return new SearchFlag(true, DecodeMateScore(ttValue.Value.Eval, depthFromRoot));
+            }
+        }
+
 
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
         var eval = Evaluator.Evaluate(position);
-        if (eval >= beta)
-        {
-            return new SearchFlag(true, beta);
-        }
-
-        if (eval > alpha)
-        {
-            alpha = eval;
-        }
+        if (eval >= beta) return new SearchFlag(true, beta);
+        if (eval > alpha) alpha = eval;
 
         Statistics.Nodes++;
         Statistics.qNodes++;
@@ -422,6 +406,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (moves.Length > 1)
             Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
 
+        var storingFlag = BoundFlag.Upper;
+        var bestMove = new Move();
         foreach (var move in moves)
         {
             _currentPosition.ApplyMove(move);
@@ -431,11 +417,19 @@ public class Searcher(Engine engine, int searcherId = 0)
             eval = -child.Score;
 
             // beta cutoff - the opponent won't let it get here
-            if (eval >= beta) return new SearchFlag(true, beta);
+            if (eval >= beta)
+            {
+                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot),
+                    0, // Depth 0 for Quiescence
+                    _engine.CurrentSearchId, BoundFlag.Lower, move);
+                return new SearchFlag(true, beta);
+            }
 
             if (eval > alpha)
             {
                 alpha = eval;
+                bestMove = move;
+                storingFlag = BoundFlag.Exact; // exact bound
 
                 _pvTable[depthFromRoot, depthFromRoot] = move;
                 var nextPlyDepth = _pvLength[depthFromRoot + 1];
@@ -448,9 +442,12 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
+        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), 0,
+            _engine.CurrentSearchId, storingFlag, bestMove);
+
         return new SearchFlag(true, alpha);
     }
-    
+
     private void ExtractPvData(int depthRemaining, int depthFromRoot, [DisallowNull] TtEntry? ttValue)
     {
         _pvTable[depthFromRoot, depthFromRoot] = ttValue.Value.BestMove;
@@ -489,5 +486,19 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         return depthFromRoot;
+    }
+
+    private int EncodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > _engine.MateScore - 1000) return score + depthFromRoot;
+        if (score < -(_engine.MateScore - 1000)) return score - depthFromRoot;
+        return score;
+    }
+
+    private int DecodeMateScore(int score, int depthFromRoot)
+    {
+        if (score > _engine.MateScore - 1000) return score - depthFromRoot;
+        if (score < -(_engine.MateScore - 1000)) return score + depthFromRoot;
+        return score;
     }
 }
