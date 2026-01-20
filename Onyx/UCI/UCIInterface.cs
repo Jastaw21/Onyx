@@ -101,17 +101,19 @@ public class UciInterface
                     TimeControl = command.TimeControl
                 });
 
-                
-                    Console.WriteLine($"bestmove {result.BestMove}");
-                    Console.Error.WriteLine(_player.Statistics.ToString());
-                    Console.Out.Flush();
-                
+
+                Console.WriteLine($"bestmove {result.BestMove}");
+                Console.Error.WriteLine(_player.Statistics.ToString());
+                Console.Error.WriteLine(_player.TranspositionTable.ttStats.Get());
+                Console.Out.Flush();
+
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 Logger.Log(LogType.EngineLog, $"Search error: {ex}");
             }
-        }) { IsBackground = true, Name = "SearchThread" };
+        })
+        { IsBackground = true, Name = "SearchThread" };
 
         _searchThread.Start();
     }

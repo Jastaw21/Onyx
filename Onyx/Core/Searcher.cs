@@ -123,6 +123,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 break;
             }
 
+            // build the pv
             SearchResults = _thisIterationResults;
             SearchResults.Pv = [];
             for (var i = 0; i < _pvLength[0]; i++)
@@ -133,6 +134,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             Statistics.Depth = depth;
             Statistics.RunTime = _engine.StopwatchManager.Elapsed;
 
+            // on completion of each depth emit an info string
             if (_searcherId == 0)
             {
                 OnDepthFinished?.Invoke(SearchResults, Statistics);
@@ -140,12 +142,11 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // We found a way to win. No need to look deeper.
             if (_thisIterationResults.Score > _engine.MateScore - 100)
-            {
                 break;
-            }
+
         }
 
-        // didn't find a move
+        // didn't find a move - get the first legal one.
         if (SearchResults.BestMove.Data == 0)
         {
             Span<Move> moveBuffer = stackalloc Move[256];
@@ -235,7 +236,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {
-            if (ttValue.Value.ShouldUseEntry(alpha, beta, depthRemaining, zobristHashValue))
+            if (_engine.TranspositionTable.PollEntry(alpha, beta, depthRemaining, zobristHashValue))
             {
                 Statistics.HashCutoffs++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
@@ -354,6 +355,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
             {
+                if (moveCount == 0)
+                    Statistics.FMC++;
                 Statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
@@ -446,7 +449,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             alpha = eval;
         }
-        
+
         Statistics.Nodes++;
         Statistics.qNodes++;
 

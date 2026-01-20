@@ -9,8 +9,38 @@ public enum BoundFlag
     Upper = 1 << 2
 }
 
+public struct TTStats : ILoggable
+{
+    public int Probes = 0;
+    public int Collisions = 0;
+    public int depthInsufficient = 0;
+    public int passUpperBound = 0;
+    public int failUpperBound = 0;
+    public int passLowerBound = 0;
+    public int failLowerBound = 0;
+    public int passExact = 0;
 
 
+    public string Get()
+    {
+        return
+            $"Probes {Probes}, " +
+            $"Collisions {Pct(Collisions)}, " +
+            $"DepthInsufficient {Pct(depthInsufficient)}, " +
+            $"PassUB {Pct(passUpperBound)}, " +
+            $"FailUB {Pct(failUpperBound)}, " +
+            $"PassLB {Pct(passLowerBound)}, " +
+            $"FailLB {Pct(failLowerBound)}, " +
+            $"Exact {Pct(passExact)}";
+    }
+
+    private string Pct(int value)
+    {
+        double pct = (double)value / Math.Max(1, Probes) * 100;
+        return $"{value} ({pct:F1}%)";
+    }
+
+}
 public struct TtEntry
 {
     public ulong Hash;
@@ -20,41 +50,59 @@ public struct TtEntry
     public BoundFlag BoundFlag;
     public Move BestMove;
 
-    public bool ShouldUseEntry(int alpha, int beta, int depth, ulong hash)
-    {
-        // Checks if the transposition table entry can be used to cut off search based on the bounds etc
-        
-        // might have been "torn" with multiple read/writes
-        if (hash != Hash)
-            return false;
-        
-        // only use if depth is sufficient
-        if (Depth < depth)
-            return false;
-
-        switch (BoundFlag)
-        {
-            case BoundFlag.Exact:
-                return true;
-            case BoundFlag.Upper:
-                // we at least know we're better than alpha
-                if (Eval <= alpha)
-                    return true;
-                break;
-            case BoundFlag.Lower:
-                // basically a beta cutoff?
-                if (Eval >= beta)
-                    return true;
-                break;
-        }
-        return false;
-    }
+    public static TtEntry InvalidEntry => new() { Hash = 0, Eval = 0, Depth = 0, Age = 0, BestMove = default, BoundFlag = default };
 }
 
 public class TranspositionTable
 {
+    public bool PollEntry(TtEntry entry, int alpha, int beta, int depth, ulong hash)
+    {
+        tTStats.Probes++;
+        if (entry.Hash != hash)
+        {
+            tTStats.Collisions++;
+            return false;
+        }
+
+        // only use if depth is sufficient
+        if (Depth < depth)
+        {
+            tTStats.depthInsufficient++;
+            return false;
+        }
+
+        switch (BoundFlag)
+        {
+            case BoundFlag.Exact:
+                {
+                    tTStats.passExact++;
+                    return true;
+                }
+            case BoundFlag.Upper:
+                // we at least know we're better than alpha
+                if (Eval <= alpha)
+                {
+                    tTStats.passUpperBound++;
+                    return true;
+                }
+                tTStats.failUpperBound++;
+                break;
+            case BoundFlag.Lower:
+                // basically a beta cutoff?
+                if (Eval >= beta)
+                {
+                    tTStats.passLowerBound;
+                    return true;
+                }
+                tTStats.failLowerBound++;
+                break;
+        }
+        return false;
+
+    }
     private TtEntry[] _entries;
 
+    public TTStats tTStats = new();
 
     public TranspositionTable(int sizeInMb = 512)
     {
@@ -79,7 +127,7 @@ public class TranspositionTable
                 Depth = depth,
                 Age = age,
                 BoundFlag = boundFlag,
-                BestMove =  bestMove
+                BestMove = bestMove
             };
         }
     }
