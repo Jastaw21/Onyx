@@ -10,10 +10,20 @@ public class Option
     public int Value;
 
     public required Action<int> OnApply { get; set; }
-    
+
     public string OptionString()
     {
-        return $"option name {Name} type {Type} default {Default} min {Min} max {Max}";
+        switch (Type)
+        {
+            case "spin":
+                return $"option name {Name} type {Type} default {Default} min {Min} max {Max}";
+            case "check":
+                var defaultString = Default == "1" ? "true" : "false";
+                return $"option name {Name} type {Type} default {defaultString}";
+
+            default:
+                return "";
+        }
     }
 }
 
@@ -42,11 +52,11 @@ public class Options
         if (value < int.Parse(thisOption.Min) || value > int.Parse(thisOption.Max))
             return;
         thisOption.Value = value;
-        
+
         thisOption.OnApply?.Invoke(value);
     }
 
-    
+
     public void PrintOptions()
     {
         foreach (var option in _options)

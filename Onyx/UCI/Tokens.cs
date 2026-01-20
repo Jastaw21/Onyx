@@ -33,7 +33,9 @@ public enum TokenType
     Evaluate,
     SetOption,
     Name,
-    Value
+    Value,
+    True,
+    False
 }
 
 public struct Token

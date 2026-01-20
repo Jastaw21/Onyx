@@ -212,6 +212,8 @@ public class UciParser
         if (Peek().Type != TokenType.IntLiteral)
             return null;
         var value = Consume().Value;
+        if (value == "true") value = "1";
+        if (value == "false") value = "0";
 
         return new SetOptionCommand { Name = name, Value = value };
     }

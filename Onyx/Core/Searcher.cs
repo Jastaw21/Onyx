@@ -352,7 +352,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
             {
-                if (moveCount == 0)
+                if (moveCount == 1)
                     Statistics.FMC++;
                 Statistics.BetaCutoffs++;
 

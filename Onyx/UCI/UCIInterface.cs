@@ -19,6 +19,7 @@ public class UciInterface
     {
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
         _options.AddOption("lmrthreshold", "spin", "5", "2", "8", SetLMRValue);
+        _options.AddOption("logging", "check", "0", "0", "1", i => Logger.LoggingEnabled = i == 1);
         _player.OnSearchInfoUpdate += Console.WriteLine;
     }
 
@@ -73,6 +74,7 @@ public class UciInterface
                     Console.WriteLine($"Score: {Evaluator.Evaluate(_player.Position)}");
                     break;
             }
+
             Console.Out.Flush();
         }
     }
@@ -91,29 +93,26 @@ public class UciInterface
         }
 
         _searchThread = new Thread(() =>
-        {
-            try
             {
-                var result = _player.Search(new SearchParameters
+                try
                 {
-                    CancellationToken = token,
-                    MaxDepth = command.Depth,
-                    TimeControl = command.TimeControl
-                });
+                    var result = _player.Search(new SearchParameters
+                    {
+                        CancellationToken = token,
+                        MaxDepth = command.Depth,
+                        TimeControl = command.TimeControl
+                    });
 
 
-                Console.WriteLine($"bestmove {result.BestMove}");
-                Console.Error.WriteLine(_player.Statistics.ToString());
-                Console.Error.WriteLine(_player.TranspositionTable.tTStats.Get());
-                Console.Out.Flush();
-
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                Logger.Log(LogType.EngineLog, $"Search error: {ex}");
-            }
-        })
-        { IsBackground = true, Name = "SearchThread" };
+                    Console.WriteLine($"bestmove {result.BestMove}");
+                    Console.Out.Flush();
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Logger.Log(LogType.EngineLog, $"Search error: {ex}");
+                }
+            })
+            { IsBackground = true, Name = "SearchThread" };
 
         _searchThread.Start();
     }
@@ -125,6 +124,7 @@ public class UciInterface
         {
             _searchThread.Join(500); // Short timeout to keep it responsive
         }
+
         _searchCts?.Dispose();
         _searchCts = null!;
         _searchThread = null!;

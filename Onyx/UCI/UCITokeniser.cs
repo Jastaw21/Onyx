@@ -82,14 +82,20 @@ public class Tokeniser
             type = TokenType.Name;
         else if (builtToken == "value")
             type = TokenType.Value;
-        else if (int.TryParse(builtToken, out _))
+        // cheat and treat bools as int values
+        else if (builtToken == "true" || builtToken == "false" || int.TryParse(builtToken, out _))
             type = TokenType.IntLiteral;
 
+        // we don't recognise this token.
         else
         {
+            // try to parse it to one of the special types
             var optionalType = ParseUnknownToken(builtToken);
+
+            // if we couldn't parse it, throw an exception
             if (!optionalType.HasValue)
                 throw new ArgumentException($"Unknown token type {builtToken}");
+
             type = optionalType.Value;
         }
 
