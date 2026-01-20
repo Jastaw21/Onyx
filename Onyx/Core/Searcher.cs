@@ -233,7 +233,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {
-            if (_engine.TranspositionTable.PollEntry(alpha, beta, depthRemaining, zobristHashValue))
+            if (_engine.TranspositionTable.PollEntry(ttValue.Value,alpha, beta, depthRemaining, zobristHashValue))
             {
                 Statistics.HashCutoffs++;
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);

@@ -20,6 +20,10 @@ public struct TTStats : ILoggable
     public int failLowerBound = 0;
     public int passExact = 0;
 
+    public TTStats()
+    {
+    }
+
 
     public string Get()
     {
@@ -65,13 +69,13 @@ public class TranspositionTable
         }
 
         // only use if depth is sufficient
-        if (Depth < depth)
+        if (entry.Depth < depth)
         {
             tTStats.depthInsufficient++;
             return false;
         }
 
-        switch (BoundFlag)
+        switch (entry.BoundFlag)
         {
             case BoundFlag.Exact:
                 {
@@ -80,7 +84,7 @@ public class TranspositionTable
                 }
             case BoundFlag.Upper:
                 // we at least know we're better than alpha
-                if (Eval <= alpha)
+                if (entry.Eval <= alpha)
                 {
                     tTStats.passUpperBound++;
                     return true;
@@ -89,9 +93,9 @@ public class TranspositionTable
                 break;
             case BoundFlag.Lower:
                 // basically a beta cutoff?
-                if (Eval >= beta)
+                if (entry.Eval >= beta)
                 {
-                    tTStats.passLowerBound;
+                    tTStats.passLowerBound++;
                     return true;
                 }
                 tTStats.failLowerBound++;
@@ -104,7 +108,7 @@ public class TranspositionTable
 
     public TTStats tTStats = new();
 
-    public TranspositionTable(int sizeInMb = 512)
+    public TranspositionTable(int sizeInMb = 1024)
     {
         var entrySize = System.Runtime.InteropServices.Marshal.SizeOf<TtEntry>();
         var numberOfEntries = sizeInMb * 1024 * 1024 / entrySize;

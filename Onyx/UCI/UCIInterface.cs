@@ -104,7 +104,7 @@ public class UciInterface
 
                 Console.WriteLine($"bestmove {result.BestMove}");
                 Console.Error.WriteLine(_player.Statistics.ToString());
-                Console.Error.WriteLine(_player.TranspositionTable.ttStats.Get());
+                Console.Error.WriteLine(_player.TranspositionTable.tTStats.Get());
                 Console.Out.Flush();
 
             }
