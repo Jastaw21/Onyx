@@ -21,7 +21,6 @@ public struct SearcherInstructions
 public class Searcher(Engine engine, int searcherId = 0)
 {
     // engine interaction
-    private Engine _engine = engine;
     public volatile bool StopFlag;
     public SearchResults SearchResults;
     private SearchResults _thisIterationResults;
@@ -30,7 +29,6 @@ public class Searcher(Engine engine, int searcherId = 0)
     private const int Reduction = -1;
     public int LMRThreshold = 3;
 
-    private readonly int _searcherId = searcherId;
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
 
@@ -39,7 +37,6 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move?[,] _killerMoves = new Move?[128, 2];
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
-    private const int MaxExtensions = 16;
 
     private bool searchAsWhite = false;
 
@@ -95,8 +92,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         searchAsWhite = _currentPosition.WhiteToMove;
 
         // some vague diversification stuff
-        var startDepth = _searcherId == 0 ? 1 : _searcherId % 2 == 0 ? 1 : 2;
-        var depthInterval = _searcherId == 0 ? 1 : Math.Max(_searcherId % 3, 1);
+        var startDepth = searcherId == 0 ? 1 : searcherId % 2 == 0 ? 1 : 2;
+        var depthInterval = searcherId == 0 ? 1 : Math.Max(searcherId % 3, 1);
 
         for (var depth = startDepth; depth <= searchParameters.MaxDepth; depth += depthInterval)
         {
@@ -108,7 +105,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             SearchFlag searchFlag;
             try
             {
-                searchFlag = Search(depth, 0, -Infinity, Infinity);
+                searchFlag = Search(depth, 0, -Infinity, Infinity, lastMoveNulled:false);
             }
             catch (OperationCanceledException)
             {
@@ -130,16 +127,16 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
             Statistics.Depth = depth;
-            Statistics.RunTime = _engine.StopwatchManager.Elapsed;
+            Statistics.RunTime = engine.StopwatchManager.Elapsed;
 
             // on completion of each depth emit an info string
-            if (_searcherId == 0)
+            if (searcherId == 0)
             {
                 OnDepthFinished?.Invoke(SearchResults, Statistics);
             }
 
             // We found a way to win. No need to look deeper.
-            if (_thisIterationResults.Score > _engine.MateScore - 100)
+            if (_thisIterationResults.Score > engine.MateScore - 100)
                 break;
         }
 
@@ -197,7 +194,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private const int Infinity = 1_000_000;
 
 
-    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, int numExtensions = 0)
+    private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, bool lastMoveNulled = false)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
@@ -217,11 +214,11 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         // See if this position has already been searched for
         var zobristHashValue = _currentPosition.ZobristState;
-        var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
+        var ttValue = engine.TranspositionTable.Retrieve(zobristHashValue);
         if (ttValue.HasValue)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
-            if (_engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, depthRemaining, zobristHashValue))
+            if (engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, depthRemaining, zobristHashValue))
             {
                 var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
 
@@ -260,6 +257,31 @@ public class Searcher(Engine engine, int searcherId = 0)
             return new SearchFlag(true, qEval.Score);
         }
 
+        var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
+        var canDoNullMove = !isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled;
+        if (canDoNullMove)
+        {
+            _currentPosition.MakeNullMove();
+            var nmr = 2;
+            var nmrResult = Search(depthRemaining - 1 - nmr, depthFromRoot + 1, -beta, -beta + 1, true);
+            
+            _currentPosition.UndoNullMove();
+            
+            if (!nmrResult.Completed)
+                return SearchFlag.Abort;
+        
+            var nullScore = -nmrResult.Score;
+            
+            if (nullScore >= beta)
+            {
+                Statistics.NullMoveCutoffs++;
+                if (nullScore >= engine.MateScore - 100)
+                    nullScore = beta;
+                return new SearchFlag(true, nullScore);
+            }
+        }
+
+
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
         var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
@@ -268,8 +290,8 @@ public class Searcher(Engine engine, int searcherId = 0)
         // no legal moves left - decide if its checkmate or stalemate
         if (legalMoveCount == 0)
         {
-            if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
-                return new SearchFlag(true, -(_engine.MateScore - depthFromRoot));
+            if (isInCheck)
+                return new SearchFlag(true, -(engine.MateScore - depthFromRoot));
 
             // stalemate
             return SearchFlag.Zero;
@@ -291,9 +313,9 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // extend in scenarios it'd be beneficial
             var extension = 0;
-            if (numExtensions < MaxExtensions)
-                if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
-                    extension = 1;
+
+            if (Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition))
+                extension = 1;
 
             // reduce later moves as the best ones should be up front
             var needsFullSearch = true;
@@ -302,7 +324,9 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 Statistics.ReducedSearches++;
-                childResult = Search(depthRemaining - 1 + Reduction, depthFromRoot + 1, -alpha - 1, -alpha);
+                childResult = Search(depthRemaining - 1 + Reduction, 
+                    depthFromRoot + 1, -alpha - 1, -alpha, false);
+                
                 needsFullSearch = -childResult.Score > alpha;
                 if (needsFullSearch)
                     Statistics.FullResearches++;
@@ -310,7 +334,8 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
             if (needsFullSearch)
-                childResult = Search(depthRemaining - 1 + extension, depthFromRoot + 1, -beta, -alpha, numExtensions);
+                childResult = Search(depthRemaining - 1 + extension, 
+                    depthFromRoot + 1, -beta, -alpha, false);
 
             _currentPosition.UndoMove(move);
 
@@ -328,8 +353,8 @@ public class Searcher(Engine engine, int searcherId = 0)
                 Statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
-                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
-                    _engine.CurrentSearchId,
+                engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
+                    engine.CurrentSearchId,
                     BoundFlag.Lower, move);
 
                 // beta cutoffs need to store killer moves
@@ -364,8 +389,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot),
-            depthRemaining, _engine.CurrentSearchId, storingFlag, bestMove);
+        engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot),
+            depthRemaining, engine.CurrentSearchId, storingFlag, bestMove);
 
         return new SearchFlag(true, alpha);
     }
@@ -378,12 +403,12 @@ public class Searcher(Engine engine, int searcherId = 0)
             return SearchFlag.Abort;
 
         var zobristHashValue = position.ZobristState;
-        var ttValue = _engine.TranspositionTable.Retrieve(zobristHashValue);
+        var ttValue = engine.TranspositionTable.Retrieve(zobristHashValue);
 
         // Use depth 0 for Q-search probing
         if (ttValue.HasValue)
         {
-            if (_engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, 0, zobristHashValue))
+            if (engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, 0, zobristHashValue))
             {
                 return new SearchFlag(true, DecodeMateScore(ttValue.Value.Eval, depthFromRoot));
             }
@@ -419,9 +444,9 @@ public class Searcher(Engine engine, int searcherId = 0)
             // beta cutoff - the opponent won't let it get here
             if (eval >= beta)
             {
-                _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot),
+                engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot),
                     0, // Depth 0 for Quiescence
-                    _engine.CurrentSearchId, BoundFlag.Lower, move);
+                    engine.CurrentSearchId, BoundFlag.Lower, move);
                 return new SearchFlag(true, beta);
             }
 
@@ -442,8 +467,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        _engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), 0,
-            _engine.CurrentSearchId, storingFlag, bestMove);
+        engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), 0,
+            engine.CurrentSearchId, storingFlag, bestMove);
 
         return new SearchFlag(true, alpha);
     }
@@ -467,7 +492,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         _pvLength[depthFromRoot] = depthFromRoot;
         if (depthRemaining <= 0) return depthFromRoot;
 
-        var ttValue = _engine.TranspositionTable.Retrieve(_currentPosition.ZobristState);
+        var ttValue = engine.TranspositionTable.Retrieve(_currentPosition.ZobristState);
         if (ttValue.HasValue && ttValue.Value.BestMove.Data != 0)
         {
             var move = ttValue.Value.BestMove;
@@ -490,15 +515,15 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private int EncodeMateScore(int score, int depthFromRoot)
     {
-        if (score > _engine.MateScore - 1000) return score + depthFromRoot;
-        if (score < -(_engine.MateScore - 1000)) return score - depthFromRoot;
+        if (score > engine.MateScore - 1000) return score + depthFromRoot;
+        if (score < -(engine.MateScore - 1000)) return score - depthFromRoot;
         return score;
     }
 
     private int DecodeMateScore(int score, int depthFromRoot)
     {
-        if (score > _engine.MateScore - 1000) return score - depthFromRoot;
-        if (score < -(_engine.MateScore - 1000)) return score + depthFromRoot;
+        if (score > engine.MateScore - 1000) return score - depthFromRoot;
+        if (score < -(engine.MateScore - 1000)) return score + depthFromRoot;
         return score;
     }
 }

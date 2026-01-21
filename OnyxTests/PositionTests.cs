@@ -5,6 +5,96 @@ namespace OnyxTests;
 public class ApplyMove
 {
     [Test]
+    public void ApplyNullMoveIncrementsHalfMove()
+    {
+        var board = new Position();
+        board.MakeNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(1));
+            Assert.That(board.FullMoves, Is.EqualTo(1));
+            Assert.That(board.WhiteToMove, Is.EqualTo(false));
+        });
+        board.MakeNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(2));
+            Assert.That(board.FullMoves, Is.EqualTo(2));
+            Assert.That(board.WhiteToMove, Is.EqualTo(true));
+        });
+    }
+
+    [Test]
+    public void UndoNullMoveDecrementsHalfMove()
+    {
+        var board = new Position();
+        board.MakeNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(1));
+            Assert.That(board.FullMoves, Is.EqualTo(1));
+            Assert.That(board.WhiteToMove, Is.EqualTo(false));
+        });
+        
+        
+        // back where we started
+        board.UndoNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(0));
+            Assert.That(board.FullMoves, Is.EqualTo(1));
+            Assert.That(board.WhiteToMove, Is.EqualTo(true));
+        });
+        
+        // skip two turns
+        board.MakeNullMove();
+        board.MakeNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(2));
+            Assert.That(board.FullMoves, Is.EqualTo(2));
+            Assert.That(board.WhiteToMove, Is.EqualTo(true));
+        });
+        
+        // undo the last one
+        board.UndoNullMove();
+        Assert.Multiple(() =>
+        {
+            Assert.That(board.HalfMoves, Is.EqualTo(1));
+            Assert.That(board.FullMoves, Is.EqualTo(1));
+            Assert.That(board.WhiteToMove, Is.EqualTo(false));
+        });
+    }
+
+    [Test]
+    public void UndoNullMoveDoesNotChangeBoardState()
+    {
+        var board = new Position();
+        board.MakeNullMove();
+        board.UndoNullMove();
+        Assert.That(board.GetFen(), Is.EqualTo(Fen.DefaultFen));
+    }
+
+    [Test]
+    public void MakeNullMoveLosesEnPassant()
+    {
+        var board = new Position();
+        board.ApplyMove(new Move(Piece.WP, "d2d4"));
+        board.MakeNullMove();
+        Assert.That(board.EnPassantSquare.HasValue, Is.False);
+    }
+    [Test]
+    public void UndoNullMoveRestoresEnPassant()
+    {
+        var board = new Position();
+        board.ApplyMove(new Move(Piece.WP, "d2d4"));
+        board.MakeNullMove();
+        Assert.That(board.EnPassantSquare.HasValue, Is.False);
+        board.UndoNullMove();
+        Assert.That(board.EnPassantSquare.HasValue, Is.True);
+    }
+    
+    [Test]
     public void HalfMoveIncrements()
     {
         var board = new Position();
@@ -389,7 +479,7 @@ public class UndoMove
     }
 }
 
-public class BoardTests
+public class PositionTests
 {
     [Test]
     public void InitFromFen()
