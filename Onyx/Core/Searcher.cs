@@ -171,6 +171,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         public int Score { get; } = score;
 
         public static SearchFlag Abort => new(false, 0);
+        public static SearchFlag NullMoveFailed => new(true, -1); 
         public static SearchFlag Zero => new(true, 0);
     }
 
@@ -193,6 +194,29 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private const int Infinity = 1_000_000;
 
+    private SearchFlag PerformNullMoveCutoff(int depthRemaining, int depthFromRoot, int alpha, int beta)
+    {
+        _currentPosition.MakeNullMove();
+        var nmr = 2;
+        var nmrResult = Search(depthRemaining - 1 - nmr, depthFromRoot + 1, -beta, -beta + 1, true);
+            
+        _currentPosition.UndoNullMove();
+            
+        if (!nmrResult.Completed)
+            return SearchFlag.Abort;
+        
+        var nullScore = -nmrResult.Score;
+            
+        if (nullScore >= beta)
+        {
+            Statistics.NullMoveCutoffs++;
+            if (nullScore >= engine.MateScore - 100)
+                nullScore = beta;
+            return new SearchFlag(true, nullScore);
+        }
+
+        return SearchFlag.NullMoveFailed;
+    }
 
     private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, bool lastMoveNulled = false)
     {
@@ -257,34 +281,18 @@ public class Searcher(Engine engine, int searcherId = 0)
             return new SearchFlag(true, qEval.Score);
         }
 
+        // try to cut off a node if it's null
         var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
-        var canDoNullMove = !isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled;
-        if (canDoNullMove)
+        if (!isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled && !Evaluator.HasNonPawnMaterial(_currentPosition))
         {
-            _currentPosition.MakeNullMove();
-            var nmr = 2;
-            var nmrResult = Search(depthRemaining - 1 - nmr, depthFromRoot + 1, -beta, -beta + 1, true);
-            
-            _currentPosition.UndoNullMove();
-            
-            if (!nmrResult.Completed)
-                return SearchFlag.Abort;
-        
-            var nullScore = -nmrResult.Score;
-            
-            if (nullScore >= beta)
-            {
-                Statistics.NullMoveCutoffs++;
-                if (nullScore >= engine.MateScore - 100)
-                    nullScore = beta;
-                return new SearchFlag(true, nullScore);
-            }
+            var nullMoveResult = PerformNullMoveCutoff(depthRemaining, depthFromRoot, alpha, beta);
+            if (!Equals(nullMoveResult, SearchFlag.NullMoveFailed))
+                return nullMoveResult;
         }
-
 
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
-        var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
+        var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,alreadyKnowBoardInCheck:true,isAlreadyInCheck: isInCheck);
         var moves = moveBuffer[..legalMoveCount];
 
         // no legal moves left - decide if its checkmate or stalemate

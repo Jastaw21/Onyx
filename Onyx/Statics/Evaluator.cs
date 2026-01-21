@@ -44,8 +44,11 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
-    public static bool LoggingEnabled = false;
-
+    public static bool HasNonPawnMaterial(Position board)
+    {
+        var mat = EvaluateMaterial(board, board.WhiteToMove);
+        return mat.Bishops > 0 || mat.Knights > 0 || mat.Rooks > 0 || mat.Queens > 0; 
+    }
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
         try
@@ -115,10 +118,6 @@ public static class Evaluator
         var whitePss = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
         var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         var pieceSquareScore = whitePss - blackPss;
-
-        if (LoggingEnabled)
-            Logger.Log(LogType.Evaluator,
-                $"{board.GetFen()} MS: {materialScore} BS: {bishopPairScore} PSS: {pieceSquareScore}");
 
         var score = materialScore + bishopPairScore + pieceSquareScore;
         return board.WhiteToMove ? score : -score;
