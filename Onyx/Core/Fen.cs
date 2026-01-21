@@ -10,6 +10,7 @@ public struct FenDetails
     public int? EnPassantSquare;
     public int HalfMove;
     public int FullMove;
+    public int CastlingRights;
 }
 
 public static class Fen
@@ -39,6 +40,15 @@ public static class Fen
 
         var castlingString = fen[castlingRightsTokenLocation..(enPassantSquareTokenLocation - 1)];
         details.CastlingString = castlingString;
+        
+        if (castlingString.Contains('K'))
+            details.CastlingRights |= BoardConstants.WhiteKingsideCastlingFlag;
+        if (castlingString.Contains('Q'))
+            details.CastlingRights |= BoardConstants.WhiteQueensideCastlingFlag;
+        if (castlingString.Contains('k'))
+            details.CastlingRights |= BoardConstants.BlackKingsideCastlingFlag;
+        if (castlingString.Contains('q'))
+            details.CastlingRights |= BoardConstants.BlackQueensideCastlingFlag;
 
         var enPassantString = fen[enPassantSquareTokenLocation..(halfMoveTokenLocation - 1)];
         if (enPassantString.Length == 2)

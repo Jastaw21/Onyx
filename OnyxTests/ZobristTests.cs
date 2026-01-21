@@ -21,6 +21,22 @@ public class ZobristTests
     }
 
     [Test]
+    public void VaryingCastlingRightsGiveDifferentValue()
+    {
+        var zob1 = Zobrist.FromFen("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
+        var zob2 = Zobrist.FromFen("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w kq - 1 2");
+        Assert.That(zob2, Is.Not.EqualTo(zob1));
+    }
+
+    [Test]
+    public void VaryingEnPassantSquareGiveDifferentValue()
+    {
+        var zob1 = Zobrist.FromFen("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
+        var zob2 = Zobrist.FromFen("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq d6 0 2");
+        Assert.That(zob2, Is.Not.EqualTo(zob1));
+    }
+
+    [Test]
     public void ApplyMoveGivesSameAsExpectedFen()
     {
         List<string> startingFen =
@@ -33,7 +49,16 @@ public class ZobristTests
             "r3k2r/ppqbbpp1/n1pppn1p/3P4/2Q4B/2P5/PP1NPPPP/2KR1BNR b kq - 2 10",
             "rnbqkbnr/pp1p1ppp/2p5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1",
             "rnbqkbnr/ppp1pppp/8/8/3pP3/1PP5/P2P1PPP/RNBQKBNR b KQkq e3 0 1",
-            "rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
+            "rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1",
+            
+            // loss of castling rights
+            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2",
+            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR b kq - 1 2",
+            "rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR w KQkq - 2 3",
+            
+            // Apply en passant
+            Fen.DefaultFen,
+            "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
         ];
         List<Move> moves =
         [
@@ -45,10 +70,19 @@ public class ZobristTests
             new(Piece.BK, "e8c8"),
             new(Piece.WP, "d5e6"),
             new(Piece.BP, "d4e3"),
-            new(Piece.WQ, "d2f4")
+            new(Piece.WQ, "d2f4"),
+            
+            // loss of castling rights
+            new(Piece.WK, "e1f2"),
+            new(Piece.BK, "e8e7"),
+            new(Piece.WR, "a1b1"),
+            
+            // Apply en passant
+            new(Piece.WP, "d2d4"),
+            new(Piece.BP, "d7d5")
         ];
 
-        List<string> PositionsAfter =
+        List<string> positionsAfter =
         [
             "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR b kq - 1 2",
             "rnbq1bnr/ppppkppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR w - - 2 3",
@@ -58,16 +92,28 @@ public class ZobristTests
             "2kr3r/ppqbbpp1/n1pppn1p/3P4/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 3 11",
             "rnbqkbnr/pp1p1ppp/2p1P3/8/8/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
             "rnbqkbnr/ppp1pppp/8/8/8/1PP1p3/P2P1PPP/RNBQKBNR w KQkq - 0 2",
-            "rnb1kbnr/ppp1pppp/3p4/8/5Q2/3P4/PPP1PPPP/RNB1KBNR b KQkq - 0 1"
+            "rnb1kbnr/ppp1pppp/3p4/8/5Q2/3P4/PPP1PPPP/RNB1KBNR b KQkq - 0 1",
+            
+            // loss of castling rights
+            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR b kq - 1 2",
+            "rnbq1bnr/ppppkppp/4p3/8/8/5P2/PPPPPKPP/RNBQ1BNR w - - 2 3",
+            "rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/1RBQKBNR b Kkq - 3 3",
+            
+            // Apply en passant
+            "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
+            "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2"
         ];
 
         for (int i = 0; i < startingFen.Count; i++)
         {
             var board = new Position(startingFen[i]);
-            var zobFromFen = Zobrist.FromFen(PositionsAfter[i]);
+            var zobFromFen = Zobrist.FromFen(positionsAfter[i]);
             var move = moves[i];
             board.ApplyMove(move);
-            Assert.That(board.ZobristState, Is.EqualTo(zobFromFen));
+            var matches = board.ZobristState.Equals(zobFromFen);
+            if (!matches)
+                TestContext.Out.WriteLine(board.GetFen());
+            Assert.That(matches);
         }
     }
     
@@ -84,7 +130,17 @@ public class ZobristTests
             "r3k2r/ppqbbpp1/n1pppn1p/3P4/2Q4B/2P5/PP1NPPPP/2KR1BNR b kq - 2 10",
             "rnbqkbnr/pp1p1ppp/2p5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1",
             "rnbqkbnr/ppp1pppp/8/8/3pP3/1PP5/P2P1PPP/RNBQKBNR b KQkq e3 0 1",
-            "rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
+            "rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1",
+            
+            // loss of castling rights
+            "rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2",
+            
+            // undo applying en passant
+            "rnbqkbnr/pp1p1ppp/2p5/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1",
+            "rnbqkbnr/ppp1pppp/8/8/3pP3/1PP5/P2P1PPP/RNBQKBNR b KQkq e3 0 1",
+            
+            // undo losing ep square
+            Fen.DefaultFen
         ];
         List<Move> moves =
         [
@@ -96,7 +152,16 @@ public class ZobristTests
             new(Piece.BK, "e8c8"),
             new(Piece.WP, "d5e6"),
             new(Piece.BP, "d4e3"),
-            new (Piece.WQ, "d2f4")
+            new (Piece.WQ, "d2f4"),
+            
+            // loss of castling rights
+            new(Piece.WK, "e1f2"),
+            
+            // undo applying en passant
+            new(Piece.WP, "d5e6"),
+            new(Piece.BP, "d4e3"),
+            
+            new Move(Piece.WP, "d2d4")
         ];
         
 

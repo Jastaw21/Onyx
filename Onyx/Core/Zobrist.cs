@@ -2,8 +2,8 @@
 
 public static class Zobrist
 {
-    private static readonly int Seed = 123111;
-    private static Random _random;
+    private const int Seed = 123111;
+    private static readonly Random Random;
 
     private static readonly ulong[] WhitePawn = new ulong[64];
     private static readonly ulong[] WhiteRook = new ulong[64];
@@ -21,18 +21,22 @@ public static class Zobrist
 
     private static ulong _whiteToMove;
 
+    private static readonly ulong[] EnPassantSquare = new ulong[64]; // store all squares, only use relevant ranks.
+    private static readonly ulong[,] CastlingRights = new ulong[2, 2]; // [w/b, kingside/queenside]
+
     static Zobrist()
     {
-        _random = new Random(Seed);
+        Random = new Random(Seed);
         InitZobrist();
     }
 
     public static ulong MakeNullMove(ulong hashValue)
     {
         var newValue = hashValue;
-        newValue^= _whiteToMove;
+        newValue ^= _whiteToMove;
         return newValue;
     }
+
     public static ulong FromFen(string fen)
     {
         var fenDetails = Fen.FromString(fen);
@@ -40,6 +44,20 @@ public static class Zobrist
         if (fenDetails.WhiteToMove)
             hashValue ^= _whiteToMove;
 
+        // handle the special board state bits
+        if (fenDetails.EnPassantSquare.HasValue)
+            hashValue ^= EnPassantSquare[fenDetails.EnPassantSquare.Value];
+
+        if ((fenDetails.CastlingRights & BoardConstants.WhiteKingsideCastlingFlag) > 0)
+            hashValue ^= CastlingRights[0, 0];
+        if ((fenDetails.CastlingRights & BoardConstants.WhiteQueensideCastlingFlag) > 0)
+            hashValue ^= CastlingRights[0, 1];
+        if ((fenDetails.CastlingRights & BoardConstants.BlackKingsideCastlingFlag) > 0)
+            hashValue ^= CastlingRights[1, 0];
+        if ((fenDetails.CastlingRights & BoardConstants.BlackQueensideCastlingFlag) > 0)
+            hashValue ^= CastlingRights[1, 1];
+
+        // now handle all the piece placements
         var rank = 7;
         var file = 0;
         var i = 0;
@@ -70,11 +88,12 @@ public static class Zobrist
 
             i++;
         }
-        
+
         return hashValue;
     }
 
-    public static ulong ApplyMove(Move move, ulong hashIn, sbyte? capturedPiece = null, int? capturedOnSquare = null)
+    public static ulong ApplyMove(Move move, ulong hashIn, sbyte? capturedPiece = null, int? capturedOnSquare = null,
+        int? epBefore = null, int? epAfter = null, int? castlingRights = null, int? newCastlingRights = null)
     {
         var hashValue = hashIn;
         var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
@@ -129,8 +148,29 @@ public static class Zobrist
             hashValue ^= rookToRand;
         }
 
+        if (epAfter.HasValue)
+            hashValue ^= EnPassantSquare[epAfter.Value];
+        if (epBefore.HasValue)
+            hashValue ^= EnPassantSquare[epBefore.Value];
+
+        if (castlingRights.HasValue && newCastlingRights.HasValue && castlingRights.Value != newCastlingRights.Value)
+        {
+            if ((castlingRights.Value & BoardConstants.WhiteKingsideCastlingFlag) !=
+                (newCastlingRights.Value & BoardConstants.WhiteKingsideCastlingFlag))
+                hashValue ^= CastlingRights[0, 0];
+            if ((castlingRights.Value & BoardConstants.WhiteQueensideCastlingFlag) !=
+                (newCastlingRights.Value & BoardConstants.WhiteQueensideCastlingFlag))
+                hashValue ^= CastlingRights[0, 1];
+            if ((castlingRights.Value & BoardConstants.BlackKingsideCastlingFlag) !=
+                (newCastlingRights.Value & BoardConstants.BlackKingsideCastlingFlag))
+                hashValue ^= CastlingRights[1, 0];
+            if ((castlingRights.Value & BoardConstants.BlackQueensideCastlingFlag) !=
+                (newCastlingRights.Value & BoardConstants.BlackQueensideCastlingFlag))
+                hashValue ^= CastlingRights[1, 1];
+        }
+
         hashValue ^= _whiteToMove;
-        
+
         return hashValue;
     }
 
@@ -152,6 +192,9 @@ public static class Zobrist
         FillRandomArray(BlackPawn);
         FillRandomArray(BlackKnight);
 
+        FillRandomArray(EnPassantSquare);
+        FillRandomArray(CastlingRights);
+
         _whiteToMove = NextUlong();
     }
 
@@ -163,10 +206,17 @@ public static class Zobrist
         }
     }
 
+    private static void FillRandomArray(ulong[,] array)
+    {
+        for (var i = 0; i < array.GetLength(0); i++)
+        for (var j = 0; j < array.GetLength(1); j++)
+            array[i, j] = NextUlong();
+    }
+
     private static ulong NextUlong()
     {
         var buffer = new byte[8];
-        _random.NextBytes(buffer);
+        Random.NextBytes(buffer);
         return BitConverter.ToUInt64(buffer, 0);
     }
 

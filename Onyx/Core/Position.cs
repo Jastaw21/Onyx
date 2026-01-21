@@ -63,36 +63,34 @@ public class Position
     public int? EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
-    public ReadOnlySpan<PositionState> History => _historyBuffer.AsSpan(0, _historyStackPointer+1);
+    public ReadOnlySpan<PositionState> History => _historyBuffer.AsSpan(0, _historyStackPointer + 1);
 
     private PositionState[] _historyBuffer = new PositionState[1024];
     private int _historyStackPointer;
-    
-    
-   
+
+
     public Position(string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         ZobristState = Zobrist.FromFen(fen);
-        for (int i=0; i<_historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
-       
+        for (int i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
+
         var startingState = new PositionState
         {
             Hash = ZobristState, CastlingRights = CastlingRights, EnPassantSquare = EnPassantSquare,
             HalfMove = HalfMoves, FullMove = FullMoves
         };
-       
+
         _historyStackPointer = 0;
         _historyBuffer[_historyStackPointer] = startingState;
     }
 
     public void SetFen(string fen)
     {
-       
         Bitboards.LoadFen(fen);
         ApplyBoardStateFromFen(fen);
-        ZobristState =  Zobrist.FromFen(fen);
+        ZobristState = Zobrist.FromFen(fen);
 
         for (int i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
 
@@ -108,7 +106,7 @@ public class Position
         _historyStackPointer = 0;
         _historyBuffer[_historyStackPointer] = startingState;
     }
-    
+
     private void UpdateHistoryState()
     {
         var state = _historyBuffer[_historyStackPointer];
@@ -156,6 +154,7 @@ public class Position
 
         return builtFen;
     }
+
     public void MakeNullMove()
     {
         _historyStackPointer++;
@@ -165,7 +164,7 @@ public class Position
         _historyBuffer[_historyStackPointer].CastlingRights = CastlingRights;
         _historyBuffer[_historyStackPointer].HalfMove = HalfMoves;
         _historyBuffer[_historyStackPointer].FullMove = FullMoves;
-        ZobristState = Zobrist.MakeNullMove(ZobristState);     
+        ZobristState = Zobrist.MakeNullMove(ZobristState);
         EnPassantSquare = null;
         SwapTurns();
         if (!WhiteToMove)
@@ -173,6 +172,7 @@ public class Position
         HalfMoves++;
         UpdateHistoryState();
     }
+
     public void UndoNullMove()
     {
         _historyStackPointer--;
@@ -181,14 +181,18 @@ public class Position
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;
         FullMoves = state.FullMove;
-        ZobristState = Zobrist.MakeNullMove(ZobristState);  
+        ZobristState = Zobrist.MakeNullMove(ZobristState);
         SwapTurns();
     }
 
     public void ApplyMove(Move move, bool fullApplyMove = true)
     {
         ApplyMoveFlags(ref move);
-        
+
+        // these will be used to update the zobrist hash
+        var previousCastlingRights = CastlingRights;
+        var previousEnPassantSquare = EnPassantSquare;
+
         var isWhite = Piece.IsWhite(move.PieceMoved);
         sbyte? capturedPiece;
         int? capturedSquare;
@@ -203,18 +207,15 @@ public class Position
         {
             var moveCapturedPiece = move.CapturedPiece;
             if (moveCapturedPiece > 0)
-                capturedPiece = Piece.MakePiece(moveCapturedPiece,!isWhite);
+                capturedPiece = Piece.MakePiece(moveCapturedPiece, !isWhite);
             else capturedPiece = null;
             capturedSquare = move.To;
         }
+
         _historyBuffer[_historyStackPointer].LastMoveFlags = move.Data;
         _historyBuffer[_historyStackPointer].CapturedPiece = capturedPiece;
         _historyStackPointer++;
-        
-        if (fullApplyMove)
-        {
-            ZobristState = Zobrist.ApplyMove(move, ZobristState, capturedPiece, capturedSquare);
-        }
+
         // get rid of the captured piece
         if (capturedPiece.HasValue)
         {
@@ -277,7 +278,13 @@ public class Position
         {
             HalfMoves = 0;
         }
-        
+
+        if (fullApplyMove)
+        {
+            ZobristState = Zobrist.ApplyMove(move, ZobristState, capturedPiece, capturedSquare, previousEnPassantSquare,
+                EnPassantSquare, previousCastlingRights, CastlingRights);
+        }
+
         UpdateHistoryState();
     }
 
@@ -285,6 +292,11 @@ public class Position
     {
         _historyStackPointer--;
         var state = _historyBuffer[_historyStackPointer];
+
+        // for zobrist hash update
+        var epAfterThisMove = EnPassantSquare;
+        var castlingRightsAfterThisMove = CastlingRights;
+
         EnPassantSquare = state.EnPassantSquare;
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;
@@ -292,7 +304,7 @@ public class Position
         move.Data = state.LastMoveFlags;
         int? capturedOn = null;
         var movePieceMoved = move.PieceMoved;
-        
+
 
         if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
@@ -339,7 +351,8 @@ public class Position
 
         if (fullUndoMove)
         {
-            ZobristState = Zobrist.ApplyMove(move, ZobristState, state.CapturedPiece, capturedOn);
+            ZobristState = Zobrist.ApplyMove(move, ZobristState, state.CapturedPiece, capturedOn, EnPassantSquare,
+                epAfterThisMove, CastlingRights, castlingRightsAfterThisMove);
         }
 
 
@@ -348,7 +361,6 @@ public class Position
 
     private void ApplyMoveFlags(ref Move move)
     {
-        
         var toRankIndex = RankAndFile.RankIndex(move.To);
         var toFileIndex = RankAndFile.FileIndex(move.To);
         var fromFileIndex = RankAndFile.FileIndex(move.From);
@@ -371,7 +383,7 @@ public class Position
         {
             move.IsEnPassant = true;
         }
-        
+
         // this move isn't from move gen, so need to check for capture
         if (!move.HasCaptureBeenChecked)
         {
