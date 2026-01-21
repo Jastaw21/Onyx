@@ -19,9 +19,9 @@ public static class Zobrist
     private static readonly ulong[] BlackQueen = new ulong[64];
     private static readonly ulong[] BlackKing = new ulong[64];
 
-    private static ulong _whiteToMove;
+    public static ulong WhiteToMove { get; private set; }
 
-    private static readonly ulong[] EnPassantSquare = new ulong[64]; // store all squares, only use relevant ranks.
+    public static ulong[] EnPassantSquare { get; private set; } = new ulong[64];
     private static readonly ulong[,] CastlingRights = new ulong[2, 2]; // [w/b, kingside/queenside]
 
     static Zobrist()
@@ -33,7 +33,7 @@ public static class Zobrist
     public static ulong MakeNullMove(ulong hashValue)
     {
         var newValue = hashValue;
-        newValue ^= _whiteToMove;
+        newValue ^= WhiteToMove;
         return newValue;
     }
 
@@ -42,7 +42,7 @@ public static class Zobrist
         var fenDetails = Fen.FromString(fen);
         var hashValue = 0ul;
         if (fenDetails.WhiteToMove)
-            hashValue ^= _whiteToMove;
+            hashValue ^= WhiteToMove;
 
         // handle the special board state bits
         if (fenDetails.EnPassantSquare.HasValue)
@@ -169,7 +169,7 @@ public static class Zobrist
                 hashValue ^= CastlingRights[1, 1];
         }
 
-        hashValue ^= _whiteToMove;
+        hashValue ^= WhiteToMove;
 
         return hashValue;
     }
@@ -195,7 +195,7 @@ public static class Zobrist
         FillRandomArray(EnPassantSquare);
         FillRandomArray(CastlingRights);
 
-        _whiteToMove = NextUlong();
+        WhiteToMove = NextUlong();
     }
 
     private static void FillRandomArray(ulong[] array)

@@ -109,7 +109,7 @@ public class Position
 
     private void UpdateHistoryState()
     {
-        var state = _historyBuffer[_historyStackPointer];
+        PositionState state = _historyBuffer[_historyStackPointer];
         state.Hash = ZobristState;
         state.CastlingRights = CastlingRights;
         state.EnPassantSquare = EnPassantSquare;
@@ -164,25 +164,36 @@ public class Position
         _historyBuffer[_historyStackPointer].CastlingRights = CastlingRights;
         _historyBuffer[_historyStackPointer].HalfMove = HalfMoves;
         _historyBuffer[_historyStackPointer].FullMove = FullMoves;
-        ZobristState = Zobrist.MakeNullMove(ZobristState);
-        EnPassantSquare = null;
-        SwapTurns();
+        _historyBuffer[_historyStackPointer].Hash = ZobristState;
+
         if (!WhiteToMove)
             FullMoves++;
         HalfMoves++;
-        UpdateHistoryState();
+
+        SwapTurns();
+        ZobristState ^= Zobrist.WhiteToMove;
+
+        if (EnPassantSquare.HasValue)
+        {
+            ZobristState ^= Zobrist.EnPassantSquare[EnPassantSquare.Value];
+            EnPassantSquare = null;
+        }
     }
 
     public void UndoNullMove()
     {
-        _historyStackPointer--;
         var state = _historyBuffer[_historyStackPointer];
+
+        // Restore everything from history
+        ZobristState = state.Hash;
         EnPassantSquare = state.EnPassantSquare;
         CastlingRights = state.CastlingRights;
         HalfMoves = state.HalfMove;
         FullMoves = state.FullMove;
-        ZobristState = Zobrist.MakeNullMove(ZobristState);
-        SwapTurns();
+
+        SwapTurns(); // Flip side to move back
+
+        _historyStackPointer--;
     }
 
     public void ApplyMove(Move move, bool fullApplyMove = true)
