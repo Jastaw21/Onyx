@@ -31,6 +31,12 @@ public static class MagicBitboards
             BuildKnightMoves(square);
             BuildKingMoves(square);
         }
+        BuildKingShields();
+    }
+
+    public static ulong GetKingShields(bool isWhite, int square)
+    {
+        return KingShields[isWhite ? 0 : 1, square];
     }
 
     private static void InitDiagMagics()
@@ -90,6 +96,7 @@ public static class MagicBitboards
     private static readonly ulong[] KnightAttacks = new ulong[64];
     private static readonly ulong[] KingAttacks = new ulong[64];
     private static readonly ulong[,] PawnAttacks = new ulong[2, 64];
+    private static readonly ulong[,] KingShields = new ulong[2, 64];
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetMovesByPiece(sbyte piece, int square, ulong boardState)
@@ -156,9 +163,18 @@ public static class MagicBitboards
     private static void BuildPawnAttacks()
     {
         for (ulong square = 0; square < 64; square++)
-        {;            
-            PawnAttacks[0,(int)square] = GetPawnAttacks(true, (int)square);
-            PawnAttacks[1,(int)square] = GetPawnAttacks(false, (int)square);
+        {
+            PawnAttacks[0, (int)square] = GetPawnAttacks(true, (int)square);
+            PawnAttacks[1, (int)square] = GetPawnAttacks(false, (int)square);
+        }
+    }
+
+    private static void BuildKingShields()
+    {
+        for (ulong square = 0; square < 64; square++)
+        {
+            KingShields[0, (int)square] = GetKingShieldOnSquare(true, (int)square);
+            KingShields[1, (int)square] = GetKingShieldOnSquare(false, (int)square);
         }
     }
 
@@ -203,6 +219,20 @@ public static class MagicBitboards
         return GetPawnPushes(isWhite, square, boardState) | PawnAttacks[index, square];
     }
 
+    private static ulong GetKingShieldOnSquare(bool isWhite, int square)
+    {
+        var outOfBounds = (isWhite && square > 47) || (!isWhite && square < 16);
+        if (outOfBounds) return 0ul;
+        
+        // always include the attacks
+        var index = isWhite ? 0 : 1;
+        var result = PawnAttacks[index, square];
+        
+        var squareOffset = isWhite ? 8 : -8;
+        result |= 1ul << square + squareOffset;
+
+        return result;
+    }
 
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static ulong GetPawnPushes(bool isWhite, int square, ulong boardState)
