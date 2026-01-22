@@ -80,4 +80,33 @@ public class EvaluatorTests
         Evaluator.SortMoves(moves, ttMove, null, 0);
         Assert.That(moves[0], Is.EqualTo(ttMove));
     }
+
+    [Test]
+    public void KingSafetyExpected()
+    {
+        // equal 
+        var board = new Position();
+        var allShields = Evaluator.KingShieldScore(board, true);
+        
+        
+        // remove one white shielder
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+        var oneDown = Evaluator.KingShieldScore(board,true);
+        Assert.That(oneDown, Is.LessThan(allShields));
+        
+        // remove the second
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1");
+        var twoDown = Evaluator.KingShieldScore(board,true);
+        Assert.That(twoDown, Is.LessThan(oneDown));
+        
+        // remove the third
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPP3PP/RNBQKBNR b KQkq - 0 1");
+        var threeDown = Evaluator.KingShieldScore(board,true);
+        Assert.That(threeDown, Is.LessThan(twoDown));
+        
+        // remove a random, non shielding pawn
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/1PP3PP/RNBQKBNR b KQkq - 0 1");
+        var randomPawn = Evaluator.KingShieldScore(board,true);
+        Assert.That(randomPawn, Is.EqualTo(threeDown));
+    }
 }

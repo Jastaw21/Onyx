@@ -98,8 +98,8 @@ public class MagicBitboardTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(MagicBitboards.GetMovesByPiece(Piece.BN,0, 0ul),
-                    Is.EqualTo(0x20400));
+            Assert.That(MagicBitboards.GetMovesByPiece(Piece.BN, 0, 0ul),
+                Is.EqualTo(0x20400));
 
             Assert.That(MagicBitboards.GetMovesByPiece(Piece.BN, 35, 0ul),
                 Is.EqualTo(0x14220022140000));
@@ -112,7 +112,7 @@ public class MagicBitboardTests
     [Test]
     public void GetKingMoves()
     {
-        Assert.That(MagicBitboards.GetMovesByPiece(Piece.WK,0,0ul),
+        Assert.That(MagicBitboards.GetMovesByPiece(Piece.WK, 0, 0ul),
             Is.EqualTo(0x302));
     }
 
@@ -123,15 +123,28 @@ public class MagicBitboardTests
         {
             // starting rank moves
             Assert.That(MagicBitboards.GetMovesByPiece(Piece.WP, 8, 0),
-                    Is.EqualTo(0x1030000));
+                Is.EqualTo(0x1030000));
 
             Assert.That(MagicBitboards.GetMovesByPiece(Piece.BP, 48, 0),
                 Is.EqualTo(0x30100000000));
-            
+
             Assert.That(MagicBitboards.GetMovesByPiece(Piece.WP, 19, 0),
                 Is.EqualTo(0x1c000000));
         });
     }
 
-
+    [Test]
+    public void KingShields()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(MagicBitboards.GetKingShields(true, 0), Is.EqualTo(0x300));
+            Assert.That(MagicBitboards.GetKingShields(true, 1), Is.EqualTo(0x700));
+            Assert.That(MagicBitboards.GetKingShields(true, 48), Is.EqualTo(0));
+            Assert.That(MagicBitboards.GetKingShields(true, 36), Is.EqualTo(0x380000000000));
+            
+            Assert.That(MagicBitboards.GetKingShields(false, 52), Is.EqualTo(0x380000000000));
+            Assert.That(MagicBitboards.GetKingShields(false, 48), Is.EqualTo(0x30000000000));
+        });
+    }
 }
