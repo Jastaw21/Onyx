@@ -25,6 +25,23 @@ public class MoveGenTests
     }
 
     [Test]
+    public void DoesntGenerateKingCaptures()
+    {
+        var fen = "6k1/8/1p3P2/2q4K/2P5/3R4/8/5r2 b - - 0 1";
+        var board = new Position(fen);
+        Span<Move> moveBuffer = stackalloc Move[256];
+        
+        var count = MoveGenerator.GetLegalMoves(board, moveBuffer);
+        var moves = moveBuffer[..count].ToArray();
+        List<string > movesNotation = [];
+        foreach (var move in moves)
+        {
+            movesNotation.Add(move.Notation);
+        }
+        Assert.That(movesNotation, Does.Not.Contain("c5h5"));
+    }
+    
+    [Test]
     public void DoesntGenerateStrangeIllegalMoves()
     {
         var fen = "rnbq1rk1/pp2n1pp/4p3/2ppPp2/3P2Q1/P1PB4/2P2PPP/R1B1K1NR w KQ f6 0 1";

@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Onyx.Core;
+﻿using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -257,11 +256,11 @@ public static class MoveGenerator
         var opponentOccupancy = board.Bitboards.OccupancyByColour(Piece.IsWhite(piece));
         while (moves > 0)
         {
-            var lowest = ulong.TrailingZeroCount(moves);
-            var move = new Move(piece, square, (int)lowest);
-            if (((1ul << (int)lowest) & opponentOccupancy) != 0)
+            var thisSquare = (int)ulong.TrailingZeroCount(moves);
+            var move = new Move(piece, square, thisSquare);
+            if (((1ul << thisSquare) & opponentOccupancy) != 0)
             {
-                var capturedPiece = board.Bitboards.PieceAtSquare((int)lowest);
+                var capturedPiece = board.Bitboards.PieceAtSquare(thisSquare);
                 if (capturedPiece.HasValue)
                     move.CapturedPiece = capturedPiece.Value;
             }
@@ -275,16 +274,20 @@ public static class MoveGenerator
 
     private static ulong GetMovesUlong(sbyte piece, int square, Position board, bool capturesOnly = false)
     {
+        var opponentKing = Piece.MakePiece(Piece.King, !Piece.IsWhite(piece));
+        var opponentKingSquare = board.Bitboards.OccupancyByPiece(opponentKing);
         if (!capturesOnly)
         {
             var result = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
             var movingSideOccupancy = board.Bitboards.OccupancyByColour(Piece.IsBlack(piece));
-            result &= ~movingSideOccupancy;
+            result &= ~movingSideOccupancy; // cant go to own square
+            result &= ~opponentKingSquare; // cant go to own king
             return result;
         }
         
         var movesByPiece = MagicBitboards.MagicBitboards.GetMovesByPiece(piece, square, board.Bitboards.Occupancy());
         var opponentOccupancy = board.Bitboards.OccupancyByColour(Piece.IsWhite(piece));
+        opponentOccupancy &= ~opponentKingSquare; // cant go to own king
         return movesByPiece & opponentOccupancy;
         
     }

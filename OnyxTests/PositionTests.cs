@@ -389,7 +389,7 @@ public class UndoMove
     }
 }
 
-public class BoardTests
+public class PositionTests
 {
     [Test]
     public void InitFromFen()
