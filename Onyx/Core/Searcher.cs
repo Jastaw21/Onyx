@@ -27,7 +27,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     public SearchStatistics Statistics;
     public bool IsFinished;
     private const int Reduction = -1;
-    public int LMRThreshold = 3;
+    public int LmrThreshold = 3;
 
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
@@ -283,16 +283,30 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         // try to cut off a node if it's null
         var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
-        if (!isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled && !Evaluator.HasNonPawnMaterial(_currentPosition))
+        if (!isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled)
         {
-            var nullMoveResult = PerformNullMoveCutoff(depthRemaining, depthFromRoot, alpha, beta);
-            if (!Equals(nullMoveResult, SearchFlag.NullMoveFailed))
-                return nullMoveResult;
+            _currentPosition.MakeNullMove();
+            int nullMoveReduction = depthRemaining > 6 ? 3 : 2;
+            var nmrResult = Search(depthRemaining - 1 - nullMoveReduction, depthFromRoot + 1, -beta, -beta + 1, true);
+            _currentPosition.UndoNullMove();
+            
+            if (!nmrResult.Completed)
+                return SearchFlag.Abort;
+        
+            var nullScore = -nmrResult.Score;
+            
+            if (nullScore >= beta)
+            {
+                Statistics.NullMoveCutoffs++;
+                return new SearchFlag(true, beta);
+            }
+            Statistics.FailedNullMoveCutoffs++;
         }
 
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
         var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,alreadyKnowBoardInCheck:true,isAlreadyInCheck: isInCheck);
+        //var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
         var moves = moveBuffer[..legalMoveCount];
 
         // no legal moves left - decide if its checkmate or stalemate
@@ -328,12 +342,12 @@ public class Searcher(Engine engine, int searcherId = 0)
             // reduce later moves as the best ones should be up front
             var needsFullSearch = true;
             var childResult = new SearchFlag(false, 0);
-            if (moveCount >= LMRThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
+            if (moveCount >= LmrThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 Statistics.ReducedSearches++;
-                childResult = Search(depthRemaining - 1 + Reduction, 
-                    depthFromRoot + 1, -alpha - 1, -alpha, false);
+                childResult = Search(depthRemaining: depthRemaining - 1 + Reduction, 
+                    depthFromRoot: depthFromRoot + 1, alpha: -alpha - 1, beta: -alpha, lastMoveNulled: false);
                 
                 needsFullSearch = -childResult.Score > alpha;
                 if (needsFullSearch)
