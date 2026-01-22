@@ -54,7 +54,7 @@ public class Engine
     public StopwatchManager StopwatchManager { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
-    public void SetLmrThreshold(int lmr) => _workers[0].LMRThreshold = lmr;
+    public void SetLmrThreshold(int lmr) => _workers[0].LmrThreshold = lmr;
     public event Action<string> OnSearchInfoUpdate;
 
     // search members
