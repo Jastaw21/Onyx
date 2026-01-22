@@ -1,62 +1,7 @@
-﻿namespace Onyx.Core;
+﻿using Onyx.Statics;
 
-public static class BoardConstants
-{
-    public const int WhiteKingsideCastlingFlag = 1 << 0;
-    public const int WhiteQueensideCastlingFlag = 1 << 1;
-    public const int BlackKingsideCastlingFlag = 1 << 2;
-    public const int BlackQueensideCastlingFlag = 1 << 3;
+namespace Onyx.Core;
 
-    public const ulong WhiteKingSideCastlingSquares = 0x60;
-    public const ulong BlackKingSideCastlingSquares = 0x6000000000000000;
-
-    public const ulong WhiteQueenSideCastlingSquares = 0xe;
-    public const ulong BlackQueenSideCastlingSquares = 0xe00000000000000;
-
-    // useful specific squares
-    public const int A1 = 0;
-    public const int H1 = 7;
-    public const int A8 = 56;
-    public const int H8 = 63;
-    
-    // king start position
-    public const int E1 = 4;
-    public const int E8 = 60;
-
-    // castling rook locations
-    public const int G1 = 6;
-    public const int G8 = 62;
-    public const int C1 = 2;
-    public const int C8 = 58;
-
-    public const int B8 = 57;
-    public const int B1 = 1;
-
-    
-    public const ulong Rank1 = 0xff;
-    public const ulong Rank2 = 0xff00;
-    public const ulong Rank3 = 0xff0000;
-    public const ulong Rank4 = 0xff000000;
-    public const ulong Rank5 = 0xff00000000;
-    public const ulong Rank6 = 0xff0000000000;
-    public const ulong Rank7 = 0xff000000000000;
-    public const ulong Rank8 = 0xff00000000000000;
-    
-    public const ulong FileA = 0x101010101010101;
-    public const ulong FileB = 0x202020202020202;
-    public const ulong FileC = 0x404040404040404;
-    public const ulong FileD = 0x808080808080808;
-    public const ulong FileE = 0x1010101010101010;
-    public const ulong FileF = 0x2020202020202020;
-    public const ulong FileG = 0x4040404040404040;
-    public const ulong FileH = 0x8080808080808080;
-
-    public static readonly int[][] KnightMoves =
-        [[2, -1], [2, 1], [1, -2], [1, 2], [-1, -2], [-1, 2], [-2, -1], [-2, 1]];
-
-    public static readonly int[][] KingMoves =
-        [[1, 1], [1, 0], [1, -1], [0, 1], [0, -1], [-1, 1], [-1, 0], [-1, -1]];
-}
 
 public class PositionState
 {
@@ -154,10 +99,10 @@ public class Position
 
 
         var castlingRightsString = "";
-        if ((CastlingRights & BoardConstants.WhiteKingsideCastlingFlag) > 0) castlingRightsString += 'K';
-        if ((CastlingRights & BoardConstants.WhiteQueensideCastlingFlag) > 0) castlingRightsString += 'Q';
-        if ((CastlingRights & BoardConstants.BlackKingsideCastlingFlag) > 0) castlingRightsString += 'k';
-        if ((CastlingRights & BoardConstants.BlackQueensideCastlingFlag) > 0) castlingRightsString += 'q';
+        if ((CastlingRights & BoardHelpers.WhiteKingsideCastlingFlag) > 0) castlingRightsString += 'K';
+        if ((CastlingRights & BoardHelpers.WhiteQueensideCastlingFlag) > 0) castlingRightsString += 'Q';
+        if ((CastlingRights & BoardHelpers.BlackKingsideCastlingFlag) > 0) castlingRightsString += 'k';
+        if ((CastlingRights & BoardHelpers.BlackQueensideCastlingFlag) > 0) castlingRightsString += 'q';
 
         if (castlingRightsString.Length == 0)
             castlingRightsString = "- ";
@@ -430,13 +375,13 @@ public class Position
         {
             if (isWhite)
             {
-                CastlingRights &= ~BoardConstants.WhiteKingsideCastlingFlag;
-                CastlingRights &= ~BoardConstants.WhiteQueensideCastlingFlag;
+                CastlingRights &= ~BoardHelpers.WhiteKingsideCastlingFlag;
+                CastlingRights &= ~BoardHelpers.WhiteQueensideCastlingFlag;
             }
             else
             {
-                CastlingRights &= ~BoardConstants.BlackKingsideCastlingFlag;
-                CastlingRights &= ~BoardConstants.BlackQueensideCastlingFlag;
+                CastlingRights &= ~BoardHelpers.BlackKingsideCastlingFlag;
+                CastlingRights &= ~BoardHelpers.BlackQueensideCastlingFlag;
             }
         }
 
@@ -444,17 +389,17 @@ public class Position
 
         if (isWhite)
         {
-            if (move.From == BoardConstants.A1)
-                CastlingRights &= ~BoardConstants.WhiteQueensideCastlingFlag;
-            if (move.From == BoardConstants.H1)
-                CastlingRights &= ~BoardConstants.WhiteKingsideCastlingFlag;
+            if (move.From == BoardHelpers.A1)
+                CastlingRights &= ~BoardHelpers.WhiteQueensideCastlingFlag;
+            if (move.From == BoardHelpers.H1)
+                CastlingRights &= ~BoardHelpers.WhiteKingsideCastlingFlag;
         }
         else
         {
-            if (move.From == BoardConstants.A8)
-                CastlingRights &= ~BoardConstants.BlackQueensideCastlingFlag;
-            if (move.From == BoardConstants.H8)
-                CastlingRights &= ~BoardConstants.BlackKingsideCastlingFlag;
+            if (move.From == BoardHelpers.A8)
+                CastlingRights &= ~BoardHelpers.BlackQueensideCastlingFlag;
+            if (move.From == BoardHelpers.H8)
+                CastlingRights &= ~BoardHelpers.BlackKingsideCastlingFlag;
         }
     }
 
@@ -478,10 +423,10 @@ public class Position
         WhiteToMove = fenDetails.WhiteToMove;
 
         var castlingString = fenDetails.CastlingString;
-        if (castlingString.Contains('K')) CastlingRights |= BoardConstants.WhiteKingsideCastlingFlag;
-        if (castlingString.Contains('Q')) CastlingRights |= BoardConstants.WhiteQueensideCastlingFlag;
-        if (castlingString.Contains('k')) CastlingRights |= BoardConstants.BlackKingsideCastlingFlag;
-        if (castlingString.Contains('q')) CastlingRights |= BoardConstants.BlackQueensideCastlingFlag;
+        if (castlingString.Contains('K')) CastlingRights |= BoardHelpers.WhiteKingsideCastlingFlag;
+        if (castlingString.Contains('Q')) CastlingRights |= BoardHelpers.WhiteQueensideCastlingFlag;
+        if (castlingString.Contains('k')) CastlingRights |= BoardHelpers.BlackKingsideCastlingFlag;
+        if (castlingString.Contains('q')) CastlingRights |= BoardHelpers.BlackQueensideCastlingFlag;
 
         EnPassantSquare = fenDetails.EnPassantSquare;
 

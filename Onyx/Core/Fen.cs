@@ -1,4 +1,6 @@
-﻿namespace Onyx.Core;
+﻿using Onyx.Statics;
+
+namespace Onyx.Core;
 
 using FenString = string;
 
@@ -42,13 +44,13 @@ public static class Fen
         details.CastlingString = castlingString;
         
         if (castlingString.Contains('K'))
-            details.CastlingRights |= BoardConstants.WhiteKingsideCastlingFlag;
+            details.CastlingRights |= BoardHelpers.WhiteKingsideCastlingFlag;
         if (castlingString.Contains('Q'))
-            details.CastlingRights |= BoardConstants.WhiteQueensideCastlingFlag;
+            details.CastlingRights |= BoardHelpers.WhiteQueensideCastlingFlag;
         if (castlingString.Contains('k'))
-            details.CastlingRights |= BoardConstants.BlackKingsideCastlingFlag;
+            details.CastlingRights |= BoardHelpers.BlackKingsideCastlingFlag;
         if (castlingString.Contains('q'))
-            details.CastlingRights |= BoardConstants.BlackQueensideCastlingFlag;
+            details.CastlingRights |= BoardHelpers.BlackQueensideCastlingFlag;
 
         var enPassantString = fen[enPassantSquareTokenLocation..(halfMoveTokenLocation - 1)];
         if (enPassantString.Length == 2)

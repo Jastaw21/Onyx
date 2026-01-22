@@ -1,4 +1,6 @@
-﻿namespace Onyx.Core;
+﻿using Onyx.Statics;
+
+namespace Onyx.Core;
 
 public static class Zobrist
 {
@@ -48,13 +50,13 @@ public static class Zobrist
         if (fenDetails.EnPassantSquare.HasValue)
             hashValue ^= EnPassantSquare[fenDetails.EnPassantSquare.Value];
 
-        if ((fenDetails.CastlingRights & BoardConstants.WhiteKingsideCastlingFlag) > 0)
+        if ((fenDetails.CastlingRights & BoardHelpers.WhiteKingsideCastlingFlag) > 0)
             hashValue ^= CastlingRights[0, 0];
-        if ((fenDetails.CastlingRights & BoardConstants.WhiteQueensideCastlingFlag) > 0)
+        if ((fenDetails.CastlingRights & BoardHelpers.WhiteQueensideCastlingFlag) > 0)
             hashValue ^= CastlingRights[0, 1];
-        if ((fenDetails.CastlingRights & BoardConstants.BlackKingsideCastlingFlag) > 0)
+        if ((fenDetails.CastlingRights & BoardHelpers.BlackKingsideCastlingFlag) > 0)
             hashValue ^= CastlingRights[1, 0];
-        if ((fenDetails.CastlingRights & BoardConstants.BlackQueensideCastlingFlag) > 0)
+        if ((fenDetails.CastlingRights & BoardHelpers.BlackQueensideCastlingFlag) > 0)
             hashValue ^= CastlingRights[1, 1];
 
         // now handle all the piece placements
@@ -155,17 +157,17 @@ public static class Zobrist
 
         if (castlingRights.HasValue && newCastlingRights.HasValue && castlingRights.Value != newCastlingRights.Value)
         {
-            if ((castlingRights.Value & BoardConstants.WhiteKingsideCastlingFlag) !=
-                (newCastlingRights.Value & BoardConstants.WhiteKingsideCastlingFlag))
+            if ((castlingRights.Value & BoardHelpers.WhiteKingsideCastlingFlag) !=
+                (newCastlingRights.Value & BoardHelpers.WhiteKingsideCastlingFlag))
                 hashValue ^= CastlingRights[0, 0];
-            if ((castlingRights.Value & BoardConstants.WhiteQueensideCastlingFlag) !=
-                (newCastlingRights.Value & BoardConstants.WhiteQueensideCastlingFlag))
+            if ((castlingRights.Value & BoardHelpers.WhiteQueensideCastlingFlag) !=
+                (newCastlingRights.Value & BoardHelpers.WhiteQueensideCastlingFlag))
                 hashValue ^= CastlingRights[0, 1];
-            if ((castlingRights.Value & BoardConstants.BlackKingsideCastlingFlag) !=
-                (newCastlingRights.Value & BoardConstants.BlackKingsideCastlingFlag))
+            if ((castlingRights.Value & BoardHelpers.BlackKingsideCastlingFlag) !=
+                (newCastlingRights.Value & BoardHelpers.BlackKingsideCastlingFlag))
                 hashValue ^= CastlingRights[1, 0];
-            if ((castlingRights.Value & BoardConstants.BlackQueensideCastlingFlag) !=
-                (newCastlingRights.Value & BoardConstants.BlackQueensideCastlingFlag))
+            if ((castlingRights.Value & BoardHelpers.BlackQueensideCastlingFlag) !=
+                (newCastlingRights.Value & BoardHelpers.BlackQueensideCastlingFlag))
                 hashValue ^= CastlingRights[1, 1];
         }
 

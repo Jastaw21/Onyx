@@ -163,15 +163,15 @@ public static class MoveGenerator
             return;
 
         var isWhite = Piece.IsWhite(piece);
-        var expectedSquare = isWhite ? BoardConstants.E1 : BoardConstants.E8;
+        var expectedSquare = isWhite ? BoardHelpers.E1 : BoardHelpers.E8;
 
         if (square != expectedSquare)
             return;
 
         var occupancy = board.Bitboards.Occupancy();
 
-        var kingSideRookSquare = isWhite ? BoardConstants.H1 : BoardConstants.H8;
-        var queenSideRookSquare = isWhite ? BoardConstants.A1 : BoardConstants.A8;
+        var kingSideRookSquare = isWhite ? BoardHelpers.H1 : BoardHelpers.H8;
+        var queenSideRookSquare = isWhite ? BoardHelpers.A1 : BoardHelpers.A8;
 
         // Try kingside
         var pieceAtTargetSquare = board.Bitboards.PieceAtSquare(kingSideRookSquare);
@@ -182,9 +182,9 @@ public static class MoveGenerator
                 board,
                 piece,
                 square,
-                isWhite ? BoardConstants.WhiteKingsideCastlingFlag : BoardConstants.BlackKingsideCastlingFlag,
-                isWhite ? BoardConstants.WhiteKingSideCastlingSquares : BoardConstants.BlackKingSideCastlingSquares,
-                isWhite ? BoardConstants.G1 : BoardConstants.G8,
+                isWhite ? BoardHelpers.WhiteKingsideCastlingFlag : BoardHelpers.BlackKingsideCastlingFlag,
+                isWhite ? BoardHelpers.WhiteKingSideCastlingSquares : BoardHelpers.BlackKingSideCastlingSquares,
+                isWhite ? BoardHelpers.G1 : BoardHelpers.G8,
                 occupancy,
                 !isWhite,
                 moveBuffer,
@@ -200,9 +200,9 @@ public static class MoveGenerator
                 board,
                 piece,
                 square,
-                isWhite ? BoardConstants.WhiteQueensideCastlingFlag : BoardConstants.BlackQueensideCastlingFlag,
-                isWhite ? BoardConstants.WhiteQueenSideCastlingSquares : BoardConstants.BlackQueenSideCastlingSquares,
-                isWhite ? BoardConstants.C1 : BoardConstants.C8,
+                isWhite ? BoardHelpers.WhiteQueensideCastlingFlag : BoardHelpers.BlackQueensideCastlingFlag,
+                isWhite ? BoardHelpers.WhiteQueenSideCastlingSquares : BoardHelpers.BlackQueenSideCastlingSquares,
+                isWhite ? BoardHelpers.C1 : BoardHelpers.C8,
                 occupancy,
                 !isWhite,
                 moveBuffer,
@@ -237,7 +237,7 @@ public static class MoveGenerator
             var squareIndex = (int)ulong.TrailingZeroCount(squaresToCheck);
 
             // Don't check b1/b8 for attack (queenside rook square)
-            if (squareIndex != BoardConstants.B1 && squareIndex != BoardConstants.B8)
+            if (squareIndex != BoardHelpers.B1 && squareIndex != BoardHelpers.B8)
             {
                 if (Referee.IsSquareAttacked(squareIndex, board, opponentIsWhite))
                     return;

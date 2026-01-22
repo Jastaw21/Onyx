@@ -1,4 +1,5 @@
 ﻿using Onyx.Core;
+using Onyx.Statics;
 
 namespace Onyx.MagicBitboards;
 
@@ -147,7 +148,7 @@ public static class MagicBitboards
     private static void BuildKnightMoves(int square)
     {
         var movesFromHere = 0ul;
-        foreach (var knightMove in BoardConstants.KnightMoves)
+        foreach (var knightMove in BoardHelpers.KnightMoves)
         {
             var newRank = RankAndFile.RankIndex(square) + knightMove[0];
             var newFile = RankAndFile.FileIndex(square) + knightMove[1];
@@ -181,7 +182,7 @@ public static class MagicBitboards
     private static void BuildKingMoves(int square)
     {
         var movesFromHere = 0ul;
-        foreach (var kingMove in BoardConstants.KingMoves)
+        foreach (var kingMove in BoardHelpers.KingMoves)
         {
             var newRank = RankAndFile.RankIndex(square) + kingMove[0];
             var newFile = RankAndFile.FileIndex(square) + kingMove[1];
@@ -229,7 +230,7 @@ public static class MagicBitboards
         var result = PawnAttacks[index, square];
         
         var squareOffset = isWhite ? 8 : -8;
-        result |= 1ul << square + squareOffset;
+        result |= 1ul << (square + squareOffset);
 
         return result;
     }

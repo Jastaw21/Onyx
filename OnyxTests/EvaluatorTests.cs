@@ -82,7 +82,7 @@ public class EvaluatorTests
     }
 
     [Test]
-    public void KingSafetyExpected()
+    public void KingShield()
     {
         // equal 
         var board = new Position();
@@ -108,5 +108,23 @@ public class EvaluatorTests
         board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/1PP3PP/RNBQKBNR b KQkq - 0 1");
         var randomPawn = Evaluator.KingShieldScore(board,true);
         Assert.That(randomPawn, Is.EqualTo(threeDown));
+    }
+
+    [Test]
+    public void OpenFilesNearKing()
+    {
+        // equal 
+        var board = new Position();
+        var allShields = Evaluator.KingShieldScore(board, true);
+        
+        // open the file
+        board.SetFen("rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        var openFileEvale = Evaluator.KingShieldScore(board,true);
+        Assert.That(openFileEvale, Is.LessThan(allShields));
+        
+        // close the file with an opposing pawn
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        var closeFileEvale = Evaluator.KingShieldScore(board,true);
+        Assert.That(closeFileEvale, Is.GreaterThan(openFileEvale));
     }
 }

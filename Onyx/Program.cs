@@ -9,18 +9,28 @@ public static class Program
 {
     public static void Main()
     {
-        var engine = new UciInterface();
-        Logger.TimeString = DateTime.Now.ToString("yyyyMMddHHmmssfff");
-        var command = string.Empty;
-        while (command != "quit")
+        try
         {
-            command = Console.ReadLine();
-            if (command is null)
-                break;
-            if (command != "quit")
-                engine.HandleCommand(command);
-            else
-                break;
+            var engine = new UciInterface();
+            Logger.TimeString = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            var command = string.Empty;
+            while (command != "quit")
+            {
+                command = Console.ReadLine();
+                if (command is null)
+                    break;
+                if (command != "quit")
+                    engine.HandleCommand(command);
+                else
+                    break;
+            }
         }
+        catch (Exception e)
+        {
+            Logger.Log(LogType.EngineLog,e.ToString());
+            throw;
+        }
+        
+        
     }
 }

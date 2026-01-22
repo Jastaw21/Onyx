@@ -1,6 +1,4 @@
 ﻿using Onyx.Core;
-
-
 namespace Onyx.Statics;
 
 internal struct MaterialEvaluation
@@ -140,26 +138,13 @@ public static class Evaluator
         var pawnPlacement = board.Bitboards.OccupancyByPiece(pawnPiece);
         var actualShields = (int)ulong.PopCount(pawnPlacement & kingShields);
 
-        return (possibleShields - actualShields) * -20;
-    }
-
-    private static int MobilityScore(Position board)
-    {
-        // cache turn
-        var boardTurnToMove = board.WhiteToMove;
-        Span<Move> moveBuffer = stackalloc Move[256];
-
-        // get moves for both sides. Pseudo legal fine, but reward positions where board is in check
-        board.WhiteToMove = true;
-        var whiteMoves = MoveGenerator.GetMoves(board, moveBuffer);
-        board.WhiteToMove = false;
-        var blackMoves = MoveGenerator.GetMoves(board, moveBuffer);
-
-        // restore turn
-        board.WhiteToMove = boardTurnToMove;
-
-        // 10 points per move
-        return (whiteMoves - blackMoves) * 10;
+        var pawnShieldScore = (possibleShields - actualShields) * -20;
+        
+        var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
+        var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
+        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+        
+        return pawnShieldScore + openFilePenalty;
     }
 
     private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)
