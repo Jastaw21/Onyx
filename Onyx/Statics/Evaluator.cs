@@ -44,14 +44,10 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
-    public static bool HasNonPawnMaterial(Position board)
-    {
-        var mat = EvaluateMaterial(board, board.WhiteToMove);
-        return mat.Bishops > 0 || mat.Knights > 0 || mat.Rooks > 0 || mat.Queens > 0; 
-    }
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
-       
+        try
+        {
             moves.Sort((a, b) =>
             {
                 if (a == b)
@@ -72,8 +68,11 @@ public static class Evaluator
 
                 return bScore.CompareTo(aScore);
             });
-        
-       
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine(e);
+        }
     }
 
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
@@ -115,27 +114,39 @@ public static class Evaluator
         var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         var pieceSquareScore = whitePss - blackPss;
 
-        var score = materialScore + bishopPairScore + pieceSquareScore;
+        var whiteKingSafety = KingShieldScore(board, true);
+        var blackKingSafety = KingShieldScore(board, false);
+        var kingSafetyScore = whiteKingSafety - blackKingSafety;
+
+        var score = 0;
+        score += materialScore;
+        score += bishopPairScore;
+        score += pieceSquareScore;
+        score += kingSafetyScore;
+
         return board.WhiteToMove ? score : -score;
     }
 
-    private static int MobilityScore(Position board)
+    public static int KingShieldScore(Position board, bool forWhite)
     {
-        // cache turn
-        var boardTurnToMove = board.WhiteToMove;
-        Span<Move> moveBuffer = stackalloc Move[256];
+        var kingPiece = forWhite ? Piece.WK : Piece.BK;
+        var pawnPiece = forWhite ? Piece.WP : Piece.BP;
+        var kingBoard = board.Bitboards.OccupancyByPiece(kingPiece);
 
-        // get moves for both sides. Pseudo legal fine, but reward positions where board is in check
-        board.WhiteToMove = true;
-        var whiteMoves = MoveGenerator.GetMoves(board, moveBuffer);
-        board.WhiteToMove = false;
-        var blackMoves = MoveGenerator.GetMoves(board, moveBuffer);
+        var kingShields =
+            MagicBitboards.MagicBitboards.GetKingShields(forWhite, (int)ulong.TrailingZeroCount(kingBoard));
 
-        // restore turn
-        board.WhiteToMove = boardTurnToMove;
+        var possibleShields = (int)ulong.PopCount(kingShields);
+        var pawnPlacement = board.Bitboards.OccupancyByPiece(pawnPiece);
+        var actualShields = (int)ulong.PopCount(pawnPlacement & kingShields);
 
-        // 10 points per move
-        return (whiteMoves - blackMoves) * 10;
+        var pawnShieldScore = (possibleShields - actualShields) * -20;
+        
+        var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
+        var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
+        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+        
+        return pawnShieldScore + openFilePenalty;
     }
 
     private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)
@@ -218,61 +229,67 @@ public static class Evaluator
     }
 
     // tables are laid out like looking at a board from white's perspective
-    private static readonly int[] PawnStart =
+    // @formatter:off
+        private static readonly int[] PawnStart =
     [
-        0, 0, 0, 0, 0, 0, 0, 0,
-        50, 50, 50, 50, 50, 50, 50, 50,
-        10, 10, 20, 30, 30, 20, 10, 10,
-        5, 5, 10, 25, 25, 10, 5, 5,
-        0, 0, 0, 20, 20, 0, 0, 0,
-        5, -5, -10, 0, 0, -10, -5, 5,
-        5, 10, 10, -20, -20, 10, 10, 5,
-        0, 0, 0, 0, 0, 0, 0, 0
+          0,   0,   0,   0,   0,   0,   0,   0,
+         50,  50,  50,  50,  50,  50,  50,  50,
+         10,  10,  20,  30,  30,  20,  10,  10,
+          5,   5,  10,  25,  25,  10,   5,   5,
+          0,   0,   0,  20,  20,   0,   0,   0,
+          5,  -5, -10,   0,   0, -10,  -5,   5,
+          5,  10,  10, -20, -20,  10,  10,   5,
+          0,   0,   0,   0,   0,   0,   0,   0
     ];
+
     private static readonly int[] PawnEnd =
     [
-        0, 0, 0, 0, 0, 0, 0, 0,
-        80, 80, 80, 80, 80, 80, 80, 80,
-        50, 50, 50, 50, 50, 50, 50, 50,
-        30, 30, 30, 30, 30, 30, 30, 30,
-        20, 20, 20, 20, 20, 20, 20, 20,
-        10, 10, 10, 10, 10, 10, 10, 10,
-        10, 10, 10, 10, 10, 10, 10, 10,
-        0, 0, 0, 0, 0, 0, 0, 0
+          0,   0,   0,   0,   0,   0,   0,   0,
+         80,  80,  80,  80,  80,  80,  80,  80,
+         50,  50,  50,  50,  50,  50,  50,  50,
+         30,  30,  30,  30,  30,  30,  30,  30,
+         20,  20,  20,  20,  20,  20,  20,  20,
+         10,  10,  10,  10,  10,  10,  10,  10,
+         10,  10,  10,  10,  10,  10,  10,  10,
+          0,   0,   0,   0,   0,   0,   0,   0
     ];
+
     private static readonly int[] BishopStart =
     [
         -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, 0, 0, 0, 0, 0, 0, -10,
-        -10, 0, 15, 10, 10, 15, 0, -10,
-        -10, 5, 5, 10, 10, 5, 5, -10,
-        -10, 0, 10, 10, 10, 10, 0, -10,
-        -10, 10, 10, 10, 10, 10, 10, -10,
-        -10, 15, 0, 0, 0, 0, 15, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,  15,  10,  10,  15,   0, -10,
+        -10,   5,   5,  10,  10,   5,   5, -10,
+        -10,   0,  10,  10,  10,  10,   0, -10,
+        -10,  10,  10,  10,  10,  10,  10, -10,
+        -10,  15,   0,   0,   0,   0,  15, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10
     ];
+
     private static readonly int[] KnightScores =
     [
         -50, -40, -30, -30, -30, -30, -40, -50,
-        -40, -20, 0, 0, 0, 0, -20, -40,
-        -30, 0, 10, 15, 15, 10, 0, -30,
-        -30, 5, 15, 20, 20, 15, 5, -30,
-        -30, 0, 15, 20, 20, 15, 0, -30,
-        -30, 5, 10, 15, 15, 10, 5, -30,
-        -40, -20, 0, 5, 5, 0, -20, -40,
-        -50, -40, -30, -30, -30, -30, -40, -50,
+        -40, -20,   0,   0,   0,   0, -20, -40,
+        -30,   0,  10,  15,  15,  10,   0, -30,
+        -30,   5,  15,  20,  20,  15,   5, -30,
+        -30,   0,  15,  20,  20,  15,   0, -30,
+        -30,   5,  10,  15,  15,  10,   5, -30,
+        -40, -20,   0,   5,   5,   0, -20, -40,
+        -50, -40, -30, -30, -30, -30, -40, -50
     ];
+
     private static readonly int[] QueenScores =
     [
-        -20, -10, -10, -5, -5, -10, -10, -20,
-        -10, 0, 0, 0, 0, 0, 0, -10,
-        -10, 0, 5, 5, 5, 5, 0, -10,
-        -5, 0, 5, 5, 5, 5, 0, -5,
-        0, 0, 5, 5, 5, 5, 0, -5,
-        -10, 5, 5, 5, 5, 5, 0, -10,
-        -10, 0, 5, 0, 0, 0, 0, -10,
-        -20, -10, -10, -5, -5, -10, -10, -20
+        -20, -12, -10,  -5,  -5, -10, -12, -20,
+        -10,  -5,   0,   2,   2,   0,  -5, -10,
+        -10,   0,   5,   6,   6,   5,   0, -10,
+         -5,   0,   5,   7,   7,   5,   0,  -5,
+         -5,   0,   5,   7,   7,   5,   0,  -5,
+        -10,   5,   5,   5,   5,   5,   0, -10,
+        -10,   1,   2,   3,   3,   2,   1, -10,
+        -20, -12, -10,  -5,  -5, -10, -12, -20
     ];
+
     private static readonly int[] KingStart =
     [
         -80, -70, -70, -70, -70, -70, -70, -80,
@@ -281,14 +298,15 @@ public static class Evaluator
         -30, -40, -40, -50, -50, -40, -40, -30,
         -20, -30, -30, -40, -40, -30, -30, -20,
         -10, -20, -20, -20, -20, -20, -20, -10,
-        20, 20, -5, -5, -5, -5, 20, 20,
-        20, 30, 10, 0, 0, 10, 30, 20
+         20,  20,  -5,  -5,  -5,  -5,  20,  20,
+         20,  30,  10,   0,   0,  10,  30,  20
     ];
+
     private static readonly int[] KingEnd =
     [
         -20, -10, -10, -10, -10, -10, -10, -20,
-        -5,   0,   5,   5,   5,   5,   0,  -5,
-        -10, -5,   20,  30,  30,  20,  -5, -10,
+         -5,   0,   5,   5,   5,   5,   0,  -5,
+        -10,  -5,  20,  30,  30,  20,  -5, -10,
         -15, -10,  35,  45,  45,  35, -10, -15,
         -20, -15,  30,  40,  40,  30, -15, -20,
         -25, -20,  20,  25,  25,  20, -20, -25,
@@ -298,26 +316,28 @@ public static class Evaluator
 
     private static readonly int[] RookStart =
     [
-        0, 0, 0, 0, 0, 0, 0, 0,
-        5, 10, 10, 10, 10, 10, 10, 5,
-        -5, 0, 0, 0, 0, 0, 0, -5,
-        -5, 0, 0, 0, 0, 0, 0, -5,
-        -5, 0, 0, 0, 0, 0, 0, -5,
-        -5, 0, 0, 0, 0, 0, 0, -5,
-        -5, 0, 0, 0, 0, 0, 0, -5,
-        0, 0, 0, 5, 5, 0, 0, 0
+          0,   0,   0,   0,   0,   0,   0,   0,
+          5,  10,  10,  10,  10,  10,  10,   5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+          0,   0,   0,   5,   5,   0,   0,   0
     ];
+
     private static readonly int[] RookEnd =
     [
-        5, 5, 5, 5, 5, 5, 5, 5,
-        8, 10, 10, 10, 10, 10, 10, 8,
-        5, 5, 5, 5, 5, 5, 5, 5,
-        -2, 0, 0, 0, 0, 0, 0, -2,
-        -2, 0, 0, 0, 0, 0, 0, -2,
-        -2, 0, 0, 0, 0, 0, 0, -2,
+          5,   5,   5,   5,   5,   5,   5,   5,
+          8,  10,  10,  10,  10,  10,  10,   8,
+          5,   5,   5,   5,   5,   5,   5,   5,
+         -2,   0,   0,   0,   0,   0,   0,  -2,
+         -2,   0,   0,   0,   0,   0,   0,  -2,
+         -2,   0,   0,   0,   0,   0,   0,  -2,
         -12, -10, -10, -10, -10, -10, -10, -12,
-        -12, -10, -10, -10, -10, -10, -10, -12,
+        -12, -10, -10, -10, -10, -10, -10, -12
     ];
+    // @formatter:on
     private static readonly int[] ZeroScores =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -336,12 +356,12 @@ public static class Evaluator
 
         return type switch
         {
-            Piece.Pawn =>  endGame ? PawnEnd:PawnStart,
+            Piece.Pawn => endGame ? PawnEnd : PawnStart,
             Piece.Knight => KnightScores,
             Piece.Bishop => BishopStart,
             Piece.Queen => QueenScores,
-            Piece.Rook =>endGame ? RookEnd:RookStart,
-            Piece.King =>endGame ?  KingEnd:KingStart,
+            Piece.Rook => endGame ? RookEnd : RookStart,
+            Piece.King => endGame ? KingEnd : KingStart,
             _ => ZeroScores
         };
     }
