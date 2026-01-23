@@ -114,8 +114,8 @@ public static class Evaluator
         var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         var pieceSquareScore = whitePss - blackPss;
 
-        var whiteKingSafety = KingShieldScore(board, true);
-        var blackKingSafety = KingShieldScore(board, false);
+        var whiteKingSafety = KingSafetyScore(board, true);
+        var blackKingSafety = KingSafetyScore(board, false);
         var kingSafetyScore = whiteKingSafety - blackKingSafety;
 
         var score = 0;
@@ -127,14 +127,15 @@ public static class Evaluator
         return board.WhiteToMove ? score : -score;
     }
 
-    public static int KingShieldScore(Position board, bool forWhite)
+    public static int KingSafetyScore(Position board, bool forWhite)
     {
         var kingPiece = forWhite ? Piece.WK : Piece.BK;
         var pawnPiece = forWhite ? Piece.WP : Piece.BP;
         var kingBoard = board.Bitboards.OccupancyByPiece(kingPiece);
 
+        var kingSquare = (int)ulong.TrailingZeroCount(kingBoard);
         var kingShields =
-            MagicBitboards.MagicBitboards.GetKingShields(forWhite, (int)ulong.TrailingZeroCount(kingBoard));
+            MagicBitboards.MagicBitboards.GetKingShields(forWhite, kingSquare);
 
         var possibleShields = (int)ulong.PopCount(kingShields);
         var pawnPlacement = board.Bitboards.OccupancyByPiece(pawnPiece);
@@ -142,9 +143,8 @@ public static class Evaluator
 
         var pawnShieldScore = (possibleShields - actualShields) * -20;
         
-        var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
         var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
-        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+        var openFilePenalty = BoardHelpers.CountOpenFilesNearKing(kingSquare,pawns) * -20;
         
         return pawnShieldScore + openFilePenalty;
     }
