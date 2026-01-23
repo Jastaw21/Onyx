@@ -1,5 +1,6 @@
 ﻿using Onyx.Core;
 
+
 namespace Onyx.Statics;
 
 internal struct MaterialEvaluation
@@ -43,6 +44,8 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
+    public static bool LoggingEnabled = false;
+
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
         try
@@ -337,7 +340,7 @@ public static class Evaluator
         -12, -10, -10, -10, -10, -10, -10, -12,
         -12, -10, -10, -10, -10, -10, -10, -12
     ];
-    // @formatter:on
+    
     private static readonly int[] ZeroScores =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -349,6 +352,7 @@ public static class Evaluator
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
     ];
+    // @formatter:on
 
     private static int[] GetArray(sbyte piece, bool endGame = false)
     {
