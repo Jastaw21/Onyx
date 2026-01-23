@@ -303,35 +303,35 @@ public class Position
         HalfMoves = state.HalfMove;
         FullMoves = state.FullMove;
         move.Data = state.LastMoveFlags;
-        int? capturedOn = null;
+       
         var movePieceMoved = move.PieceMoved;
 
 
-        if (move.IsPromotion && move.PromotedPiece.HasValue)
+        if (move.IsPromotion)
         {
-            Bitboards.SetOff(move.PromotedPiece.Value, move.To);
+            Bitboards.SetOff(move.PromotedPiece!.Value, move.To);
             Bitboards.SetOn(movePieceMoved, move.From);
         }
         else
         {
             MovePiece(movePieceMoved, move.To, move.From);
         }
-
-        var capturedPieceHasValue = state.CapturedPiece.HasValue;
-        if (capturedPieceHasValue)
+        
+        int? capturedOn = null;
+        if (state.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
             {
-                Bitboards.SetOn(state.CapturedPiece!.Value, move.To);
+                Bitboards.SetOn(state.CapturedPiece.Value, move.To);
                 capturedOn = move.To;
             }
         }
-
-        var isBlack = Piece.IsBlack(movePieceMoved);
-        var isWhite = !isBlack;
+      
+        var isWhite = !Piece.IsBlack(movePieceMoved);
         var fileIndex = RankAndFile.FileIndex(move.To);
         if (move.IsCastling)
         {
+            
             var rank = RankAndFile.RankIndex(move.To);
             var file = fileIndex;
             var rookHomeFile = file > 4 ? 7 : 0;
@@ -345,7 +345,7 @@ public class Position
 
         if (move.IsEnPassant)
         {
-            var pawnHomeRank = isBlack ? 3 : 4;
+            var pawnHomeRank = isWhite ? 4 : 3;
             capturedOn = RankAndFile.SquareIndex(pawnHomeRank, fileIndex);
             Bitboards.SetOn(Piece.MakePiece(Piece.Pawn, !isWhite), capturedOn.Value);
         }

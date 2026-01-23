@@ -48,8 +48,7 @@ public static class Evaluator
 
     public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
     {
-        try
-        {
+       
             moves.Sort((a, b) =>
             {
                 if (a == b)
@@ -70,11 +69,8 @@ public static class Evaluator
 
                 return bScore.CompareTo(aScore);
             });
-        }
-        catch (Exception e)
-        {
-            Console.Error.WriteLine(e);
-        }
+        
+       
     }
 
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
