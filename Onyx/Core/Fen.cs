@@ -100,12 +100,11 @@ public static class Fen
         var lowerVersion = Piece.PieceType(piece) switch
         {
             Piece.King => 'k',
-            Piece.Queen => 'q',
+            Piece.Knight => 'n',
             Piece.Bishop => 'b',
             Piece.Rook => 'r',
-            Piece.Knight => 'n',
+            Piece.Queen => 'q',
             Piece.Pawn => 'p',
-            _ => throw new ArgumentOutOfRangeException()
         };
 
         return Piece.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;

@@ -234,7 +234,7 @@ public class Position
         }
 
         // action the required change for the moving piece
-        if (move is { IsPromotion: true, PromotedPiece: not null })
+        if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
             Bitboards.SetOff(move.PieceMoved, move.From);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
@@ -264,10 +264,11 @@ public class Position
         }
 
         // king moving always sacrifices the castling rights
-        UpdateCastlingRights(move);
+        var pieceType = Piece.PieceType(move.PieceMoved);
+        UpdateCastlingRights(move, pieceType, isWhite);
 
         // set en passant target square
-        var pieceType = Piece.PieceType(move.PieceMoved);
+        
         if (pieceType == Piece.Pawn && Math.Abs(fromRankIndex - toRankIndex) == 2)
         {
             var targetRank = isWhite ? 2 : 5;
@@ -313,35 +314,35 @@ public class Position
         HalfMoves = state.HalfMove;
         FullMoves = state.FullMove;
         move.Data = state.LastMoveFlags;
-        int? capturedOn = null;
+       
         var movePieceMoved = move.PieceMoved;
 
 
-        if (move.IsPromotion && move.PromotedPiece.HasValue)
+        if (move.IsPromotion)
         {
-            Bitboards.SetOff(move.PromotedPiece.Value, move.To);
+            Bitboards.SetOff(move.PromotedPiece!.Value, move.To);
             Bitboards.SetOn(movePieceMoved, move.From);
         }
         else
         {
             MovePiece(movePieceMoved, move.To, move.From);
         }
-
-        var capturedPieceHasValue = state.CapturedPiece.HasValue;
-        if (capturedPieceHasValue)
+        
+        int? capturedOn = null;
+        if (state.CapturedPiece.HasValue)
         {
             if (!move.IsEnPassant)
             {
-                Bitboards.SetOn(state.CapturedPiece!.Value, move.To);
+                Bitboards.SetOn(state.CapturedPiece.Value, move.To);
                 capturedOn = move.To;
             }
         }
-
-        var isBlack = Piece.IsBlack(movePieceMoved);
-        var isWhite = !isBlack;
+      
+        var isWhite = !Piece.IsBlack(movePieceMoved);
         var fileIndex = RankAndFile.FileIndex(move.To);
         if (move.IsCastling)
         {
+            
             var rank = RankAndFile.RankIndex(move.To);
             var file = fileIndex;
             var rookHomeFile = file > 4 ? 7 : 0;
@@ -355,7 +356,7 @@ public class Position
 
         if (move.IsEnPassant)
         {
-            var pawnHomeRank = isBlack ? 3 : 4;
+            var pawnHomeRank = isWhite ? 4 : 3;
             capturedOn = RankAndFile.SquareIndex(pawnHomeRank, fileIndex);
             Bitboards.SetOn(Piece.MakePiece(Piece.Pawn, !isWhite), capturedOn.Value);
         }
@@ -412,11 +413,10 @@ public class Position
         }
     }
 
-    private void UpdateCastlingRights(Move move)
+    private void UpdateCastlingRights(Move move, int pieceType, bool isWhite)
     {
-        var type = Piece.PieceType(move.PieceMoved);
-        var isWhite = Piece.IsWhite(move.PieceMoved);
-        if (type == Piece.King)
+        
+        if (pieceType == Piece.King)
         {
             if (isWhite)
             {
@@ -430,7 +430,7 @@ public class Position
             }
         }
 
-        if (type != Piece.Rook) return;
+        if (pieceType != Piece.Rook) return;
 
         if (isWhite)
         {

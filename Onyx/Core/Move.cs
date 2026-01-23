@@ -110,9 +110,8 @@ public struct Move : IEquatable<Move>
         // Mask for From (6-11), To (0-5), and Special Flags (14-15)
         const uint functionalMask = 0xFC0 | 0x3F | (3 << 14);
         
-        return PieceMoved == other.PieceMoved &&
-               (Data & functionalMask) == (other.Data & functionalMask) &&
-               PromotedPiece == other.PromotedPiece;
+        return (Data & functionalMask) == (other.Data & functionalMask) 
+               && PieceMoved == other.PieceMoved && PromotedPiece == other.PromotedPiece;
     }
 
     public override bool Equals(object? obj) => obj is Move other && Equals(other);

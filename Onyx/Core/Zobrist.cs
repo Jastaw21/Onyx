@@ -5,19 +5,7 @@ public static class Zobrist
     private const int Seed = 123111;
     private static readonly Random Random;
 
-    private static readonly ulong[] WhitePawn = new ulong[64];
-    private static readonly ulong[] WhiteRook = new ulong[64];
-    private static readonly ulong[] WhiteBishop = new ulong[64];
-    private static readonly ulong[] WhiteKnight = new ulong[64];
-    private static readonly ulong[] WhiteQueen = new ulong[64];
-    private static readonly ulong[] WhiteKing = new ulong[64];
-
-    private static readonly ulong[] BlackPawn = new ulong[64];
-    private static readonly ulong[] BlackRook = new ulong[64];
-    private static readonly ulong[] BlackBishop = new ulong[64];
-    private static readonly ulong[] BlackKnight = new ulong[64];
-    private static readonly ulong[] BlackQueen = new ulong[64];
-    private static readonly ulong[] BlackKing = new ulong[64];
+    private static readonly ulong[,] PieceSquare = new ulong[32, 64]; // Use sbyte piece value directly as index. 32 to be safe for 1<<4 + 6
 
     public static ulong WhiteToMove { get; private set; }
 
@@ -81,8 +69,8 @@ public static class Zobrist
             else
             {
                 var square = rank * 8 + file;
-                var valueHere = GetArrayFromChar(fenDetails.PositionFen[i])[square];
-                hashValue ^= valueHere;
+                var piece = Fen.GetPieceFromChar(fenDetails.PositionFen[i]);
+                hashValue ^= PieceSquare[piece, square];
                 file++;
             }
 
@@ -96,10 +84,8 @@ public static class Zobrist
         int? epBefore = null, int? epAfter = null, int? castlingRights = null, int? newCastlingRights = null)
     {
         var hashValue = hashIn;
-        var movedPieceChar = Fen.GetCharFromPiece(move.PieceMoved);
-        var movedPieceArray = GetArrayFromChar(movedPieceChar);
-        var movedPieceToRand = movedPieceArray[move.To];
-        var movedPieceFromRand = movedPieceArray[move.From];
+        var movedPieceToRand = PieceSquare[move.PieceMoved, move.To];
+        var movedPieceFromRand = PieceSquare[move.PieceMoved, move.From];
 
         // move the moving piece, turning its from square off, and to square on
         hashValue ^= movedPieceFromRand;
@@ -108,41 +94,29 @@ public static class Zobrist
         // test capture
         if (capturedPiece.HasValue && capturedOnSquare.HasValue)
         {
-            var capturedPieceChar = Fen.GetCharFromPiece(capturedPiece.Value);
-            var capturedPieceArray = GetArrayFromChar(capturedPieceChar);
-            var capturedPieceRand = capturedPieceArray[capturedOnSquare.Value];
-            hashValue ^= capturedPieceRand;
+            hashValue ^= PieceSquare[capturedPiece.Value, capturedOnSquare.Value];
         }
 
-        if (move is { IsPromotion: true, PromotedPiece: not null })
+        if (move.IsPromotion)
         {
             // We need to undo the move to of the piece, thats covered in MovePiece,
             // as obviously for promotion this is overridden by the promoted piece. Explicitly set it off here
             hashValue ^= movedPieceToRand;
-
-            var promotedPieceChar = Fen.GetCharFromPiece(move.PromotedPiece.Value);
-            var promotedPieceArray = GetArrayFromChar(promotedPieceChar);
-            var promotedPieceRand = promotedPieceArray[move.To];
+            var promotedPieceRand = PieceSquare[move.PromotedPiece!.Value, move.To];
             hashValue ^= promotedPieceRand;
         }
 
-        if (move.IsCastling)
+        else if (move.IsCastling)
         {
             var affectedRook = Piece.IsWhite(move.PieceMoved) ? Piece.WR : Piece.BR;
-
-            var rookChar = Fen.GetCharFromPiece(affectedRook);
-            var rookArray = GetArrayFromChar(rookChar);
 
             var toFileIndex = RankAndFile.FileIndex(move.To);
             var toRankIndex = RankAndFile.RankIndex(move.To);
 
             var rookNewFile = toFileIndex == 2 ? 3 : 5;
             var rookOldFile = toFileIndex == 2 ? 0 : 7;
-            var rookFrom = RankAndFile.SquareIndex(toRankIndex, rookOldFile);
-            var rookTo = RankAndFile.SquareIndex(toRankIndex, rookNewFile);
-
-            var rookFromRand = rookArray[rookFrom];
-            var rookToRand = rookArray[rookTo];
+            var rookFromRand = PieceSquare[affectedRook, RankAndFile.SquareIndex(toRankIndex, rookOldFile)];
+            var rookToRand = PieceSquare[affectedRook, RankAndFile.SquareIndex(toRankIndex, rookNewFile)];
 
             hashValue ^= rookFromRand;
             hashValue ^= rookToRand;
@@ -152,6 +126,7 @@ public static class Zobrist
             hashValue ^= EnPassantSquare[epAfter.Value];
         if (epBefore.HasValue)
             hashValue ^= EnPassantSquare[epBefore.Value];
+
 
         if (castlingRights.HasValue && newCastlingRights.HasValue && castlingRights.Value != newCastlingRights.Value)
         {
@@ -176,21 +151,13 @@ public static class Zobrist
 
     private static void InitZobrist()
     {
-        FillRandomArray(WhitePawn);
-        FillRandomArray(WhiteRook);
-        FillRandomArray(WhiteBishop);
-        FillRandomArray(WhiteQueen);
-        FillRandomArray(WhiteKing);
-        FillRandomArray(WhitePawn);
-        FillRandomArray(WhiteKnight);
-
-        FillRandomArray(BlackPawn);
-        FillRandomArray(BlackRook);
-        FillRandomArray(BlackBishop);
-        FillRandomArray(BlackQueen);
-        FillRandomArray(BlackKing);
-        FillRandomArray(BlackPawn);
-        FillRandomArray(BlackKnight);
+        foreach (var piece in Piece.AllPieces)
+        {
+            for (var square = 0; square < 64; square++)
+            {
+                PieceSquare[piece, square] = NextUlong();
+            }
+        }
 
         FillRandomArray(EnPassantSquare);
         FillRandomArray(CastlingRights);
@@ -218,25 +185,5 @@ public static class Zobrist
         var buffer = new byte[8];
         Random.NextBytes(buffer);
         return BitConverter.ToUInt64(buffer, 0);
-    }
-
-    private static ulong[] GetArrayFromChar(char c)
-    {
-        return c switch
-        {
-            'P' => WhitePawn,
-            'N' => WhiteKnight,
-            'B' => WhiteBishop,
-            'R' => WhiteRook,
-            'Q' => WhiteQueen,
-            'K' => WhiteKing,
-            'p' => BlackPawn,
-            'n' => BlackKnight,
-            'b' => BlackBishop,
-            'r' => BlackRook,
-            'q' => BlackQueen,
-            'k' => BlackKing,
-            _ => WhitePawn
-        };
     }
 }
