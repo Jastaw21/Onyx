@@ -1,4 +1,5 @@
-﻿using Onyx.Core;
+﻿using System.Security.Cryptography.X509Certificates;
+using Onyx.Core;
 
 namespace Onyx.Statics;
 
@@ -59,6 +60,15 @@ public static class BoardHelpers
     public static bool FileIsOpen(int file, ulong pawns)
     {
         return (pawns & GetFileFromIndex(file)) == 0;
+    }
+
+    public static int CountOpenFilesNearKing(int kingSquare, ulong pawns)
+    {
+        var thisFile = RankAndFile.FileIndex(kingSquare);
+        var result = FileIsOpen(thisFile, pawns) ? 1 : 0;
+        if (thisFile > 0) result += FileIsOpen(thisFile - 1,pawns) ? 1 : 0;
+        if (thisFile < 7) result += FileIsOpen(thisFile + 1,pawns) ? 1 : 0;
+        return result;
     }
 
     public const int WhiteKingsideCastlingFlag = 1 << 0;
