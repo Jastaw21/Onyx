@@ -146,7 +146,37 @@ public static class Referee
     public static bool IsSquareAttacked(int square, Position board, bool byWhite)
     {
         var occupancy = board.Bitboards.Occupancy();
-
+        
+        // check pawn attacks
+        var attackingPiece = byWhite ? Piece.WP : Piece.BP;
+        var pawnsBb = board.Bitboards.OccupancyByPiece(attackingPiece);
+        var fileIndex = RankAndFile.FileIndex(square);
+        if (fileIndex > 0)
+        {
+            var targetIndex = byWhite ? square - 9 : square + 7;
+            if ((uint)targetIndex < 64)
+            {
+                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
+            }
+        }
+        if (fileIndex < 7)
+        {
+            var targetIndex = byWhite ? square - 7 : square + 9;
+            if ((uint)targetIndex < 64)
+            {
+                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
+            }
+        }
+        
+        var knightPiece = byWhite ? Piece.WN : Piece.BN;
+        var knightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WN, square, occupancy);
+        if ((knightAttacks & board.Bitboards.OccupancyByPiece(knightPiece)) > 0)
+            return true;
+        
+        var relevantKing = byWhite ? Piece.WK : Piece.BK;
+        var kingAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WK, square, occupancy);
+        if ((kingAttacks & board.Bitboards.OccupancyByPiece(relevantKing)) > 0)
+            return true;
 
         // what squares could a bishop attack from where the king currently is?
         var diagAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WB, square, occupancy);
@@ -157,55 +187,23 @@ public static class Referee
         var relevantQueen = byWhite ? Piece.WQ : Piece.BQ;
 
         // check the pieces one by one to save some cycles if one does match
-        if ((diagAttacks & board.Bitboards.OccupancyByPiece(relevantBishop)) > 0)
-            return true;
-
         var queenOccupancy = board.Bitboards.OccupancyByPiece(relevantQueen); // precache as used below
         if ((diagAttacks & queenOccupancy) > 0)
+            return true;
+        
+        if ((diagAttacks & board.Bitboards.OccupancyByPiece(relevantBishop)) > 0)
             return true;
 
         // pre calc the attackers to save makePieceCalls
         var relevantRook = byWhite ? Piece.WR : Piece.BR;
         var straightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WR, square, occupancy);
-        if ((straightAttacks & queenOccupancy) > 0)
-            return true;
+        
         var rookOccupancy = board.Bitboards.OccupancyByPiece(relevantRook);
         if ((straightAttacks & rookOccupancy) > 0)
             return true;
-
-        var knightPiece = byWhite ? Piece.WN : Piece.BN;
-        var knightAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WN, square, occupancy);
-        if ((knightAttacks & board.Bitboards.OccupancyByPiece(knightPiece)) > 0)
+        
+        if ((straightAttacks & queenOccupancy) > 0)
             return true;
-
-        // check pawn attacks
-        var attackingPiece = byWhite ? Piece.WP : Piece.BP;
-        var pawnsBb = board.Bitboards.OccupancyByPiece(attackingPiece);
-
-        var fileIndex = RankAndFile.FileIndex(square);
-        if (fileIndex > 0)
-        {
-            var targetIndex = byWhite ? square - 9 : square + 7;
-            if ((uint)targetIndex < 64)
-            {
-                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
-            }
-        }
-
-        if (fileIndex < 7)
-        {
-            var targetIndex = byWhite ? square - 7 : square + 9;
-            if ((uint)targetIndex < 64)
-            {
-                if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
-            }
-        }
-
-        var relevantKing = byWhite ? Piece.WK : Piece.BK;
-        var kingAttacks = MagicBitboards.MagicBitboards.GetMovesByPiece(Piece.WK, square, occupancy);
-        if ((kingAttacks & board.Bitboards.OccupancyByPiece(relevantKing)) > 0)
-            return true;
-
 
         return false;
     }
