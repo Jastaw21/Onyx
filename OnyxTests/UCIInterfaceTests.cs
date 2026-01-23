@@ -19,6 +19,6 @@ public class UCIInterfaceTests
     {
         var player = new UciInterface();
         player.HandleCommand("setoption name lmrthreshold value 3");
-        Assert.That(player.Player.PrimaryWorker.LMRThreshold, Is.EqualTo(3));
+        Assert.That(player.Player.PrimaryWorker.LmrThreshold, Is.EqualTo(3));
     }
 }
