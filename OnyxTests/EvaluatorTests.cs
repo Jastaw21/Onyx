@@ -80,4 +80,51 @@ public class EvaluatorTests
         Evaluator.SortMoves(moves, ttMove, null, 0);
         Assert.That(moves[0], Is.EqualTo(ttMove));
     }
+
+    [Test]
+    public void KingShield()
+    {
+        // equal 
+        var board = new Position();
+        var allShields = Evaluator.KingSafetyScore(board, true);
+        
+        
+        // remove one white shielder
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+        var oneDown = Evaluator.KingSafetyScore(board,true);
+        Assert.That(oneDown, Is.LessThan(allShields));
+        
+        // remove the second
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 1");
+        var twoDown = Evaluator.KingSafetyScore(board,true);
+        Assert.That(twoDown, Is.LessThan(oneDown));
+        
+        // remove the third
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPP3PP/RNBQKBNR b KQkq - 0 1");
+        var threeDown = Evaluator.KingSafetyScore(board,true);
+        Assert.That(threeDown, Is.LessThan(twoDown));
+        
+        // remove a random, non shielding pawn
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/1PP3PP/RNBQKBNR b KQkq - 0 1");
+        var randomPawn = Evaluator.KingSafetyScore(board,true);
+        Assert.That(randomPawn, Is.EqualTo(threeDown));
+    }
+
+    [Test]
+    public void OpenFilesNearKing()
+    {
+        // equal 
+        var board = new Position();
+        var allShields = Evaluator.KingSafetyScore(board, true);
+        
+        // open the file
+        board.SetFen("rnbqkbnr/pppp1ppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        var openFileEvale = Evaluator.KingSafetyScore(board,true);
+        Assert.That(openFileEvale, Is.LessThan(allShields));
+        
+        // close the file with an opposing pawn
+        board.SetFen("rnbqkbnr/pppppppp/8/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        var closeFileEvale = Evaluator.KingSafetyScore(board,true);
+        Assert.That(closeFileEvale, Is.GreaterThan(openFileEvale));
+    }
 }
