@@ -114,19 +114,16 @@ public static class Zobrist
             hashValue ^= capturedPieceRand;
         }
 
-        if (move is { IsPromotion: true, PromotedPiece: not null })
+        if (move.IsPromotion)
         {
             // We need to undo the move to of the piece, thats covered in MovePiece,
             // as obviously for promotion this is overridden by the promoted piece. Explicitly set it off here
             hashValue ^= movedPieceToRand;
-
-            var promotedPieceChar = Fen.GetCharFromPiece(move.PromotedPiece.Value);
-            var promotedPieceArray = GetArrayFromChar(promotedPieceChar);
-            var promotedPieceRand = promotedPieceArray[move.To];
+            var promotedPieceRand = GetArrayFromChar(Fen.GetCharFromPiece(move.PromotedPiece!.Value))[move.To];
             hashValue ^= promotedPieceRand;
         }
 
-        if (move.IsCastling)
+        else if (move.IsCastling)
         {
             var affectedRook = Piece.IsWhite(move.PieceMoved) ? Piece.WR : Piece.BR;
 
@@ -138,11 +135,8 @@ public static class Zobrist
 
             var rookNewFile = toFileIndex == 2 ? 3 : 5;
             var rookOldFile = toFileIndex == 2 ? 0 : 7;
-            var rookFrom = RankAndFile.SquareIndex(toRankIndex, rookOldFile);
-            var rookTo = RankAndFile.SquareIndex(toRankIndex, rookNewFile);
-
-            var rookFromRand = rookArray[rookFrom];
-            var rookToRand = rookArray[rookTo];
+            var rookFromRand = rookArray[RankAndFile.SquareIndex(toRankIndex, rookOldFile)];
+            var rookToRand = rookArray[RankAndFile.SquareIndex(toRankIndex, rookNewFile)];
 
             hashValue ^= rookFromRand;
             hashValue ^= rookToRand;
@@ -152,6 +146,7 @@ public static class Zobrist
             hashValue ^= EnPassantSquare[epAfter.Value];
         if (epBefore.HasValue)
             hashValue ^= EnPassantSquare[epBefore.Value];
+
 
         if (castlingRights.HasValue && newCastlingRights.HasValue && castlingRights.Value != newCastlingRights.Value)
         {

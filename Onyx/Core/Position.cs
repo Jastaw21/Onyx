@@ -223,7 +223,7 @@ public class Position
         }
 
         // action the required change for the moving piece
-        if (move is { IsPromotion: true, PromotedPiece: not null })
+        if (move.IsPromotion && move.PromotedPiece.HasValue)
         {
             Bitboards.SetOff(move.PieceMoved, move.From);
             Bitboards.SetOn(move.PromotedPiece.Value, move.To);
@@ -253,10 +253,11 @@ public class Position
         }
 
         // king moving always sacrifices the castling rights
-        UpdateCastlingRights(move);
+        var pieceType = Piece.PieceType(move.PieceMoved);
+        UpdateCastlingRights(move, pieceType, isWhite);
 
         // set en passant target square
-        var pieceType = Piece.PieceType(move.PieceMoved);
+        
         if (pieceType == Piece.Pawn && Math.Abs(fromRankIndex - toRankIndex) == 2)
         {
             var targetRank = isWhite ? 2 : 5;
@@ -401,11 +402,10 @@ public class Position
         }
     }
 
-    private void UpdateCastlingRights(Move move)
+    private void UpdateCastlingRights(Move move, int pieceType, bool isWhite)
     {
-        var type = Piece.PieceType(move.PieceMoved);
-        var isWhite = Piece.IsWhite(move.PieceMoved);
-        if (type == Piece.King)
+        
+        if (pieceType == Piece.King)
         {
             if (isWhite)
             {
@@ -419,7 +419,7 @@ public class Position
             }
         }
 
-        if (type != Piece.Rook) return;
+        if (pieceType != Piece.Rook) return;
 
         if (isWhite)
         {
