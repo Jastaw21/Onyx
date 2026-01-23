@@ -1,4 +1,5 @@
 ﻿using Onyx.Core;
+
 namespace Onyx.Statics;
 
 internal struct MaterialEvaluation
@@ -96,8 +97,6 @@ public static class Evaluator
 
     public static int Evaluate(Position board)
     {
-        if (Referee.IsThreeFoldRepetition(board)) return 0;
-
         var whiteMaterial = EvaluateMaterial(board, true);
         var blackMaterial = EvaluateMaterial(board, false);
 
@@ -112,9 +111,12 @@ public static class Evaluator
         var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
         var pieceSquareScore = whitePss - blackPss;
 
+        // is the king in a safe place
         var whiteKingSafety = KingSafetyScore(board, true);
         var blackKingSafety = KingSafetyScore(board, false);
         var kingSafetyScore = whiteKingSafety - blackKingSafety;
+        //var opponentQueenCount = board.WhiteToMove ? blackMaterial.Queens : whiteMaterial.Queens;
+        //if (opponentQueenCount > 0) kingSafetyScore *= 2; // king safety even more important with queens on the board
 
         var score = 0;
         score += materialScore;
@@ -140,10 +142,11 @@ public static class Evaluator
         var actualShields = (int)ulong.PopCount(pawnPlacement & kingShields);
 
         var pawnShieldScore = (possibleShields - actualShields) * -20;
-        
+
+        var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
         var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
-        var openFilePenalty = BoardHelpers.CountOpenFilesNearKing(kingSquare,pawns) * -20;
-        
+        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+
         return pawnShieldScore + openFilePenalty;
     }
 
@@ -335,7 +338,7 @@ public static class Evaluator
         -12, -10, -10, -10, -10, -10, -10, -12,
         -12, -10, -10, -10, -10, -10, -10, -12
     ];
-    // @formatter:on
+    
     private static readonly int[] ZeroScores =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -347,6 +350,7 @@ public static class Evaluator
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
     ];
+    // @formatter:on
 
     private static int[] GetArray(sbyte piece, bool endGame = false)
     {
