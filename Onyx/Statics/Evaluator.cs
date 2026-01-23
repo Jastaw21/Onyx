@@ -1,6 +1,5 @@
 ﻿using Onyx.Core;
 
-
 namespace Onyx.Statics;
 
 internal struct MaterialEvaluation
@@ -142,10 +141,11 @@ public static class Evaluator
         var actualShields = (int)ulong.PopCount(pawnPlacement & kingShields);
 
         var pawnShieldScore = (possibleShields - actualShields) * -20;
-        
+
+        var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
         var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
-        var openFilePenalty = BoardHelpers.CountOpenFilesNearKing(kingSquare,pawns) * -20;
-        
+        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+
         return pawnShieldScore + openFilePenalty;
     }
 
