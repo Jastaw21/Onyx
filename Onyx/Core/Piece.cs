@@ -54,6 +54,6 @@ public static class Piece
         BP, BB, BK, BQ, BN, BR
     ];
 
-    public static readonly sbyte[] _whitePromotionTypes = [WB, WQ, WR, WN];
-    public static readonly sbyte[] _blackPromotionTypes = [BB, BQ, BR, BN];
+    public static readonly sbyte[] _whitePromotionTypes = [WQ, WN, WR, WB];
+    public static readonly sbyte[] _blackPromotionTypes = [BQ, BN, BR, BB];
 }

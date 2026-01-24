@@ -167,7 +167,7 @@ public class TranspositionTable
         }
 
         // if we already have this hash needs to think about a replacement scheme
-        if (existingEntry.Hash == hash)
+        else if (existingEntry.Hash == hash)
         {
             if (existingEntry.Age != age)
             {

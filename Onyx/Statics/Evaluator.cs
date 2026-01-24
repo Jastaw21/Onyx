@@ -212,7 +212,7 @@ public static class Evaluator
 
         var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
         var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
-        var openFilePenalty = (BoardHelpers.FileIsOpen(kingFile, pawns)) ? -30 : 0;
+        var openFilePenalty = BoardHelpers.FileIsOpen(kingFile, pawns) ? -30 : 0;
 
         return pawnShieldScore + openFilePenalty;
     }

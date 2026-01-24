@@ -145,7 +145,7 @@ public static class Referee
 
     public static bool IsSquareAttacked(int square, Position board, bool byWhite)
     {
-        var occupancy = board.Bitboards.Occupancy();
+        
         
         // check pawn attacks as they're precomputed and also cheap
         var attackingPiece = byWhite ? Piece.WP : Piece.BP;
@@ -167,6 +167,8 @@ public static class Referee
                 if (((1UL << targetIndex) & pawnsBb) != 0UL) return true;
             }
         }
+        
+        var occupancy = board.Bitboards.Occupancy();
         
         // knights are also precomputed
         var knightPiece = byWhite ? Piece.WN : Piece.BN;
