@@ -194,30 +194,6 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private const int Infinity = 1_000_000;
 
-    private SearchFlag PerformNullMoveCutoff(int depthRemaining, int depthFromRoot, int alpha, int beta)
-    {
-        _currentPosition.MakeNullMove();
-        var nmr = 2;
-        var nmrResult = Search(depthRemaining - 1 - nmr, depthFromRoot + 1, -beta, -beta + 1, true);
-            
-        _currentPosition.UndoNullMove();
-            
-        if (!nmrResult.Completed)
-            return SearchFlag.Abort;
-        
-        var nullScore = -nmrResult.Score;
-            
-        if (nullScore >= beta)
-        {
-            Statistics.NullMoveCutoffs++;
-            if (nullScore >= engine.MateScore - 100)
-                nullScore = beta;
-            return new SearchFlag(true, nullScore);
-        }
-
-        return SearchFlag.NullMoveFailed;
-    }
-
     private SearchFlag Search(int depthRemaining, int depthFromRoot, int alpha, int beta, bool lastMoveNulled = false)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
@@ -306,7 +282,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
         var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,alreadyKnowBoardInCheck:true,isAlreadyInCheck: isInCheck);
-        //var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer);
         var moves = moveBuffer[..legalMoveCount];
 
         // no legal moves left - decide if its checkmate or stalemate
@@ -438,7 +413,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
 
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
-        var eval = Evaluator.Evaluate(position);
+        var eval = engine.EvaluationTable.Evaluate(position, engine.CurrentSearchId);
         if (eval >= beta) return new SearchFlag(true, beta);
         if (eval > alpha) alpha = eval;
 

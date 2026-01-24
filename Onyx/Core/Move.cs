@@ -94,8 +94,6 @@ public struct Move : IEquatable<Move>
         get => (Data & (3 << 14)) == MoveFlags.Castling;
         set => Data |= MoveFlags.Castling;
     }
-
-
     public bool IsEnPassant
     {
         get => (Data & (3 << 14)) == MoveFlags.EnPassant;

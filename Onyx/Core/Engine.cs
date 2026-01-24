@@ -51,6 +51,7 @@ public class Engine
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
+    public EvaluationTable EvaluationTable { get; } = new();
     public StopwatchManager StopwatchManager { get; set; } = new();
     public int MateScore { get; private set; } = 30000;
     private CancellationToken _ct; // for threading
