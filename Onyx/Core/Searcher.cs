@@ -413,7 +413,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
 
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
-        var eval = engine.EvaluationTable.Evaluate(position);
+        var eval = engine.EvaluationTable.Evaluate(position,engine.CurrentSearchId);
         if (eval >= beta) return new SearchFlag(true, beta);
         if (eval > alpha) alpha = eval;
 

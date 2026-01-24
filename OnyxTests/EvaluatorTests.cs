@@ -134,12 +134,12 @@ public class EvaluatorTests
         var evalTable = new EvaluationTable();
         var board = new Position("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
 
-        var eval = evalTable.Evaluate(board);
-        var secondEval = evalTable.Evaluate(board);
+        var eval = evalTable.Evaluate(board,0);
+        var secondEval = evalTable.Evaluate(board,0);
         
         board.MakeNullMove();
 
-        var flippedEval = evalTable.Evaluate(board);
+        var flippedEval = evalTable.Evaluate(board,0);
         Assert.Multiple(() =>
         {
             Assert.That(eval, Is.EqualTo(secondEval));

@@ -55,6 +55,23 @@ public class MoveGenTests
     }
 
     [Test]
+    public void B1C3NotGen()
+    {
+        var board = new Position("rnbqkb1r/ppn2ppp/4p3/2ppP3/2BP4/2P2N2/PP3PPP/RNBQK2R w KQkq - 0 1");
+        Span<Move> moveBuffer = stackalloc Move[256];
+        var count = MoveGenerator.GetMoves(board, moveBuffer);
+        var moves = moveBuffer[..count];
+        List<string> moveNotation = [];
+        foreach (var move in moves)
+        {
+            moveNotation.Add(move.Notation);
+        }
+        
+        Assert.That(moveNotation,Does.Not.Contain("b1c3"));
+
+    }
+
+    [Test]
     public void DoesntGenerateMoveToOwn()
     {
         var testBoard = new Position("8/8/8/8/8/NRBBN3/PKQBN3/8 w - - 0 1");

@@ -2,10 +2,12 @@
 
 namespace Onyx.Core;
 
-public struct EvalTableEntry(ulong hash, int eval)
+public struct EvalTableEntry(ulong hash, int eval, bool forWhite, int age)
 {
     public readonly ulong Hash = hash;
     public int Eval = eval;
+    public bool ForWhite = forWhite;
+    public int Age = age;
 }
 
 public class EvaluationTable
@@ -19,13 +21,11 @@ public class EvaluationTable
 
     private EvalTableEntry[] _entries;
 
-    protected void Store(ulong hash, int eval)
+    protected void Store(ulong hash, int eval, bool forWhite, int age)
     {
         var index = hash % (ulong)_entries.Length;
-        var store = false;
-
         // always replace
-        _entries[index] = new EvalTableEntry(hash, eval);
+        _entries[index] = new EvalTableEntry(hash, eval, forWhite, age);
     }
 
     protected EvalTableEntry? Poll(ulong hash)
@@ -39,16 +39,19 @@ public class EvaluationTable
         return null;
     }
 
-    public int Evaluate(Position board)
+    public int Evaluate(Position board, int age)
     {
         var existingEval = Poll(board.ZobristState);
         if (existingEval.HasValue)
         {
-            return existingEval.Value.Eval;
+            var flipEval = board.WhiteToMove != existingEval.Value.ForWhite;
+            var value = existingEval.Value.Eval * (flipEval ? -1 : 1);
+            return value;
         }
 
         var eval = Evaluator.Evaluate(board);
-        Store(board.ZobristState, eval);
+        var forWhite = board.WhiteToMove;
+        Store(board.ZobristState, eval,forWhite, age);
 
         return eval;
     }
