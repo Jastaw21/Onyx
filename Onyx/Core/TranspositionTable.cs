@@ -1,4 +1,5 @@
 ﻿using Onyx.Statics;
+using System.Runtime.CompilerServices;
 
 namespace Onyx.Core;
 
@@ -127,20 +128,32 @@ public class TranspositionTable
     }
 
     private TtEntry[] _entries;
-
+    private ulong _indexMask;
     public TtStats TTStats = new();
 
     public TranspositionTable(int sizeInMb = 512)
     {
         var entrySize = System.Runtime.InteropServices.Marshal.SizeOf<TtEntry>();
-        var numberOfEntries = sizeInMb * 1024 * 1024 / entrySize;
-        _entries = new TtEntry[numberOfEntries];
+        var numberOfEntries = sizeInMb * 1024 * 1024 / entrySize; // raw number of entries
+        
+        // next power of two
+        var v = numberOfEntries;
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        _entries = new TtEntry[v];
+        _indexMask = (ulong)v - 1UL;
     }
 
 
     public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
     {
-        var index = hash % (ulong)_entries.Length;
+        // faster modulo via bitmask
+        var index = (int)(hash & _indexMask);
         TTStats.AttemptedStores++;
         var existingEntry = _entries[index];
 
@@ -186,14 +199,19 @@ public class TranspositionTable
         TTStats.NonReplacements++;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryRetrieve(ulong hash, out TtEntry entry)
+    {
+        var index = (int)(hash & _indexMask);
+        entry = _entries[index];
+        return entry.Hash == hash;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TtEntry? Retrieve(ulong hash)
     {
-        var index = hash % (ulong)_entries.Length;
-        var entry = _entries[index];
-
-        if (entry.Hash == hash)
+        if (TryRetrieve(hash, out var entry))
             return entry;
-
         return null;
     }
 }

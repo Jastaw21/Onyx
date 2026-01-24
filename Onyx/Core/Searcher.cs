@@ -238,24 +238,25 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         // See if this position has already been searched for
         var zobristHashValue = _currentPosition.ZobristState;
-        var ttValue = engine.TranspositionTable.Retrieve(zobristHashValue);
-        if (ttValue.HasValue)
+        var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);
+       
+        if (entryExists)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
-            if (engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, depthRemaining, zobristHashValue))
+            if (engine.TranspositionTable.PollEntry(ttValue, alpha, beta, depthRemaining, zobristHashValue))
             {
-                var ttEval = DecodeMateScore(ttValue.Value.Eval, depthFromRoot);
+                var ttEval = DecodeMateScore(ttValue.Eval, depthFromRoot);
 
                 // cutoff at depth 0 - this is our new best move
                 if (depthFromRoot == 0)
                 {
-                    if (ttValue.Value.BestMove.Data != 0)
-                        _thisIterationResults.BestMove = ttValue.Value.BestMove;
+                    if (ttValue.BestMove.Data != 0)
+                        _thisIterationResults.BestMove = ttValue.BestMove;
                     _thisIterationResults.Score = ttEval;
                 }
 
                 // the value is usable
-                if (ttValue.Value.BestMove.Data != 0)
+                if (ttValue.BestMove.Data != 0)
                 {
                     // PV extract
                     ExtractPvData(depthRemaining, depthFromRoot, ttValue);
@@ -320,8 +321,10 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         // order the moves
-        if (moves.Length > 1)
-            Evaluator.SortMoves(moves, ttValue?.BestMove ?? new Move(), _killerMoves, depthFromRoot);
+        if (entryExists)
+            Evaluator.SortMoves(moves, ttValue.BestMove, _killerMoves, depthFromRoot);
+        else
+            Evaluator.SortMoves(moves, default, _killerMoves, depthFromRoot);
 
         // start to search through each of them
         var moveCount = 0;
@@ -425,14 +428,14 @@ public class Searcher(Engine engine, int searcherId = 0)
             return SearchFlag.Abort;
 
         var zobristHashValue = position.ZobristState;
-        var ttValue = engine.TranspositionTable.Retrieve(zobristHashValue);
+        var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);      
 
         // Use depth 0 for Q-search probing
-        if (ttValue.HasValue)
+        if (entryExists)
         {
-            if (engine.TranspositionTable.PollEntry(ttValue.Value, alpha, beta, 0, zobristHashValue))
+            if (engine.TranspositionTable.PollEntry(ttValue, alpha, beta, 0, zobristHashValue))
             {
-                return new SearchFlag(true, DecodeMateScore(ttValue.Value.Eval, depthFromRoot));
+                return new SearchFlag(true, DecodeMateScore(ttValue.Eval, depthFromRoot));
             }
         }
 
@@ -450,8 +453,8 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         var moves = moveBuffer[..moveCount];
 
-        if (moves.Length > 1)
-            Evaluator.SortMoves(moves, null, _killerMoves, depthFromRoot);
+       
+        Evaluator.SortMoves(moves, new Move(), _killerMoves, depthFromRoot);
 
         var storingFlag = BoundFlag.Upper;
         var bestMove = new Move();

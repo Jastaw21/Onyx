@@ -92,8 +92,8 @@ public static class Fen
             'r' => Piece.BR,
             'n' => Piece.BN,
             'p' => Piece.BP,
-            'q' => Piece.BQ,
-            _ => throw new ArgumentException()
+            'q' => Piece.BQ
+           
         };
     }
 
