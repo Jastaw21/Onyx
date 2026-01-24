@@ -1,4 +1,5 @@
 ﻿using Onyx.Core;
+using System;
 
 
 namespace Onyx.Statics;
@@ -45,32 +46,7 @@ internal struct MaterialEvaluation
 public static class Evaluator
 {
     
-    public static void SortMoves(Span<Move> moves, Move? transpositionTableMove, Move?[,] killerMoves, int ply)
-    {
-       
-            moves.Sort((a, b) =>
-            {
-                if (a == b)
-                {
-                    return 0;
-                }
-
-                if (transpositionTableMove is { Data: > 0 })
-                {
-                    if (a == transpositionTableMove.Value)
-                        return -1;
-                    if (b == transpositionTableMove.Value)
-                        return 1;
-                }
-
-                var aScore = GetMoveScore(a, killerMoves, ply);
-                var bScore = GetMoveScore(b, killerMoves, ply);
-
-                return bScore.CompareTo(aScore);
-            });
-       
-    }
-
+   
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
     {
         var score = 0;
@@ -90,6 +66,101 @@ public static class Evaluator
             return 2000;
 
         return score;
+    }
+
+    public static void SortMoves(Span<Move> moves, Move transpositionTableMove, Move?[,] killerMoves, int ply)
+    {
+        var len = moves.Length;
+        if (len <= 1)  return;
+
+        Span<int> scores = stackalloc int[len];
+        var hasTTMove = transpositionTableMove.Data > 0;
+
+        for (var i = 0; i < len; i++)
+        {
+            if (hasTTMove && moves[i] == transpositionTableMove)
+            {
+                scores[i] = int.MaxValue;
+                continue;
+            }
+            scores[i] = GetMoveScore(moves[i], killerMoves, ply);
+        }
+        
+        PerformSort(moves, scores, 0, len - 1);
+
+    }
+
+    static void PerformSort(Span<Move> moves, Span<int> scores, int left, int right)
+    {
+
+        if (left < right) QuickSort(moves,scores,left, right);
+
+    }
+
+    static void InsertionSort(Span<Move> moves, Span<int> scores,int l, int r)
+    {
+        for (var i = l + 1; i <= r; i++)
+        {
+            var keyMove = moves[i];
+            var keyScore = scores[i];
+            var j = i - 1;
+            while (j >= l && scores[j] < keyScore) // descending
+            {
+                moves[j + 1] = moves[j];
+                scores[j + 1] = scores[j];
+                j--;
+            }
+            moves[j + 1] = keyMove;
+            scores[j + 1] = keyScore;
+        }
+    }
+
+
+    static void QuickSort(Span<Move> moves, Span<int> scores,int l, int r)
+    {
+        const int InsertionThreshold = 10;
+        if (r - l <= InsertionThreshold)
+        {
+            InsertionSort( moves, scores,l, r);
+            return;
+        }
+
+        // median-of-three pivot
+        var mid = (l + r) >> 1;
+        if (scores[l] < scores[mid]) Swap(l, mid, moves,scores);
+        if (scores[l] < scores[r]) Swap(l, r, moves,scores);
+        if (scores[mid] < scores[r]) Swap(mid, r, moves,scores);
+
+        var pivot = scores[mid];
+        // move pivot to r-1
+        Swap(mid, r - 1, moves, scores);
+        var i = l;
+        var j = r - 1;
+
+        while (true)
+        {
+            while (scores[++i] > pivot) { }
+            while (scores[--j] < pivot) { }
+            if (i >= j) break;
+            Swap(i, j, moves, scores);
+        }
+
+        // restore pivot
+        Swap(i, r - 1, moves, scores);
+
+        if (i - 1 - l > 0) QuickSort(moves,scores,l, i - 1);
+        if (r - (i + 1) > 0) QuickSort(moves,scores, i + 1, r);
+    }
+
+    private static void Swap(int a, int b, Span<Move> moves, Span<int> scores)
+    {
+        var tmpMove = moves[a];
+        moves[a] = moves[b];
+        moves[b] = tmpMove;
+
+        var tmpScore = scores[a];
+        scores[a] = scores[b];
+        scores[b] = tmpScore;
     }
 
     public static int Evaluate(Position board)
