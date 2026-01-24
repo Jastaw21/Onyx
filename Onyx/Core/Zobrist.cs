@@ -20,13 +20,7 @@ public static class Zobrist
         InitZobrist();
     }
 
-    public static ulong MakeNullMove(ulong hashValue)
-    {
-        var newValue = hashValue;
-        newValue ^= WhiteToMove;
-        return newValue;
-    }
-
+    
     public static ulong FromFen(string fen)
     {
         var fenDetails = Fen.FromString(fen);
