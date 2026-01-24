@@ -2,12 +2,10 @@
 
 namespace Onyx.Core;
 
-public struct EvalTableEntry(ulong hash, int eval, bool forWhite, int age)
+public struct EvalTableEntry(ulong hash, int eval)
 {
     public readonly ulong Hash = hash;
     public int Eval = eval;
-    public bool ForWhite = forWhite;
-    public int Age = age;
 }
 
 public class EvaluationTable
@@ -21,28 +19,13 @@ public class EvaluationTable
 
     private EvalTableEntry[] _entries;
 
-    protected void Store(ulong hash, int eval, bool forWhite, int age)
+    protected void Store(ulong hash, int eval)
     {
         var index = hash % (ulong)_entries.Length;
-        var existingEntry = _entries[index];
-
         var store = false;
 
-        // empty slot
-        if (existingEntry.Hash == 0)
-        {
-            store = true;
-        }
-        else if (existingEntry.Hash == hash)
-        {
-            if (existingEntry.Age != age)
-                store = true;
-        }
-
-        if (store)
-        {
-            _entries[index] = new EvalTableEntry(hash, eval, forWhite, age);
-        }
+        // always replace
+        _entries[index] = new EvalTableEntry(hash, eval);
     }
 
     protected EvalTableEntry? Poll(ulong hash)
@@ -56,19 +39,16 @@ public class EvaluationTable
         return null;
     }
 
-    public int Evaluate(Position board, int age)
+    public int Evaluate(Position board)
     {
         var existingEval = Poll(board.ZobristState);
         if (existingEval.HasValue)
         {
-            var flipEval = board.WhiteToMove != existingEval.Value.ForWhite;
-            var value = existingEval.Value.Eval * (flipEval ? -1 : 1);
-            return value;
+            return existingEval.Value.Eval;
         }
 
         var eval = Evaluator.Evaluate(board);
-        var forWhite = board.WhiteToMove;
-        Store(board.ZobristState, eval, forWhite, age);
+        Store(board.ZobristState, eval);
 
         return eval;
     }
