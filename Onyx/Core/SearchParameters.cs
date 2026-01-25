@@ -18,6 +18,11 @@ public struct SearchStatistics : ILoggable
     public int FailedNullMoveCutoffs;
 
 
+    public void WriteStats()
+    {
+        Console.Error.WriteLine(Get());
+    }
+    
     public string Get()
     {
         return

@@ -176,12 +176,14 @@ public class Engine
         Statistics = _workers[0].Statistics;
         Statistics.RunTime = StopwatchManager.Elapsed;
         StopwatchManager.Reset();
-        
+
         if (Logger.LoggingEnabled)
         {
-            Console.Error.WriteLine(Statistics.ToString());
-            Console.Error.WriteLine(TranspositionTable.TTStats.Get());
+            Statistics.WriteStats();
+            TranspositionTable.WriteStats();
+            EvaluationTable.WriteStats();
         }
+
         return result;
     }
 

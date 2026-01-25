@@ -10,7 +10,7 @@ public enum BoundFlag
     Upper = 1 << 2
 }
 
-public struct TtStats : ILoggable
+internal struct TtStats : ILoggable
 {
     // retrieval
     public int Probes = 0;
@@ -129,7 +129,7 @@ public class TranspositionTable
 
     private TtEntry[] _entries;
     private ulong _indexMask;
-    public TtStats TTStats = new();
+    private TtStats TTStats = new();
 
     public TranspositionTable(int sizeInMb = 512)
     {
@@ -149,6 +149,10 @@ public class TranspositionTable
         _indexMask = (ulong)v - 1UL;
     }
 
+    public void WriteStats()
+    {
+        Console.Error.WriteLine(TTStats.Get());
+    }
 
     public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
     {
