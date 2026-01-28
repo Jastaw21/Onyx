@@ -171,17 +171,29 @@ public class TranspositionTable
         }
 
         // if we already have this hash only replace if we've now got a deeper search result
-        if (existingEntry.Hash == hash && depth > existingEntry.Depth)
+        if (existingEntry.Hash == hash)
         {
-            _ttStats.DepthReplacements++;
+            if (depth >= existingEntry.Depth)
+            {
+                _ttStats.DepthReplacements++;
+                ExecuteStore();
+            }
+
+            return;
+        }
+
+        // older search
+        if (existingEntry.Age != age)
+        {
+            _ttStats.AgeReplacements++;
             ExecuteStore();
             return;
         }
 
-        // newer search
-        if (existingEntry.Age != age)
+        // deeper search
+        if (depth > existingEntry.Depth)
         {
-            _ttStats.AgeReplacements++;
+            _ttStats.DepthReplacements++;
             ExecuteStore();
             return;
         }

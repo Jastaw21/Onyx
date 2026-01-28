@@ -47,7 +47,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.10.6";
+    public static string Version => "0.11.0";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
@@ -71,7 +71,7 @@ public class Engine
         _timeManager = new TimeManager(this);
         InitializeWorkerThreads();
         _workers[0].OnDepthFinished +=
-            (results, stats) => OnSearchInfoUpdate(GetSearchInfoString(results, stats));
+            (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
     }
 
     private void InitializeWorkerThreads()
