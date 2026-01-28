@@ -81,17 +81,17 @@ public class TranspositionTable
 {
     public bool PollEntry(TtEntry entry, int alpha, int beta, int depth, ulong hash)
     {
-        TTStats.Probes++;
+        _ttStats.Probes++;
         if (entry.Hash != hash)
         {
-            TTStats.Collisions++;
+            _ttStats.Collisions++;
             return false;
         }
 
         // only use if depth is sufficient
         if (entry.Depth < depth)
         {
-            TTStats.DepthInsufficient++;
+            _ttStats.DepthInsufficient++;
             return false;
         }
 
@@ -99,43 +99,43 @@ public class TranspositionTable
         {
             case BoundFlag.Exact:
             {
-                TTStats.PassExact++;
+                _ttStats.PassExact++;
                 return true;
             }
             case BoundFlag.Upper:
                 // we at least know we're better than alpha
                 if (entry.Eval <= alpha)
                 {
-                    TTStats.PassUpperBound++;
+                    _ttStats.PassUpperBound++;
                     return true;
                 }
 
-                TTStats.FailUpperBound++;
+                _ttStats.FailUpperBound++;
                 break;
             case BoundFlag.Lower:
                 // basically a beta cutoff?
                 if (entry.Eval >= beta)
                 {
-                    TTStats.PassLowerBound++;
+                    _ttStats.PassLowerBound++;
                     return true;
                 }
 
-                TTStats.FailLowerBound++;
+                _ttStats.FailLowerBound++;
                 break;
         }
 
         return false;
     }
 
-    private TtEntry[] _entries;
-    private ulong _indexMask;
-    private TtStats TTStats = new();
+    private readonly TtEntry[] _entries;
+    private readonly ulong _indexMask;
+    private TtStats _ttStats = new();
 
     public TranspositionTable(int sizeInMb = 512)
     {
         var entrySize = System.Runtime.InteropServices.Marshal.SizeOf<TtEntry>();
         var numberOfEntries = sizeInMb * 1024 * 1024 / entrySize; // raw number of entries
-        
+
         // next power of two
         var v = numberOfEntries;
         v--;
@@ -151,42 +151,45 @@ public class TranspositionTable
 
     public void WriteStats()
     {
-        Console.Error.WriteLine(TTStats.Get());
+        Console.Error.WriteLine(_ttStats.Get());
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Store(ulong hash, int eval, int depth, int age, BoundFlag boundFlag, Move bestMove)
     {
         // faster modulo via bitmask
         var index = (int)(hash & _indexMask);
-        TTStats.AttemptedStores++;
+        _ttStats.AttemptedStores++;
         var existingEntry = _entries[index];
-
-        var store = false;
 
         // always replace empties
         if (existingEntry.Hash == 0)
         {
-            store = true;
-            TTStats.Empties++;
+            _ttStats.Empties++;
+            ExecuteStore();
+            return;
         }
 
-        // if we already have this hash needs to think about a replacement scheme
-        else if (existingEntry.Hash == hash)
+        // if we already have this hash only replace if we've now got a deeper search result
+        if (existingEntry.Hash == hash && depth > existingEntry.Depth)
         {
-            if (depth > existingEntry.Depth)
-            {
-                store = true;
-                TTStats.DepthReplacements++;
-            }
+            _ttStats.DepthReplacements++;
+            ExecuteStore();
+            return;
         }
-        
+
+        // newer search
         if (existingEntry.Age != age)
         {
-            store = true;
-            TTStats.AgeReplacements++;
+            _ttStats.AgeReplacements++;
+            ExecuteStore();
+            return;
         }
 
-        if (store)
+        _ttStats.NonReplacements++;
+        return;
+
+        void ExecuteStore()
         {
             _entries[index] = new TtEntry
             {
@@ -197,10 +200,7 @@ public class TranspositionTable
                 BoundFlag = boundFlag,
                 BestMove = bestMove
             };
-            return;
         }
-
-        TTStats.NonReplacements++;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

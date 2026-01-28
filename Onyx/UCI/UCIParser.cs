@@ -174,7 +174,7 @@ public class UciParser
                 fenPositionString += " " + Consume().Value;
             else return null;
 
-            positionCommand.Fenstring = fenPositionString;
+            positionCommand.Fen = fenPositionString;
         }
 
         List<string>? moves = null;

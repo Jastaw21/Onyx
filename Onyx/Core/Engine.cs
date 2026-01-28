@@ -52,33 +52,31 @@ public class Engine
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();
     public EvaluationTable EvaluationTable { get; } = new();
-    public StopwatchManager StopwatchManager { get; set; } = new();
-    public int MateScore { get; private set; } = 30000;
+    public StopwatchManager StopwatchManager { get; private set; } = new();
+    public static int MateScore => 30000;
     private CancellationToken _ct; // for threading
     public void SetLmrThreshold(int lmr) => _workers[0].LmrThreshold = lmr;
-    public event Action<string> OnSearchInfoUpdate;
+    public event Action<string> OnSearchInfoUpdate = null!;
 
     // search members
     public int CurrentSearchId { get; private set; }
     private readonly TimeManager _timeManager;
     private readonly List<Searcher> _workers = [];
     public Searcher PrimaryWorker => _workers[0];
-    public readonly int MaxThreads = 1;
+    private readonly int _maxThreads = 1;
     public SearchStatistics Statistics;
 
     public Engine()
     {
-        IsReady = false;
         _timeManager = new TimeManager(this);
         InitializeWorkerThreads();
         _workers[0].OnDepthFinished +=
-            (results, stats) => OnSearchInfoUpdate?.Invoke(GetSearchInfoString(results, stats));
-        IsReady = true;
+            (results, stats) => OnSearchInfoUpdate(GetSearchInfoString(results, stats));
     }
 
     private void InitializeWorkerThreads()
     {
-        for (var workerId = 0; workerId < MaxThreads; workerId++)
+        for (var workerId = 0; workerId < _maxThreads; workerId++)
         {
             var worker = new Searcher(this, workerId);
             _workers.Add(worker);
@@ -101,20 +99,15 @@ public class Engine
 
     public void Reset()
     {
-        IsReady = false;
         Position = new Position();
         StopwatchManager = new StopwatchManager();
         foreach (var worker in _workers)
         {
             worker.ResetState();
         }
-
-        IsReady = true;
     }
 
-    public bool IsReady { get; set; }
-
-    public virtual SearchResults Search(SearchParameters searchParameters)
+    public SearchResults Search(SearchParameters searchParameters)
     {
         CurrentSearchId++;
         _ct = searchParameters.CancellationToken;
@@ -143,12 +136,10 @@ public class Engine
 
         // take off some buffer time
         StopwatchManager.Start(timeLimit - 30);
-        var depthCount = 1;
         foreach (var worker in _workers)
         {
             //searchInstructions.StartDepth = depthCount;
             worker.TriggerSearch(searchInstructions, Position);
-            depthCount++;
         }
 
         try
@@ -197,7 +188,7 @@ public class Engine
             sb.Append(' ');
         }
 
-        sb.Remove(sb.Length - 1, 1); // remove last space
+        sb.Remove(sb.Length - 1, 1); // remove the last space
         return sb.ToString();
     }
 
@@ -208,7 +199,7 @@ public class Engine
         if (stats.RunTime > 0)
             nps = (int)(stats.Nodes / (float)stats.RunTime) * 1000;
 
-        string scoreString = "";
+        string scoreString;
 
         // is a mating score
         if (Math.Abs(results.Score) > 29000)

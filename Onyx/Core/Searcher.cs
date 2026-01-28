@@ -38,11 +38,11 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
 
-    private bool searchAsWhite = false;
+    private bool _searchAsWhite;
 
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition = new();
-    public event Action<SearchResults, SearchStatistics> OnDepthFinished;
+    public event Action<SearchResults, SearchStatistics> OnDepthFinished = null!;
 
     public void Start()
     {
@@ -89,7 +89,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters)
     {
         Reset();
-        searchAsWhite = _currentPosition.WhiteToMove;
+        _searchAsWhite = _currentPosition.WhiteToMove;
 
         // some vague diversification stuff
         var startDepth = searcherId == 0 ? 1 : searcherId % 2 == 0 ? 1 : 2;
@@ -136,7 +136,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
             // We found a way to win. No need to look deeper.
-            if (_thisIterationResults.Score > engine.MateScore - 100)
+            if (_thisIterationResults.Score > Engine.MateScore - 100)
                 break;
         }
 
@@ -206,7 +206,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             // try not to draw
             if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
             {
-                var isOurTurn = _currentPosition.WhiteToMove == searchAsWhite;
+                var isOurTurn = _currentPosition.WhiteToMove == _searchAsWhite;
                 var drawContempt = isOurTurn ? -100 : 100;
                 return new SearchFlag(true, drawContempt); // draw contempt
             }
@@ -289,7 +289,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (legalMoveCount == 0)
         {
             if (isInCheck)
-                return new SearchFlag(true, -(engine.MateScore - depthFromRoot));
+                return new SearchFlag(true, -(Engine.MateScore - depthFromRoot));
 
             // stalemate
             return SearchFlag.Zero;
@@ -515,15 +515,15 @@ public class Searcher(Engine engine, int searcherId = 0)
 
     private int EncodeMateScore(int score, int depthFromRoot)
     {
-        if (score > engine.MateScore - 1000) return score + depthFromRoot;
-        if (score < -(engine.MateScore - 1000)) return score - depthFromRoot;
+        if (score > Engine.MateScore - 1000) return score + depthFromRoot;
+        if (score < -(Engine.MateScore - 1000)) return score - depthFromRoot;
         return score;
     }
 
     private int DecodeMateScore(int score, int depthFromRoot)
     {
-        if (score > engine.MateScore - 1000) return score - depthFromRoot;
-        if (score < -(engine.MateScore - 1000)) return score + depthFromRoot;
+        if (score > Engine.MateScore - 1000) return score - depthFromRoot;
+        if (score < -(Engine.MateScore - 1000)) return score + depthFromRoot;
         return score;
     }
 }

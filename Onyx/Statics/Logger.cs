@@ -17,7 +17,7 @@ public enum LogType
 public static class Logger
 {
     public static bool LoggingEnabled = false;
-    public static string TimeString;
+    public static string TimeString = null!;
 
     public static void Log(LogType type, string message)
     {

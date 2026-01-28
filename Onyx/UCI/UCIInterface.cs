@@ -21,6 +21,7 @@ public class UciInterface
         _options.AddOption("lmrthreshold", "spin", "5", "2", "8", SetLMRValue);
         _options.AddOption("logging", "check", "0", "0", "1", i => Logger.LoggingEnabled = i == 1);
         _player.OnSearchInfoUpdate += Console.WriteLine;
+        _searchCts = new CancellationTokenSource();
     }
 
     public void HandleCommand(string commandString)

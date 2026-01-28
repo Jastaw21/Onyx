@@ -1,13 +1,12 @@
 ﻿using System.Diagnostics;
 
 namespace Onyx.Core;
+
 public class StopwatchManager
 {
     private Stopwatch _stopwatch = null!;
     private bool _started;
     private long _milliseconds;
-    public readonly bool InstantStopFlag = false;
-
     public void Start(long milliseconds)
     {
         _stopwatch = Stopwatch.StartNew();
@@ -34,7 +33,6 @@ public class StopwatchManager
     {
         get
         {
-            if (InstantStopFlag) return true;
             if (!_started)
                 return false;
             return _stopwatch.ElapsedMilliseconds > _milliseconds;

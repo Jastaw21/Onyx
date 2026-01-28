@@ -1,6 +1,4 @@
-﻿using Onyx.Core;
-
-namespace Onyx.UCI;
+﻿namespace Onyx.UCI;
 
 public abstract record Command;
 public record UciCommand : Command;
@@ -27,27 +25,19 @@ public record GoCommand : Command
 
 public record SetOptionCommand : Command
 {
-    public string Name;
-    public string Value;
+    public string Name = null!;
+    public string Value = null!;
 }
 
 public record UciNewGameCommand : Command;
 public record IsReadyCommand : Command;
 public record SetLoggingOn : Command;
 
-public record PositionCommand : Command
+public record PositionCommand(bool IsStartpos, string? Fen = null, List<string>? Moves = null)
+    : Command
 {
-    public bool IsStartpos { get; }
+    public string? FenString => IsStartpos ? Core.Fen.DefaultFen : Fen;
 
-    public string? FenString => IsStartpos ? Fen.DefaultFen : Fenstring;
-
-    public string? Fenstring { get; set; }
-    public List<string>? Moves;
-
-    public PositionCommand(bool isStartpos, string? fen = null, List<string>? moves = null)
-    {
-        IsStartpos = isStartpos;
-        Fenstring = fen;
-        Moves = moves;
-    }
+    public string? Fen { get; set; } = Fen;
+    public List<string>? Moves = Moves;
 }
