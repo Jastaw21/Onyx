@@ -401,20 +401,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         if (StopFlag)
             return SearchFlag.Abort;
-
-        var zobristHashValue = position.ZobristState;
-        var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);      
-
-        // Use depth 0 for Q-search probing
-        if (entryExists)
-        {
-            if (engine.TranspositionTable.PollEntry(ttValue, alpha, beta, 0, zobristHashValue))
-            {
-                return new SearchFlag(true, DecodeMateScore(ttValue.Eval, depthFromRoot));
-            }
-        }
-
-
+        
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
         var eval = engine.EvaluationTable.Evaluate(position,engine.CurrentSearchId);
         if (eval >= beta) return new SearchFlag(true, beta);
@@ -431,8 +418,7 @@ public class Searcher(Engine engine, int searcherId = 0)
        
         Evaluator.SortMoves(moves, new Move(), _killerMoves, depthFromRoot);
 
-        var storingFlag = BoundFlag.Upper;
-        var bestMove = new Move();
+        
         foreach (var move in moves)
         {
             _currentPosition.ApplyMove(move);
@@ -444,17 +430,12 @@ public class Searcher(Engine engine, int searcherId = 0)
             // beta cutoff - the opponent won't let it get here
             if (eval >= beta)
             {
-                engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot),
-                    0, // Depth 0 for Quiescence
-                    engine.CurrentSearchId, BoundFlag.Lower, move);
                 return new SearchFlag(true, beta);
             }
 
             if (eval > alpha)
             {
                 alpha = eval;
-                bestMove = move;
-                storingFlag = BoundFlag.Exact; // exact bound
 
                 _pvTable[depthFromRoot, depthFromRoot] = move;
                 var nextPlyDepth = _pvLength[depthFromRoot + 1];
@@ -466,10 +447,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
             }
         }
-
-        engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), 0,
-            engine.CurrentSearchId, storingFlag, bestMove);
-
+        
         return new SearchFlag(true, alpha);
     }
 
