@@ -168,8 +168,6 @@ public static class Evaluator
 
     public static int Evaluate(Position board)
     {
-        if (Referee.IsThreeFoldRepetition(board)) return 0;
-
         var whiteMaterial = EvaluateMaterial(board, true);
         var blackMaterial = EvaluateMaterial(board, false);
 

@@ -105,7 +105,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             SearchFlag searchFlag;
             try
             {
-                searchFlag = Search(depth, 0, -Infinity, Infinity, lastMoveNulled:false);
+                searchFlag = Search(depth, 0, -Infinity, Infinity, lastMoveNulled: false);
             }
             catch (OperationCanceledException)
             {
@@ -171,7 +171,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         public int Score { get; } = score;
 
         public static SearchFlag Abort => new(false, 0);
-        public static SearchFlag NullMoveFailed => new(true, -1); 
+        public static SearchFlag NullMoveFailed => new(true, -1);
         public static SearchFlag Zero => new(true, 0);
     }
 
@@ -201,21 +201,17 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (Statistics.Nodes % 2047 == 0 && StopFlag)
             return SearchFlag.Abort;
 
-        if (depthFromRoot > 0)
+
+        if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
         {
-            // try not to draw
-            if (_currentPosition.HalfMoves >= 50 || Referee.IsRepetition(_currentPosition))
-            {
-                var isOurTurn = _currentPosition.WhiteToMove == _searchAsWhite;
-                var drawContempt = isOurTurn ? -100 : 100;
-                return new SearchFlag(true, drawContempt); // draw contempt
-            }
+            return SearchFlag.Zero;
         }
+
 
         // See if this position has already been searched for
         var zobristHashValue = _currentPosition.ZobristState;
         var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);
-       
+
         if (entryExists)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
@@ -266,23 +262,25 @@ public class Searcher(Engine engine, int searcherId = 0)
             int nullMoveReduction = depthRemaining > 6 ? 3 : 2;
             var nmrResult = Search(depthRemaining - 1 - nullMoveReduction, depthFromRoot + 1, -beta, -beta + 1, true);
             _currentPosition.UndoNullMove();
-            
+
             if (!nmrResult.Completed)
                 return SearchFlag.Abort;
-        
+
             var nullScore = -nmrResult.Score;
-            
+
             if (nullScore >= beta)
             {
                 Statistics.NullMoveCutoffs++;
                 return new SearchFlag(true, beta);
             }
+
             Statistics.FailedNullMoveCutoffs++;
         }
 
         // get the moves
         Span<Move> moveBuffer = stackalloc Move[256];
-        var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,alreadyKnowBoardInCheck:true,isAlreadyInCheck: isInCheck);
+        var legalMoveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, alreadyKnowBoardInCheck: true,
+            isAlreadyInCheck: isInCheck);
         var moves = moveBuffer[..legalMoveCount];
 
         // no legal moves left - decide if its checkmate or stalemate
@@ -324,9 +322,9 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 // search with a super narrow window - basically only checking if any of these are better than alpha
                 Statistics.ReducedSearches++;
-                childResult = Search(depthRemaining: depthRemaining - 1 + Reduction, 
+                childResult = Search(depthRemaining: depthRemaining - 1 + Reduction,
                     depthFromRoot: depthFromRoot + 1, alpha: -alpha - 1, beta: -alpha, lastMoveNulled: false);
-                
+
                 needsFullSearch = -childResult.Score > alpha;
                 if (needsFullSearch)
                     Statistics.FullResearches++;
@@ -334,7 +332,7 @@ public class Searcher(Engine engine, int searcherId = 0)
 
             // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
             if (needsFullSearch)
-                childResult = Search(depthRemaining - 1 + extension, 
+                childResult = Search(depthRemaining - 1 + extension,
                     depthFromRoot + 1, -beta, -alpha, false);
 
             _currentPosition.UndoMove(move);
@@ -402,8 +400,10 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (StopFlag)
             return SearchFlag.Abort;
         
+        if (Referee.IsRepetition(position)) return SearchFlag.Zero;
+
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
-        var eval = engine.EvaluationTable.Evaluate(position,engine.CurrentSearchId);
+        var eval = engine.EvaluationTable.Evaluate(position, engine.CurrentSearchId);
         if (eval >= beta) return new SearchFlag(true, beta);
         if (eval > alpha) alpha = eval;
 
@@ -415,10 +415,10 @@ public class Searcher(Engine engine, int searcherId = 0)
 
         var moves = moveBuffer[..moveCount];
 
-       
+
         Evaluator.SortMoves(moves, new Move(), _killerMoves, depthFromRoot);
 
-        
+
         foreach (var move in moves)
         {
             _currentPosition.ApplyMove(move);
@@ -447,7 +447,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
             }
         }
-        
+
         return new SearchFlag(true, alpha);
     }
 
