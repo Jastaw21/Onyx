@@ -45,8 +45,6 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
-    
-   
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
     {
         var score = 0;
@@ -71,7 +69,7 @@ public static class Evaluator
     public static void SortMoves(Span<Move> moves, Move transpositionTableMove, Move?[,] killerMoves, int ply)
     {
         var len = moves.Length;
-        if (len <= 1)  return;
+        if (len <= 1) return;
 
         Span<int> scores = stackalloc int[len];
         var hasTTMove = transpositionTableMove.Data > 0;
@@ -83,21 +81,19 @@ public static class Evaluator
                 scores[i] = int.MaxValue;
                 continue;
             }
+
             scores[i] = GetMoveScore(moves[i], killerMoves, ply);
         }
-        
-        PerformSort(moves, scores, 0, len - 1);
 
+        PerformSort(moves, scores, 0, len - 1);
     }
 
     static void PerformSort(Span<Move> moves, Span<int> scores, int left, int right)
     {
-
-        if (left < right) QuickSort(moves,scores,left, right);
-
+        if (left < right) QuickSort(moves, scores, left, right);
     }
 
-    static void InsertionSort(Span<Move> moves, Span<int> scores,int l, int r)
+    static void InsertionSort(Span<Move> moves, Span<int> scores, int l, int r)
     {
         for (var i = l + 1; i <= r; i++)
         {
@@ -110,26 +106,27 @@ public static class Evaluator
                 scores[j + 1] = scores[j];
                 j--;
             }
+
             moves[j + 1] = keyMove;
             scores[j + 1] = keyScore;
         }
     }
 
 
-    static void QuickSort(Span<Move> moves, Span<int> scores,int l, int r)
+    static void QuickSort(Span<Move> moves, Span<int> scores, int l, int r)
     {
         const int InsertionThreshold = 10;
         if (r - l <= InsertionThreshold)
         {
-            InsertionSort( moves, scores,l, r);
+            InsertionSort(moves, scores, l, r);
             return;
         }
 
         // median-of-three pivot
         var mid = (l + r) >> 1;
-        if (scores[l] < scores[mid]) Swap(l, mid, moves,scores);
-        if (scores[l] < scores[r]) Swap(l, r, moves,scores);
-        if (scores[mid] < scores[r]) Swap(mid, r, moves,scores);
+        if (scores[l] < scores[mid]) Swap(l, mid, moves, scores);
+        if (scores[l] < scores[r]) Swap(l, r, moves, scores);
+        if (scores[mid] < scores[r]) Swap(mid, r, moves, scores);
 
         var pivot = scores[mid];
         // move pivot to r-1
@@ -139,8 +136,14 @@ public static class Evaluator
 
         while (true)
         {
-            while (scores[++i] > pivot) { }
-            while (scores[--j] < pivot) { }
+            while (scores[++i] > pivot)
+            {
+            }
+
+            while (scores[--j] < pivot)
+            {
+            }
+
             if (i >= j) break;
             Swap(i, j, moves, scores);
         }
@@ -148,8 +151,8 @@ public static class Evaluator
         // restore pivot
         Swap(i, r - 1, moves, scores);
 
-        if (i - 1 - l > 0) QuickSort(moves,scores,l, i - 1);
-        if (r - (i + 1) > 0) QuickSort(moves,scores, i + 1, r);
+        if (i - 1 - l > 0) QuickSort(moves, scores, l, i - 1);
+        if (r - (i + 1) > 0) QuickSort(moves, scores, i + 1, r);
     }
 
     private static void Swap(int a, int b, Span<Move> moves, Span<int> scores)
@@ -184,12 +187,17 @@ public static class Evaluator
         var whiteKingSafety = KingSafetyScore(board, true);
         var blackKingSafety = KingSafetyScore(board, false);
         var kingSafetyScore = whiteKingSafety - blackKingSafety;
+        
+        var whitePawnStructure = PawnStructureScore(board, true);
+        var blackPawnStructure = PawnStructureScore(board, false);
+        var pawnStructureScore = whitePawnStructure - blackPawnStructure;
 
         var score = 0;
         score += materialScore;
         score += bishopPairScore;
         score += pieceSquareScore;
         score += kingSafetyScore;
+        score += pawnStructureScore;
 
         return board.WhiteToMove ? score : -score;
     }
@@ -215,6 +223,28 @@ public static class Evaluator
         var openFilePenalty = BoardHelpers.FileIsOpen(kingFile, pawns) ? -30 : 0;
 
         return pawnShieldScore + openFilePenalty;
+    }
+
+    public static int PawnStructureScore(Position board, bool forWhite)
+    {
+        var relevantPawn = forWhite ? Piece.WP : Piece.BP;
+        var enemyPawn = forWhite ? Piece.BP : Piece.WP;
+        var friendlyPawns = board.Bitboards.OccupancyByPiece(relevantPawn);
+        var enemyPawns = board.Bitboards.OccupancyByPiece(enemyPawn);
+        var passedPawnsBonus = 0;
+
+        while (friendlyPawns > 0)
+        {
+            var square = (int)ulong.TrailingZeroCount(friendlyPawns);
+            var fileOpenOfEnemies = BoardHelpers.CountNeighbouringOpenFiles(square, enemyPawns);
+            var file = RankAndFile.FileIndex(square);
+            var isPassed = (file is 0 or 7 && fileOpenOfEnemies >= 2) ||
+                           (file is > 0 or < 7 && fileOpenOfEnemies >= 3);
+            passedPawnsBonus += isPassed ? 10 : 0;
+            friendlyPawns &= friendlyPawns - 1;
+        }
+        
+        return passedPawnsBonus;
     }
 
     private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)
