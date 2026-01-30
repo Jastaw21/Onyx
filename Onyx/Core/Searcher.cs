@@ -303,6 +303,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             if (isRepetition)
             {
                 childResult = SearchFlag.Zero;
+                _pvLength[depthFromRoot + 1] = depthFromRoot + 1;
             }
             else
             {
@@ -426,7 +427,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (StopFlag)
             return SearchFlag.Abort;
 
-        if (Referee.IsRepetition(position) || position.HalfMoves >= 50) return SearchFlag.Zero;
+        if (Referee.IsRepetition(position) || position.HalfMoves >= 50)
+        {
+            _pvLength[depthFromRoot + 1] = depthFromRoot + 1;
+            return SearchFlag.Zero;
+        }
 
         // stand pat to prevent explosion. This says that we're not necessarily forced to capture
         var eval = engine.EvaluationTable.Evaluate(position, engine.CurrentSearchId);

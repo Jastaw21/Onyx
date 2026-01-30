@@ -112,7 +112,6 @@ public static class Evaluator
         }
     }
 
-
     static void QuickSort(Span<Move> moves, Span<int> scores, int l, int r)
     {
         const int InsertionThreshold = 10;
@@ -170,32 +169,13 @@ public static class Evaluator
     {
         var whiteMaterial = EvaluateMaterial(board, true);
         var blackMaterial = EvaluateMaterial(board, false);
-
-        // value of material
-        var materialScore = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
-
-        // a small boost for having both bishops on the board
-        var bishopPairScore = whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
-
-        // piece square score
-        var whitePss = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
-        var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
-        var pieceSquareScore = whitePss - blackPss;
-
-        var whiteKingSafety = KingSafetyScore(board, true);
-        var blackKingSafety = KingSafetyScore(board, false);
-        var kingSafetyScore = whiteKingSafety - blackKingSafety;
-        
-        var whitePawnStructure = PawnStructureScore(board, true);
-        var blackPawnStructure = PawnStructureScore(board, false);
-        var pawnStructureScore = whitePawnStructure - blackPawnStructure;
-
         var score = 0;
-        score += materialScore;
-        score += bishopPairScore;
-        score += pieceSquareScore;
-        score += kingSafetyScore;
-        score += pawnStructureScore;
+        
+        score += whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
+        score += whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
+        score += PieceSquareScore(board, blackMaterial.EndGameRatio(), true) -PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
+        score += KingSafetyScore(board, true) -KingSafetyScore(board, false);
+        score += PawnStructureScore(board, true) -PawnStructureScore(board, false);;
 
         return board.WhiteToMove ? score : -score;
     }
@@ -236,9 +216,9 @@ public static class Evaluator
             var square = (int)ulong.TrailingZeroCount(friendlyPawns);
             var fileOpenOfEnemies = BoardHelpers.CountNeighbouringOpenFiles(square, enemyPawns);
             var file = RankAndFile.FileIndex(square);
-            var isPassed = (file is 0 or 7 && fileOpenOfEnemies >= 2) ||
-                           (file is > 0 or < 7 && fileOpenOfEnemies >= 3);
-            passedPawnsBonus += isPassed ? 10 : 0;
+            if (file is 0 or 7 && fileOpenOfEnemies >= 2) passedPawnsBonus += 10;
+            else if (file is > 0 or < 7 && fileOpenOfEnemies >= 3) passedPawnsBonus += 10;
+           
             friendlyPawns &= friendlyPawns - 1;
         }
         
