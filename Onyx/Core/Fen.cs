@@ -20,7 +20,7 @@ public static class Fen
     public static void BuildPvString(Move[,] pvTable, int[] pvLengthTable, out List<Move> moveList)
     {
         moveList = new List<Move>(pvLengthTable[0]);
-        for (int i = 0; i < pvLengthTable[0]; i++)
+        for (var i = 0; i < pvLengthTable[0]; i++)
         {
             var move = pvTable[0, i];
             if (move.Data == 0) break; // No more moves

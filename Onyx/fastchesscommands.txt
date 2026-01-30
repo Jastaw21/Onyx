@@ -5,6 +5,7 @@ C:\Users\jacks\source\repos\Onyx\Onyx\Builds\fastchess-windows-x86-64\fastchess.
 
 0    1347
 1    1490
+position fen 1n1qkb1r/rp2pppp/p1p2n2/3p4/2PP2b1/1QN1PN2/PP3PPP/R1B1KB1R w KQk - 3 7 moves f1d3 g4e6 e1g1 d5c4 d3c4 e6c4 b3c4 b8d7 e3e4 a7a8 f3e5 e7e6 c1f4 c6c5 e5d7 f6d7 a1d1 d7b6 c4b3 c5d4 c3a4 b6a4 b3a4 b7b5 a4d4 d8d4 d1d4 f8c5 d4d3 e8g8 f1c1 c5a7 b2b4 a8c8 c1c8 f8c8 d3d1 a7d4 d1d4 e6e5 d4d1 e5f4 e4e5 c8b8 d1d6 b8c8 d6d1
 2    1597
 3    1694
 4    1785
