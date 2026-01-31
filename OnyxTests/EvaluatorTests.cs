@@ -146,4 +146,10 @@ public class EvaluatorTests
             Assert.That(flippedEval, Is.EqualTo(-secondEval));
         });
     }
+
+    [Test]
+    public void PassedPawn()
+    {
+        var board = new Position("rnbqkbnr/pp1p1ppp/8/8/8/8/1PPPPPP1/RNBQKBNR b KQkq - 0 1");
+    }
 }

@@ -222,13 +222,13 @@ public static class Referee
     {
         var history = board.History; // The span of historical states
         var currentHash = board.ZobristState;
-        var matches = 0;
+        var matches = 1; // The current position is already the first occurrence
 
         // We only need to check back as far as the HalfMoves rule allows
         var startSearch = history.Length - 1;
         var endSearch = Math.Max(0, history.Length - board.HalfMoves);
 
-        for (var i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
+        for (var i = startSearch; i >= endSearch; i--)
         {
             if (history[i].Hash == currentHash)
             {
@@ -247,15 +247,14 @@ public static class Referee
         var matches = 0;
 
         // We only need to check back as far as the HalfMoves rule allows
-        var startSearch = history.Length - 1;
+        var startSearch = history.Length - 2;
         var endSearch = Math.Max(0, history.Length - board.HalfMoves);
 
-        for (var i = startSearch; i >= endSearch; i -= 2) // Check only same-side moves
+        for (var i = startSearch; i >= endSearch; i--)
         {
             if (history[i].Hash == currentHash)
             {
-                matches++;
-                if (matches >= 2) return true;
+               return true;
             }
         }
 

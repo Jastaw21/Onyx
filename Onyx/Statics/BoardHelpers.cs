@@ -62,9 +62,9 @@ public static class BoardHelpers
         return (pawns & GetFileFromIndex(file)) == 0;
     }
 
-    public static int CountOpenFilesNearKing(int kingSquare, ulong pawns)
+    public static int CountNeighbouringOpenFiles(int testSquare, ulong pawns)
     {
-        var thisFile = RankAndFile.FileIndex(kingSquare);
+        var thisFile = RankAndFile.FileIndex(testSquare);
         var result = FileIsOpen(thisFile, pawns) ? 1 : 0;
         if (thisFile > 0) result += FileIsOpen(thisFile - 1,pawns) ? 1 : 0;
         if (thisFile < 7) result += FileIsOpen(thisFile + 1,pawns) ? 1 : 0;

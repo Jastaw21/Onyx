@@ -82,11 +82,11 @@ public static class Evaluator
                 scores[i] = int.MaxValue;
                 continue;
             }
+
             scores[i] = GetMoveScore(moves[i], killerMoves, ply);
         }
 
         PerformSort(moves, scores, 0, len - 1);
-
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -109,6 +109,7 @@ public static class Evaluator
                 scores[j + 1] = scores[j];
                 j--;
             }
+
             moves[j + 1] = keyMove;
             scores[j + 1] = keyScore;
         }
@@ -138,8 +139,14 @@ public static class Evaluator
 
         while (true)
         {
-            while (scores[++i] > pivot) { }
-            while (scores[--j] < pivot) { }
+            while (scores[++i] > pivot)
+            {
+            }
+
+            while (scores[--j] < pivot)
+            {
+            }
+
             if (i >= j) break;
             Swap(i, j, moves, scores);
         }
@@ -202,6 +209,28 @@ public static class Evaluator
         var openFilePenalty = BoardHelpers.FileIsOpen(kingFile, pawns) ? -30 : 0;
 
         return pawnShieldScore + openFilePenalty;
+    }
+
+    public static int PawnStructureScore(Position board, bool forWhite)
+    {
+        var relevantPawn = forWhite ? Piece.WP : Piece.BP;
+        var enemyPawn = forWhite ? Piece.BP : Piece.WP;
+        var friendlyPawns = board.Bitboards.OccupancyByPiece(relevantPawn);
+        var enemyPawns = board.Bitboards.OccupancyByPiece(enemyPawn);
+        var passedPawnsBonus = 0;
+
+        while (friendlyPawns > 0)
+        {
+            var square = (int)ulong.TrailingZeroCount(friendlyPawns);
+            var fileOpenOfEnemies = BoardHelpers.CountNeighbouringOpenFiles(square, enemyPawns);
+            var file = RankAndFile.FileIndex(square);
+            if (file is 0 or 7 && fileOpenOfEnemies >= 2) passedPawnsBonus += 10;
+            else if (file is > 0 or < 7 && fileOpenOfEnemies >= 3) passedPawnsBonus += 10;
+           
+            friendlyPawns &= friendlyPawns - 1;
+        }
+        
+        return passedPawnsBonus;
     }
 
     private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)

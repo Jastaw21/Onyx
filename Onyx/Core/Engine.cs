@@ -47,7 +47,7 @@ public class TimeManager(Engine engine)
 
 public class Engine
 {
-    public static string Version => "0.11.0";
+    public static string Version => "0.12.0";
     // data members
     public Position Position = new();
     public TranspositionTable TranspositionTable { get; } = new();

@@ -40,7 +40,7 @@ public class Position
         Bitboards = new Bitboards(fen);
         ApplyBoardStateFromFen(fen);
         ZobristState = Zobrist.FromFen(fen);
-        for (int i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
+        for (var i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
 
         var startingState = new PositionState
         {
@@ -58,7 +58,7 @@ public class Position
         ApplyBoardStateFromFen(fen);
         ZobristState = Zobrist.FromFen(fen);
 
-        for (int i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
+        for (var i = 0; i < _historyBuffer.Length; i++) _historyBuffer[i] = new PositionState();
 
         var startingState = new PositionState
         {
@@ -75,7 +75,7 @@ public class Position
 
     private void UpdateHistoryState()
     {
-        PositionState state = _historyBuffer[_historyStackPointer];
+        var state = _historyBuffer[_historyStackPointer];
         state.Hash = ZobristState;
         state.CastlingRights = CastlingRights;
         state.EnPassantSquare = EnPassantSquare;

@@ -53,13 +53,13 @@ internal struct TtStats : ILoggable
 
     private string PctRetrieve(int value)
     {
-        double pct = (double)value / Math.Max(1, Probes) * 100;
+        var pct = (double)value / Math.Max(1, Probes) * 100;
         return $"{value} ({pct:F1}%)";
     }
 
     private string PctStore(int value)
     {
-        double pct = (double)value / Math.Max(1, AttemptedStores) * 100;
+        var pct = (double)value / Math.Max(1, AttemptedStores) * 100;
         return $"{value} ({pct:F1}%)";
     }
 }

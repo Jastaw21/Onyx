@@ -16,7 +16,7 @@ set "BOOK=C:\Users\jacks\source\repos\Onyx\Onyx\Builds\Games\opening.epd"
 
 
 set GAMES_PER_LEVEL=12
-set TIME_CONTROL=15+0.1
+set TIME_CONTROL=8+0.1
 set CONCURRENCY=4
 
 echo [Build]
