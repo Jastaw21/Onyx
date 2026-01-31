@@ -5,8 +5,8 @@ namespace Onyx.Core;
 
 public class PositionState
 {
-    public byte? CapturedPiece;
-    public int? EnPassantSquare;
+    public byte CapturedPiece;
+    public int EnPassantSquare;
     public int CastlingRights;
     public uint LastMoveFlags;
     public int HalfMove;
@@ -26,7 +26,7 @@ public class Position
     public ulong ZobristState { get; private set; }
     
     public int CastlingRights { get; private set; }// bit field - from the lowest bit in this order White : K, Q, Black K,Q
-    public int? EnPassantSquare { get; private set; }
+    public int EnPassantSquare { get; private set; }
     public int HalfMoves { get; private set; }
     public int FullMoves { get; private set; }
     public ReadOnlySpan<PositionState> History => _historyBuffer.AsSpan(0, _historyStackPointer + 1);
@@ -113,7 +113,7 @@ public class Position
 
         builtFen += castlingRightsString;
 
-        var enPassantString = EnPassantSquare.HasValue ? RankAndFile.Notation(EnPassantSquare.Value) : "-";
+        var enPassantString = EnPassantSquare != -1 ? RankAndFile.Notation(EnPassantSquare) : "-";
         builtFen += enPassantString;
         builtFen += $" {HalfMoves}";
         builtFen += $" {FullMoves}";
@@ -125,7 +125,7 @@ public class Position
     {
         _historyStackPointer++;
         _historyBuffer[_historyStackPointer].LastMoveFlags = 0;
-        _historyBuffer[_historyStackPointer].CapturedPiece = null;
+        _historyBuffer[_historyStackPointer].CapturedPiece = 0;
         _historyBuffer[_historyStackPointer].EnPassantSquare = EnPassantSquare;
         _historyBuffer[_historyStackPointer].CastlingRights = CastlingRights;
         _historyBuffer[_historyStackPointer].HalfMove = HalfMoves;
@@ -139,10 +139,10 @@ public class Position
         SwapTurns();
         ZobristState ^= Zobrist.WhiteToMove;
 
-        if (EnPassantSquare.HasValue)
+        if (EnPassantSquare != -1)
         {
-            ZobristState ^= Zobrist.EnPassantSquare[EnPassantSquare.Value];
-            EnPassantSquare = null;
+            ZobristState ^= Zobrist.EnPassantSquare[EnPassantSquare];
+            EnPassantSquare = -1;
         }
     }
 
@@ -171,8 +171,8 @@ public class Position
         var previousEnPassantSquare = EnPassantSquare;
 
         var isWhite = PieceTypes.IsWhite(move.PieceMoved);
-        byte? capturedPiece;
-        int? capturedSquare;
+        byte capturedPiece;
+        int capturedSquare = -1;
 
         if (move.IsEnPassant)
         {
@@ -182,10 +182,10 @@ public class Position
         }
         else
         {
-            var moveCapturedPiece = move.CapturedPiece;
-            if (moveCapturedPiece > 0)
-                capturedPiece = PieceTypes.MakePiece(moveCapturedPiece, !isWhite);
-            else capturedPiece = null;
+           
+            if (move.CapturedPiece > 0)
+                capturedPiece = move.CapturedPiece;
+            else capturedPiece = 0;
             capturedSquare = move.To;
         }
 
@@ -194,9 +194,9 @@ public class Position
         _historyStackPointer++;
 
         // get rid of the captured piece
-        if (capturedPiece.HasValue)
+        if (capturedPiece != 0)
         {
-            Bitboards.SetOff(capturedPiece.Value, capturedSquare.Value);
+            Bitboards.SetOff(capturedPiece, capturedSquare);
         }
 
         // action the required change for the moving piece
@@ -242,14 +242,14 @@ public class Position
         }
         else
         {
-            EnPassantSquare = null;
+            EnPassantSquare = -1;
         }
 
         SwapTurns();
 
         if (PieceTypes.IsBlack(move.PieceMoved))
             FullMoves++;
-        if (pieceType != PieceTypes.Pawn && !capturedPiece.HasValue)
+        if (pieceType != PieceTypes.Pawn && capturedPiece == 0)
             HalfMoves++;
         // irreversible move
         else
@@ -294,12 +294,12 @@ public class Position
             MovePiece(movePieceMoved, move.To, move.From);
         }
         
-        int? capturedOn = null;
-        if (state.CapturedPiece.HasValue)
+        var capturedOn = -1;
+        if (state.CapturedPiece != 0)
         {
             if (!move.IsEnPassant)
             {
-                Bitboards.SetOn(state.CapturedPiece.Value, move.To);
+                Bitboards.SetOn(state.CapturedPiece, move.To);
                 capturedOn = move.To;
             }
         }
@@ -324,7 +324,7 @@ public class Position
         {
             var pawnHomeRank = isWhite ? 4 : 3;
             capturedOn = RankAndFile.SquareIndex(pawnHomeRank, fileIndex);
-            Bitboards.SetOn(PieceTypes.MakePiece(PieceTypes.Pawn, !isWhite), capturedOn.Value);
+            Bitboards.SetOn(PieceTypes.MakePiece(PieceTypes.Pawn, !isWhite), capturedOn);
         }
 
         if (fullUndoMove)
@@ -428,7 +428,7 @@ public class Position
     private void ApplyBoardStateFromFen(string fen)
     {
         CastlingRights = 0;
-        EnPassantSquare = null;
+        EnPassantSquare = -1;
         var fenDetails = Fen.FromString(fen);
 
         WhiteToMove = fenDetails.WhiteToMove;

@@ -36,8 +36,8 @@ public class ApplyMove
             Assert.That(board.FullMoves, Is.EqualTo(1));
             Assert.That(board.WhiteToMove, Is.EqualTo(false));
         });
-        
-        
+
+
         // back where we started
         board.UndoNullMove();
         Assert.Multiple(() =>
@@ -46,7 +46,7 @@ public class ApplyMove
             Assert.That(board.FullMoves, Is.EqualTo(1));
             Assert.That(board.WhiteToMove, Is.EqualTo(true));
         });
-        
+
         // skip two turns
         board.MakeNullMove();
         board.MakeNullMove();
@@ -56,7 +56,7 @@ public class ApplyMove
             Assert.That(board.FullMoves, Is.EqualTo(2));
             Assert.That(board.WhiteToMove, Is.EqualTo(true));
         });
-        
+
         // undo the last one
         board.UndoNullMove();
         Assert.Multiple(() =>
@@ -82,45 +82,46 @@ public class ApplyMove
         var board = new Position();
         board.ApplyMove(new Move(PieceTypes.WP, "d2d4"));
         board.MakeNullMove();
-        Assert.That(board.EnPassantSquare.HasValue, Is.False);
+        Assert.That(board.EnPassantSquare, Is.EqualTo(-1));
     }
+
     [Test]
     public void UndoNullMoveRestoresEnPassant()
     {
         var board = new Position();
         board.ApplyMove(new Move(PieceTypes.WP, "d2d4"));
         board.MakeNullMove();
-        Assert.That(board.EnPassantSquare.HasValue, Is.False);
+        Assert.That(board.EnPassantSquare, Is.EqualTo(-1));
         board.UndoNullMove();
-        Assert.That(board.EnPassantSquare.HasValue, Is.True);
+        Assert.That(board.EnPassantSquare, Is.Not.EqualTo(-1));
     }
-    
+
     [Test]
     public void HalfMoveIncrements()
     {
         var board = new Position();
-        board.ApplyMove(new Move(PieceTypes.WP,"a2a4"));
+        board.ApplyMove(new Move(PieceTypes.WP, "a2a4"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(1));
             Assert.That(board.HalfMoves, Is.EqualTo(0));
         });
 
-        board.ApplyMove(new Move(PieceTypes.BN,"b8c6"));
+        board.ApplyMove(new Move(PieceTypes.BN, "b8c6"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(2));
             Assert.That(board.HalfMoves, Is.EqualTo(1));
         });
 
-        board.ApplyMove(new Move(PieceTypes.WP,"h2h4"));
+        board.ApplyMove(new Move(PieceTypes.WP, "h2h4"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(2));
             Assert.That(board.HalfMoves, Is.EqualTo(0));
         });
     }
-    
+
     [Test]
     public void ApplyPawnPush()
     {
@@ -314,8 +315,6 @@ public class ApplyMove
 
         VerifyMoves(startingPositions, moves, endingPositions);
     }
-    
-    
 }
 
 public class UndoMove
@@ -377,8 +376,6 @@ public class UndoMove
         board.ApplyMove(move);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2"));
-
-
     }
 
     [Test]
@@ -473,10 +470,10 @@ public class UndoMove
         var fenBefore = board.GetFen();
         board.ApplyMove(captureMove);
         var fenDuring = board.GetFen();
-        
+
         board.UndoMove(captureMove);
         var fenAfter = board.GetFen();
-        Assert.That(fenBefore,Is.EqualTo(fenAfter));
+        Assert.That(fenBefore, Is.EqualTo(fenAfter));
     }
 }
 
@@ -491,7 +488,7 @@ public class PositionTests
         {
             Assert.That(board.WhiteToMove, Is.True);
             Assert.That(board.Bitboards.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"));
-            Assert.That(board.EnPassantSquare.HasValue, Is.False);
+            Assert.That(board.EnPassantSquare, Is.EqualTo(-1));
         });
     }
 
@@ -507,7 +504,6 @@ public class PositionTests
     [Test]
     public void SetFenGivesSameResultAsInit()
     {
-        
         var fen = "r1bqkbr1/pppppppp/2n2n2/8/8/2N2N2/PPPPPPPP/1RBQKB1R w Kq - 6 4";
         var boardFromFen = new Position(fen);
         var board = new Position();
@@ -529,6 +525,5 @@ public class PositionTests
             // zobrist equal
             Assert.That(board.ZobristState, Is.EqualTo(boardFromFen.ZobristState));
         });
-
     }
 }

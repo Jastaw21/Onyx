@@ -29,8 +29,8 @@ public static class Zobrist
             hashValue ^= WhiteToMove;
 
         // handle the special board state bits
-        if (fenDetails.EnPassantSquare.HasValue)
-            hashValue ^= EnPassantSquare[fenDetails.EnPassantSquare.Value];
+        if (fenDetails.EnPassantSquare != -1)
+            hashValue ^= EnPassantSquare[fenDetails.EnPassantSquare];
 
         if ((fenDetails.CastlingRights & BoardHelpers.WhiteKingsideCastlingFlag) > 0)
             hashValue ^= CastlingRights[0, 0];
@@ -76,8 +76,8 @@ public static class Zobrist
         return hashValue;
     }
 
-    public static ulong ApplyMove(Move move, ulong hashIn, byte? capturedPiece = null, int? capturedOnSquare = null,
-        int? epBefore = null, int? epAfter = null, int? castlingRights = null, int? newCastlingRights = null)
+    public static ulong ApplyMove(Move move, ulong hashIn, byte capturedPiece = 0, int capturedOnSquare = -1,
+        int epBefore = -1, int epAfter = -1, int castlingRights = 0, int newCastlingRights = 0)
     {
         var hashValue = hashIn;
         var movedPieceToRand = PieceSquare[move.PieceMoved, move.To];
@@ -88,9 +88,9 @@ public static class Zobrist
         hashValue ^= movedPieceToRand;
 
         // test capture
-        if (capturedPiece.HasValue && capturedOnSquare.HasValue)
+        if (capturedPiece != 0 && capturedOnSquare != -1)
         {
-            hashValue ^= PieceSquare[capturedPiece.Value, capturedOnSquare.Value];
+            hashValue ^= PieceSquare[capturedPiece, capturedOnSquare];
         }
 
         if (move.IsPromotion)
@@ -118,25 +118,25 @@ public static class Zobrist
             hashValue ^= rookToRand;
         }
 
-        if (epAfter.HasValue)
-            hashValue ^= EnPassantSquare[epAfter.Value];
-        if (epBefore.HasValue)
-            hashValue ^= EnPassantSquare[epBefore.Value];
+        if (epAfter != -1)
+            hashValue ^= EnPassantSquare[epAfter];
+        if (epBefore != -1)
+            hashValue ^= EnPassantSquare[epBefore];
 
 
-        if (castlingRights.HasValue && newCastlingRights.HasValue && castlingRights.Value != newCastlingRights.Value)
+        if (castlingRights != newCastlingRights)
         {
-            if ((castlingRights.Value & BoardHelpers.WhiteKingsideCastlingFlag) !=
-                (newCastlingRights.Value & BoardHelpers.WhiteKingsideCastlingFlag))
+            if ((castlingRights & BoardHelpers.WhiteKingsideCastlingFlag) !=
+                (newCastlingRights & BoardHelpers.WhiteKingsideCastlingFlag))
                 hashValue ^= CastlingRights[0, 0];
-            if ((castlingRights.Value & BoardHelpers.WhiteQueensideCastlingFlag) !=
-                (newCastlingRights.Value & BoardHelpers.WhiteQueensideCastlingFlag))
+            if ((castlingRights & BoardHelpers.WhiteQueensideCastlingFlag) !=
+                (newCastlingRights & BoardHelpers.WhiteQueensideCastlingFlag))
                 hashValue ^= CastlingRights[0, 1];
-            if ((castlingRights.Value & BoardHelpers.BlackKingsideCastlingFlag) !=
-                (newCastlingRights.Value & BoardHelpers.BlackKingsideCastlingFlag))
+            if ((castlingRights & BoardHelpers.BlackKingsideCastlingFlag) !=
+                (newCastlingRights & BoardHelpers.BlackKingsideCastlingFlag))
                 hashValue ^= CastlingRights[1, 0];
-            if ((castlingRights.Value & BoardHelpers.BlackQueensideCastlingFlag) !=
-                (newCastlingRights.Value & BoardHelpers.BlackQueensideCastlingFlag))
+            if ((castlingRights & BoardHelpers.BlackQueensideCastlingFlag) !=
+                (newCastlingRights & BoardHelpers.BlackQueensideCastlingFlag))
                 hashValue ^= CastlingRights[1, 1];
         }
 

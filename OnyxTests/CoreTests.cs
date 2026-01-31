@@ -21,21 +21,21 @@ public class CoreTests
     public void PieceTest()
     {
         Piece whitePawn = Piece.WP;
-        Assert.That(whitePawn.Notation == "P");
+        Assert.That(whitePawn.Notation, Is.EqualTo("P"));
         Piece blackPawn = Piece.BP;
-        Assert.That(blackPawn.Notation == "p");
+        Assert.That(blackPawn.Notation, Is.EqualTo("p"));
         Piece whiteKnight = Piece.WN;
-        Assert.That(whiteKnight.Notation == "N");
+        Assert.That(whiteKnight.Notation, Is.EqualTo("N"));
         Piece blackKnight = Piece.BN;
-        Assert.That(blackKnight.Notation == "n");
+        Assert.That(blackKnight.Notation, Is.EqualTo("n"));
         Piece whiteBishop = Piece.WB;
-        Assert.That(whiteBishop.Notation == "B");
+        Assert.That(whiteBishop.Notation, Is.EqualTo("B"));
         Piece blackBishop = Piece.BB;
-        Assert.That(blackBishop.Notation == "b");
+        Assert.That(blackBishop.Notation, Is.EqualTo("b"));
         Piece whiteRook = Piece.WR;
-        Assert.That(whiteRook.Notation == "R");
+        Assert.That(whiteRook.Notation, Is.EqualTo("R"));
         Piece blackRook = Piece.BR;
-        Assert.That(blackRook.Notation == "r");
+        Assert.That(blackRook.Notation, Is.EqualTo("r"));
     }
     
     [Test]

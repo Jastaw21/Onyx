@@ -90,16 +90,16 @@ public static class MoveGenerator
 
         var enPassantAttacks = 0ul;
         // the board has a viable en passant square, and we're on an appropriate file
-        if (board.EnPassantSquare.HasValue &&
-            Math.Abs(RankAndFile.FileIndex(board.EnPassantSquare.Value) - RankAndFile.FileIndex(square)) == 1)
+        if (board.EnPassantSquare != -1 &&
+            Math.Abs(RankAndFile.FileIndex(board.EnPassantSquare) - RankAndFile.FileIndex(square)) == 1)
         {
             var relevantAttackRank = isWhite ? 5 : 2;
             var pawnHomeRank = isWhite ? 4 : 3;
 
             // all other conditions for en passant are met
-            if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare.Value))
+            if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare))
             {
-                var epSquare = 1ul << board.EnPassantSquare.Value;
+                var epSquare = 1ul << board.EnPassantSquare;
                 normalAttacks |= epSquare;
                 enPassantAttacks |= epSquare;
             }

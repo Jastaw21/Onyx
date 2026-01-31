@@ -165,31 +165,16 @@ public static class Evaluator
 
     public static int Evaluate(Position board)
     {
-        if (Referee.IsThreeFoldRepetition(board)) return 0;
 
         var whiteMaterial = EvaluateMaterial(board, true);
         var blackMaterial = EvaluateMaterial(board, false);
-
-        // value of material
-        var materialScore = whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
-
-        // a small boost for having both bishops on the board
-        var bishopPairScore = whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
-
-        // piece square score
-        var whitePss = PieceSquareScore(board, blackMaterial.EndGameRatio(), true);
-        var blackPss = PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
-        var pieceSquareScore = whitePss - blackPss;
-
-        var whiteKingSafety = KingSafetyScore(board, true);
-        var blackKingSafety = KingSafetyScore(board, false);
-        var kingSafetyScore = whiteKingSafety - blackKingSafety;
-
         var score = 0;
-        score += materialScore;
-        score += bishopPairScore;
-        score += pieceSquareScore;
-        score += kingSafetyScore;
+
+        score += whiteMaterial.MaterialScore - blackMaterial.MaterialScore;
+        score += whiteMaterial.BishopPairScore - blackMaterial.BishopPairScore;
+        score += PieceSquareScore(board, blackMaterial.EndGameRatio(), true) - PieceSquareScore(board, whiteMaterial.EndGameRatio(), false);
+        score += KingSafetyScore(board, true) - KingSafetyScore(board, false);
+        //score += PawnStructureScore(board, true) - PawnStructureScore(board, false); ;
 
         return board.WhiteToMove ? score : -score;
     }

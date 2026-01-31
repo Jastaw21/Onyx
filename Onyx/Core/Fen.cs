@@ -9,7 +9,7 @@ public struct FenDetails
     public string PositionFen;
     public bool WhiteToMove;
     public string CastlingString;
-    public int? EnPassantSquare;
+    public int EnPassantSquare;
     public int HalfMove;
     public int FullMove;
     public int CastlingRights;
@@ -59,7 +59,7 @@ public static class Fen
         }
         else
         {
-            details.EnPassantSquare = null;
+            details.EnPassantSquare = -1;
         }
 
         var halfMoveTokenValue = int.Parse(fen[halfMoveTokenLocation..(fullMoveTokenLocation - 1)]);
