@@ -209,25 +209,26 @@ public static class Evaluator
         foreach (var piece in pieces)
         {
             var occupancyByPiece = board.Bitboards.OccupancyByPiece(piece);
-            var pieceCount = ulong.PopCount(occupancyByPiece);
-            materialEvaluation.MaterialScore += (int)pieceCount * PieceValues[PieceTypes.PieceTypeIndex(piece)];
+            var pieceCount = (int)ulong.PopCount(occupancyByPiece);
+            
+            materialEvaluation.MaterialScore += pieceCount * PieceValues[PieceTypes.PieceTypeIndex(piece)];
 
             switch (PieceTypes.PieceType(piece))
             {
                 case PieceTypes.Pawn:
-                    materialEvaluation.Pawns += (int)pieceCount;
+                    materialEvaluation.Pawns += pieceCount;
                     break;
                 case PieceTypes.Knight:
-                    materialEvaluation.Knights += (int)pieceCount;
+                    materialEvaluation.Knights += pieceCount;
                     break;
                 case PieceTypes.Rook:
-                    materialEvaluation.Rooks += (int)pieceCount;
+                    materialEvaluation.Rooks += pieceCount;
                     break;
                 case PieceTypes.Queen:
-                    materialEvaluation.Queens += (int)pieceCount;
+                    materialEvaluation.Queens += pieceCount;
                     break;
                 case PieceTypes.Bishop:
-                    materialEvaluation.Bishops += (int)pieceCount;
+                    materialEvaluation.Bishops += pieceCount;
                     break;
             }
         }
@@ -404,19 +405,38 @@ public static class Evaluator
     ];
     // @formatter:on
 
+    // Cache lookup tables by piece type and game phase (start/end) to avoid repeated switch
+    private static readonly int[][] PieceSquareTablesStart = new[]
+    {
+        ZeroScores, // 0 - no piece
+        PawnStart,  // 1 - Pawn
+        KnightScores, // 2 - Knight
+        BishopStart,  // 3 - Bishop
+        RookStart,    // 4 - Rook
+        KingStart,    // 5 - King
+        QueenScores,  // 6 - Queen
+        ZeroScores    // 7 - sentinel
+    };
+
+    private static readonly int[][] PieceSquareTablesEnd = new[]
+    {
+        ZeroScores, // 0 - no piece
+        PawnEnd,    // 1 - Pawn
+        KnightScores, // 2 - Knight (no endgame table)
+        BishopStart,  // 3 - Bishop
+        RookEnd,      // 4 - Rook
+        KingEnd,      // 5 - King
+        QueenScores,  // 6 - Queen
+        ZeroScores    // 7 - sentinel
+    };
+
     private static int[] GetArray(byte piece, bool endGame = false)
     {
-        var type = PieceTypes.PieceType(piece);
+        // inline the piece type computation to avoid a method call hotspot
+        var type = piece & 0x7; // equivalent to PieceTypes.PieceType(piece)
 
-        return type switch
-        {
-            PieceTypes.Pawn => endGame ? PawnEnd : PawnStart,
-            PieceTypes.Knight => KnightScores,
-            PieceTypes.Bishop => BishopStart,
-            PieceTypes.Queen => QueenScores,
-            PieceTypes.Rook => endGame ? RookEnd : RookStart,
-            PieceTypes.King => endGame ? KingEnd : KingStart,
-            _ => ZeroScores
-        };
+        // bounds-safe quick lookup
+        if (type >= PieceSquareTablesStart.Length) return ZeroScores;
+        return endGame ? PieceSquareTablesEnd[type] : PieceSquareTablesStart[type];
     }
 }
