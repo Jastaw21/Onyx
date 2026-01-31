@@ -42,16 +42,16 @@ public static class PieceTypes
 
     public static readonly byte[] AllPieces =
     [
-        WP, WB, WK, WQ, WN, WR,
-        BP, BB, BK, BQ, BN, BR
+        WP, WN, WB, WR, WK, WQ,
+        BP, BN, BB, BR, BK, BQ
     ];
     public static readonly byte[] _whitePieces =
     [
-        WP, WB, WK, WQ, WN, WR
+        WP, WN, WB, WR, WK, WQ
     ];
     public static readonly byte[] _blackPieces =
     [
-        BP, BB, BK, BQ, BN, BR
+        BP, BN, BB, BR, BK, BQ
     ];
 
     public static readonly byte[] _whitePromotionTypes = [WQ, WN, WR, WB];

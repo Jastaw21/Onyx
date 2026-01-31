@@ -1,5 +1,6 @@
 ﻿using Onyx.Core;
 using System;
+using System.Runtime.CompilerServices;
 
 
 namespace Onyx.Statics;
@@ -45,8 +46,6 @@ internal struct MaterialEvaluation
 
 public static class Evaluator
 {
-    
-   
     private static int GetMoveScore(Move move, Move?[,]? killerMoves, int ply)
     {
         var score = 0;
@@ -71,7 +70,7 @@ public static class Evaluator
     public static void SortMoves(Span<Move> moves, Move transpositionTableMove, Move?[,] killerMoves, int ply)
     {
         var len = moves.Length;
-        if (len <= 1)  return;
+        if (len <= 1) return;
 
         Span<int> scores = stackalloc int[len];
         var hasTTMove = transpositionTableMove.Data > 0;
@@ -85,19 +84,19 @@ public static class Evaluator
             }
             scores[i] = GetMoveScore(moves[i], killerMoves, ply);
         }
-        
+
         PerformSort(moves, scores, 0, len - 1);
 
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static void PerformSort(Span<Move> moves, Span<int> scores, int left, int right)
     {
-
-        if (left < right) QuickSort(moves,scores,left, right);
-
+        if (left < right) QuickSort(moves, scores, left, right);
     }
 
-    static void InsertionSort(Span<Move> moves, Span<int> scores,int l, int r)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static void InsertionSort(Span<Move> moves, Span<int> scores, int l, int r)
     {
         for (var i = l + 1; i <= r; i++)
         {
@@ -116,20 +115,20 @@ public static class Evaluator
     }
 
 
-    static void QuickSort(Span<Move> moves, Span<int> scores,int l, int r)
+    static void QuickSort(Span<Move> moves, Span<int> scores, int l, int r)
     {
-        const int InsertionThreshold = 10;
+        const int InsertionThreshold = 14;
         if (r - l <= InsertionThreshold)
         {
-            InsertionSort( moves, scores,l, r);
+            InsertionSort(moves, scores, l, r);
             return;
         }
 
         // median-of-three pivot
         var mid = (l + r) >> 1;
-        if (scores[l] < scores[mid]) Swap(l, mid, moves,scores);
-        if (scores[l] < scores[r]) Swap(l, r, moves,scores);
-        if (scores[mid] < scores[r]) Swap(mid, r, moves,scores);
+        if (scores[l] < scores[mid]) Swap(l, mid, moves, scores);
+        if (scores[l] < scores[r]) Swap(l, r, moves, scores);
+        if (scores[mid] < scores[r]) Swap(mid, r, moves, scores);
 
         var pivot = scores[mid];
         // move pivot to r-1
@@ -148,10 +147,13 @@ public static class Evaluator
         // restore pivot
         Swap(i, r - 1, moves, scores);
 
-        if (i - 1 - l > 0) QuickSort(moves,scores,l, i - 1);
-        if (r - (i + 1) > 0) QuickSort(moves,scores, i + 1, r);
+        if (i - 1 - l > 0) QuickSort(moves, scores, l, i - 1);
+        if (r - (i + 1) > 0) QuickSort(moves, scores, i + 1, r);
     }
 
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Swap(int a, int b, Span<Move> moves, Span<int> scores)
     {
         var tmpMove = moves[a];
@@ -206,12 +208,18 @@ public static class Evaluator
     {
         var materialEvaluation = new MaterialEvaluation();
         var pieces = forWhite ? PieceTypes._whitePieces : PieceTypes._blackPieces;
+        var pieceIndex = 0;
         foreach (var piece in pieces)
         {
             var occupancyByPiece = board.Bitboards.OccupancyByPiece(piece);
+            if (occupancyByPiece == 0)
+            {
+                pieceIndex++;
+                continue;
+            }
             var pieceCount = (int)ulong.PopCount(occupancyByPiece);
-            
-            materialEvaluation.MaterialScore += pieceCount * PieceValues[PieceTypes.PieceTypeIndex(piece)];
+
+            materialEvaluation.MaterialScore += pieceCount * PieceValues[pieceIndex++];
 
             switch (PieceTypes.PieceType(piece))
             {
@@ -231,6 +239,7 @@ public static class Evaluator
                     materialEvaluation.Bishops += pieceCount;
                     break;
             }
+
         }
 
         return materialEvaluation;
@@ -252,20 +261,25 @@ public static class Evaluator
     {
         var bitboardIndex = PieceTypes.BitboardIndex(piece);
         var occupancy = board.Bitboards.Boards[bitboardIndex];
+        if (occupancy == 0) return 0;
 
         var score = 0;
+
+        var startTable = GetArray(piece, false);
+        var endTable = GetArray(piece, true);
+        var isWhite = PieceTypes.IsWhite(piece);
+
         while (occupancy > 0)
         {
             var lowestSetBit = ulong.TrailingZeroCount(occupancy);
             var square = (int)lowestSetBit;
-            if (PieceTypes.PieceType(piece) == PieceTypes.Pawn)
-            {
-                // ReSharper disable once RedundantArgumentDefaultValue
-                var earlyGameScore = GetPieceValueOnSquare(square, piece, false);
-                var endGameScore = GetPieceValueOnSquare(square, piece, true);
-                score += (int)(endGameScore * enemyEndGameScale + earlyGameScore * (1 - enemyEndGameScale));
-            }
-            else score += GetPieceValueOnSquare(square, piece);
+            var index = PieceTypes.IsWhite(piece) ? square ^ 56 : square;
+
+            // ReSharper disable once RedundantArgumentDefaultValue
+            var earlyGameScore = startTable[index];
+            var endGameScore = endTable[index];
+            score += (int)(endGameScore * enemyEndGameScale + earlyGameScore * (1 - enemyEndGameScale));
+
 
             occupancy &= occupancy - 1;
         }
@@ -284,9 +298,9 @@ public static class Evaluator
 
     // tables are laid out like looking at a board from white's perspective
     // @formatter:off
-        private static readonly int[] PawnStart =
-    [
-          0,   0,   0,   0,   0,   0,   0,   0,
+    private static readonly int[] PawnStart =
+[
+      0,   0,   0,   0,   0,   0,   0,   0,
          50,  50,  50,  50,  50,  50,  50,  50,
          10,  10,  20,  30,  30,  20,  10,  10,
           5,   5,  10,  25,  25,  10,   5,   5,
@@ -294,7 +308,7 @@ public static class Evaluator
           5,  -5, -10,   0,   0, -10,  -5,   5,
           5,  10,  10, -20, -20,  10,  10,   5,
           0,   0,   0,   0,   0,   0,   0,   0
-    ];
+];
 
     private static readonly int[] PawnEnd =
     [
@@ -391,7 +405,7 @@ public static class Evaluator
         -12, -10, -10, -10, -10, -10, -10, -12,
         -12, -10, -10, -10, -10, -10, -10, -12
     ];
-    
+
     private static readonly int[] ZeroScores =
     [
         0, 0, 0, 0, 0, 0, 0, 0,
