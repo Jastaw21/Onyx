@@ -80,7 +80,7 @@ public class ApplyMove
     public void MakeNullMoveLosesEnPassant()
     {
         var board = new Position();
-        board.ApplyMove(new Move(Piece.WP, "d2d4"));
+        board.ApplyMove(new Move(PieceTypes.WP, "d2d4"));
         board.MakeNullMove();
         Assert.That(board.EnPassantSquare.HasValue, Is.False);
     }
@@ -88,7 +88,7 @@ public class ApplyMove
     public void UndoNullMoveRestoresEnPassant()
     {
         var board = new Position();
-        board.ApplyMove(new Move(Piece.WP, "d2d4"));
+        board.ApplyMove(new Move(PieceTypes.WP, "d2d4"));
         board.MakeNullMove();
         Assert.That(board.EnPassantSquare.HasValue, Is.False);
         board.UndoNullMove();
@@ -99,21 +99,21 @@ public class ApplyMove
     public void HalfMoveIncrements()
     {
         var board = new Position();
-        board.ApplyMove(new Move(Piece.WP,"a2a4"));
+        board.ApplyMove(new Move(PieceTypes.WP,"a2a4"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(1));
             Assert.That(board.HalfMoves, Is.EqualTo(0));
         });
 
-        board.ApplyMove(new Move(Piece.BN,"b8c6"));
+        board.ApplyMove(new Move(PieceTypes.BN,"b8c6"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(2));
             Assert.That(board.HalfMoves, Is.EqualTo(1));
         });
 
-        board.ApplyMove(new Move(Piece.WP,"h2h4"));
+        board.ApplyMove(new Move(PieceTypes.WP,"h2h4"));
         Assert.Multiple(() =>
         {
             Assert.That(board.FullMoves, Is.EqualTo(2));
@@ -127,7 +127,7 @@ public class ApplyMove
         var board = new Position();
 
         var move = new Move(
-            Piece.WP,
+            PieceTypes.WP,
             RankAndFile.SquareIndex("a2"),
             RankAndFile.SquareIndex("a4")
         );
@@ -137,7 +137,7 @@ public class ApplyMove
             "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR"
         ));
 
-        board.ApplyMove(new Move(Piece.BP, "a7a5"));
+        board.ApplyMove(new Move(PieceTypes.BP, "a7a5"));
         Assert.That(board.Bitboards.GetFen(), Is.EqualTo(
             "rnbqkbnr/1ppppppp/8/p7/P7/8/1PPPPPPP/RNBQKBNR"
         ));
@@ -148,7 +148,7 @@ public class ApplyMove
     {
         var board = new Position("rnb1kbnr/ppp1pppp/3p4/8/5q2/3P4/PPPQPPPP/RNB1KBNR w KQkq - 0 1");
 
-        var queenCapture = new Move(Piece.WQ, "d2f4");
+        var queenCapture = new Move(PieceTypes.WQ, "d2f4");
         board.ApplyMove(queenCapture);
 
         Assert.That(board.GetFen(), Is.EqualTo("rnb1kbnr/ppp1pppp/3p4/8/5Q2/3P4/PPP1PPPP/RNB1KBNR b KQkq - 0 1"));
@@ -167,10 +167,10 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new(Piece.WK, "e1g1"),
-            new(Piece.WK, "e1c1"),
-            new(Piece.BK, "e8g8"),
-            new(Piece.BK, "e8c8")
+            new(PieceTypes.WK, "e1g1"),
+            new(PieceTypes.WK, "e1c1"),
+            new(PieceTypes.BK, "e8g8"),
+            new(PieceTypes.BK, "e8c8")
         ];
 
         List<string> endingPositions =
@@ -194,7 +194,7 @@ public class ApplyMove
     {
         // white can promote from here
         var board = new Position("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
-        var promotionMove = new Move(Piece.WP, "b7b8q");
+        var promotionMove = new Move(PieceTypes.WP, "b7b8q");
 
         board.ApplyMove(promotionMove);
         Assert.That(board.GetFen(), Is.EqualTo("1Q1rb2r/p1qkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR b - - 0 13"));
@@ -211,8 +211,8 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new(Piece.WK, "e1f2"),
-            new(Piece.BK, "e8e7")
+            new(PieceTypes.WK, "e1f2"),
+            new(PieceTypes.BK, "e8e7")
         ];
 
         List<string> PositionsAfter =
@@ -238,7 +238,7 @@ public class ApplyMove
     public void MovingRookLosesCastlingRights()
     {
         var board = new Position("rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR w KQkq - 2 3");
-        var rookMove = new Move(Piece.WR, "a1b1");
+        var rookMove = new Move(PieceTypes.WR, "a1b1");
 
         board.ApplyMove(rookMove);
         Assert.Multiple(() =>
@@ -250,7 +250,7 @@ public class ApplyMove
                            BoardHelpers.BlackQueensideCastlingFlag));
         });
 
-        var blackRookMove = new Move(Piece.BR, "h8g8");
+        var blackRookMove = new Move(PieceTypes.BR, "h8g8");
         board.ApplyMove(blackRookMove);
         Assert.Multiple(() =>
         {
@@ -272,7 +272,7 @@ public class ApplyMove
             Is.EqualTo(BoardHelpers.WhiteKingsideCastlingFlag | BoardHelpers.BlackQueensideCastlingFlag));
 
         // move the rook out to call the castlingrigths function
-        var blackRookMove = new Move(Piece.BR, "h8g8");
+        var blackRookMove = new Move(PieceTypes.BR, "h8g8");
         board.ApplyMove(blackRookMove);
 
         // check nothing has changed
@@ -284,10 +284,10 @@ public class ApplyMove
     public void BasicEnPassantSquareSetting()
     {
         var board = new Position();
-        board.ApplyMove(new Move(Piece.WP, "d2d4"));
+        board.ApplyMove(new Move(PieceTypes.WP, "d2d4"));
         Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"));
 
-        board.ApplyMove(new Move(Piece.BP, "d7d5"));
+        board.ApplyMove(new Move(PieceTypes.BP, "d7d5"));
         Assert.That(board.GetFen(), Is.EqualTo("rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2"));
     }
 
@@ -302,8 +302,8 @@ public class ApplyMove
 
         List<Move> moves =
         [
-            new(Piece.WP, "d5e6"),
-            new(Piece.BP, "d4e3")
+            new(PieceTypes.WP, "d5e6"),
+            new(PieceTypes.BP, "d4e3")
         ];
 
         List<string> endingPositions =
@@ -325,13 +325,13 @@ public class UndoMove
     {
         var board = new Position();
         var fenPrior = board.GetFen();
-        var push = new Move(Piece.WP, "b2b4");
+        var push = new Move(PieceTypes.WP, "b2b4");
         board.ApplyMove(push);
 
         board.UndoMove(push);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
 
-        var knight = new Move(Piece.WN, "b1c3");
+        var knight = new Move(PieceTypes.WN, "b1c3");
         board.ApplyMove(knight);
         board.UndoMove(knight);
         Assert.That(board.GetFen(), Is.EqualTo(fenPrior));
@@ -342,7 +342,7 @@ public class UndoMove
     {
         var board = new Position("rnb1kbnr/pp1ppppp/2p5/2q5/8/2N1PP2/PPPP2PP/R1BQKBNR b KQkq - 0 1");
         var fenBefore = board.GetFen();
-        var capture = new Move(Piece.BQ, "c5c3");
+        var capture = new Move(PieceTypes.BQ, "c5c3");
         board.ApplyMove(capture);
 
         Assert.That(board.GetFen(), Is.Not.EqualTo(fenBefore));
@@ -356,7 +356,7 @@ public class UndoMove
     {
         var board = new Position("3rb2r/pPqkbpp1/n2ppn1p/8/2Q4B/2P5/PP1NPPPP/2KR1BNR w - - 1 13");
         var fenBefore = board.GetFen();
-        var promotionMove = new Move(Piece.WP, "b7b8q");
+        var promotionMove = new Move(PieceTypes.WP, "b7b8q");
 
         board.ApplyMove(promotionMove);
 
@@ -367,13 +367,13 @@ public class UndoMove
         Assert.That(board.GetFen(), Is.EqualTo(fenBefore));
 
         board = new Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2");
-        var move = new Move(Piece.BP, "g2h1b");
+        var move = new Move(PieceTypes.BP, "g2h1b");
         board.ApplyMove(move);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/PPN2Q2/2PBBPpP/R3K2R b KQkq - 0 2"));
 
         board = new Position("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2");
-        move = new Move(Piece.WP, "a7b8B");
+        move = new Move(PieceTypes.WP, "a7b8B");
         board.ApplyMove(move);
         board.UndoMove(move);
         Assert.That(board.GetFen(), Is.EqualTo("1r2k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1R1K w k - 2 2"));
@@ -394,10 +394,10 @@ public class UndoMove
 
         List<Move> moves =
         [
-            new(Piece.WK, "e1g1"),
-            new(Piece.WK, "e1c1"),
-            new(Piece.BK, "e8g8"),
-            new(Piece.BK, "e8c8")
+            new(PieceTypes.WK, "e1g1"),
+            new(PieceTypes.WK, "e1c1"),
+            new(PieceTypes.BK, "e8g8"),
+            new(PieceTypes.BK, "e8c8")
         ];
 
         List<string> endingPositions =
@@ -429,7 +429,7 @@ public class UndoMove
     {
         var board = new Position("rnbqkbnr/pppp1ppp/4p3/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
         var rightsBefore = board.CastlingRights;
-        var kingMove = new Move(Piece.WK, "e1f2");
+        var kingMove = new Move(PieceTypes.WK, "e1f2");
         board.ApplyMove(kingMove);
         board.UndoMove(kingMove);
         Assert.That(board.CastlingRights, Is.EqualTo(rightsBefore));
@@ -446,8 +446,8 @@ public class UndoMove
 
         List<Move> moves =
         [
-            new(Piece.WP, "d5e6"),
-            new(Piece.BP, "d4e3")
+            new(PieceTypes.WP, "d5e6"),
+            new(PieceTypes.BP, "d4e3")
         ];
 
         VerifyUndoingMoves(startingPositions, moves);
@@ -458,7 +458,7 @@ public class UndoMove
     {
         var board = new Position();
         var previousEP = board.EnPassantSquare;
-        var move = new Move(Piece.WP, "d2d4");
+        var move = new Move(PieceTypes.WP, "d2d4");
         board.ApplyMove(move);
         board.UndoMove(move);
 
@@ -469,7 +469,7 @@ public class UndoMove
     public void UndoQueenCapture()
     {
         var board = new Position("rnbqkbnr/p1pppppp/8/1p6/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 0 1");
-        var captureMove = new Move(Piece.BP, "b5a4");
+        var captureMove = new Move(PieceTypes.BP, "b5a4");
         var fenBefore = board.GetFen();
         board.ApplyMove(captureMove);
         var fenDuring = board.GetFen();

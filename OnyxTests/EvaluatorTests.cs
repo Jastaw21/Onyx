@@ -8,10 +8,10 @@ public class EvaluatorTests
     [Test]
     public void PieceSquareLogic()
     {
-        Assert.That(Evaluator.GetPieceValueOnSquare(48, Piece.WP), Is.EqualTo(50));
-        Assert.That(Evaluator.GetPieceValueOnSquare(48, Piece.BP), Is.EqualTo(5));
-        Assert.That(Evaluator.GetPieceValueOnSquare(12, Piece.WP), Is.EqualTo(-20));
-        Assert.That(Evaluator.GetPieceValueOnSquare(12, Piece.BP), Is.EqualTo(50));
+        Assert.That(Evaluator.GetPieceValueOnSquare(48, PieceTypes.WP), Is.EqualTo(50));
+        Assert.That(Evaluator.GetPieceValueOnSquare(48, PieceTypes.BP), Is.EqualTo(5));
+        Assert.That(Evaluator.GetPieceValueOnSquare(12, PieceTypes.WP), Is.EqualTo(-20));
+        Assert.That(Evaluator.GetPieceValueOnSquare(12, PieceTypes.BP), Is.EqualTo(50));
     }
 
     [Test]
@@ -38,8 +38,8 @@ public class EvaluatorTests
     [Test]
     public void EndGameEvaluatesDifferentlyPawns()
     {
-        var startPawn = Evaluator.GetPieceValueOnSquare(16, Piece.WP, false);
-        var endPawn = Evaluator.GetPieceValueOnSquare(16, Piece.WP, true);
+        var startPawn = Evaluator.GetPieceValueOnSquare(16, PieceTypes.WP, false);
+        var endPawn = Evaluator.GetPieceValueOnSquare(16, PieceTypes.WP, true);
         Assert.That(endPawn, Is.Not.EqualTo(startPawn));
     }
 

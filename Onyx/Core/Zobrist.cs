@@ -7,7 +7,7 @@ public static class Zobrist
     private const int Seed = 123111;
     private static readonly Random Random;
 
-    private static readonly ulong[,] PieceSquare = new ulong[32, 64]; // Use sbyte piece value directly as index. 32 to be safe for 1<<4 + 6
+    private static readonly ulong[,] PieceSquare = new ulong[32, 64]; // Use byte piece value directly as index. 32 to be safe for 1<<4 + 6
 
     public static ulong WhiteToMove { get; private set; }
 
@@ -76,7 +76,7 @@ public static class Zobrist
         return hashValue;
     }
 
-    public static ulong ApplyMove(Move move, ulong hashIn, sbyte? capturedPiece = null, int? capturedOnSquare = null,
+    public static ulong ApplyMove(Move move, ulong hashIn, byte? capturedPiece = null, int? capturedOnSquare = null,
         int? epBefore = null, int? epAfter = null, int? castlingRights = null, int? newCastlingRights = null)
     {
         var hashValue = hashIn;
@@ -98,13 +98,13 @@ public static class Zobrist
             // We need to undo the move to of the piece, thats covered in MovePiece,
             // as obviously for promotion this is overridden by the promoted piece. Explicitly set it off here
             hashValue ^= movedPieceToRand;
-            var promotedPieceRand = PieceSquare[move.PromotedPiece!.Value, move.To];
+            var promotedPieceRand = PieceSquare[move.PromotedPiece, move.To];
             hashValue ^= promotedPieceRand;
         }
 
         else if (move.IsCastling)
         {
-            var affectedRook = Piece.IsWhite(move.PieceMoved) ? Piece.WR : Piece.BR;
+            var affectedRook = PieceTypes.IsWhite(move.PieceMoved) ? PieceTypes.WR : PieceTypes.BR;
 
             var toFileIndex = RankAndFile.FileIndex(move.To);
             var toRankIndex = RankAndFile.RankIndex(move.To);
@@ -147,7 +147,7 @@ public static class Zobrist
 
     private static void InitZobrist()
     {
-        foreach (var piece in Piece.AllPieces)
+        foreach (var piece in PieceTypes.AllPieces)
         {
             for (var square = 0; square < 64; square++)
             {

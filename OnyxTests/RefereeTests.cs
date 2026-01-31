@@ -87,9 +87,9 @@ public class RefereeTests
     public void CantMoveIntoCheck()
     {
         var board = new Position("qrn1bnrb/pppp1ppp/N7/3k4/4p3/5B2/PPPPPPPP/QR1K1NRB b - - 0 1");
-        var exposeKingMove = new Move(Piece.BP, "e4e3");
-        var normalKingMove = new Move(Piece.BK, "d5d6");
-        var moveIntoCheck = new Move(Piece.BK, "d5c5");
+        var exposeKingMove = new Move(PieceTypes.BP, "e4e3");
+        var normalKingMove = new Move(PieceTypes.BK, "d5d6");
+        var moveIntoCheck = new Move(PieceTypes.BK, "d5c5");
         Assert.Multiple(() =>
         {
             Assert.That(Referee.MoveIsLegal(exposeKingMove, board), Is.False);
@@ -119,18 +119,18 @@ public class RefereeTests
     {
         var fen = "rnbq1k1r/pp1Pbppp/2p4B/8/2B5/8/PPP1NnPP/RN1QK2R b KQ - 2 8";
         var board = new Position(fen);
-        var move = new Move(Piece.BP, "g7h6");
+        var move = new Move(PieceTypes.BP, "g7h6");
         Assert.That(Referee.MoveIsLegal(move, board), Is.True);
     }
 
     [Test]
     public void ThreefoldRepetition()
     {
-        var whiteMove = new Move(Piece.WN, "b1c3");
-        var blackMove = new Move(Piece.BN, "b8c6");
+        var whiteMove = new Move(PieceTypes.WN, "b1c3");
+        var blackMove = new Move(PieceTypes.BN, "b8c6");
         
-        var reverseWhiteMove = new Move(Piece.WN, "c3b1");
-        var reverseBlackMove = new Move(Piece.BN, "c6b8");
+        var reverseWhiteMove = new Move(PieceTypes.WN, "c3b1");
+        var reverseBlackMove = new Move(PieceTypes.BN, "c6b8");
 
         var board = new Position();
         // start in the state (1), apply and reverse once (2) and a second time (3)

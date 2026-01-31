@@ -54,8 +54,8 @@ public static class Evaluator
 
         if (move.CapturedPiece != 0)
         {
-            var victimPiece = PieceValues[Piece.PieceTypeIndex(move.CapturedPiece)];
-            var attackerPiece = PieceValues[Piece.PieceTypeIndex(move.PieceMoved)];
+            var victimPiece = PieceValues[PieceTypes.PieceTypeIndex(move.CapturedPiece)];
+            var attackerPiece = PieceValues[PieceTypes.PieceTypeIndex(move.PieceMoved)];
             score += 12000 + (victimPiece * 10 - attackerPiece);
         }
 
@@ -196,8 +196,8 @@ public static class Evaluator
 
     public static int KingSafetyScore(Position board, bool forWhite)
     {
-        var kingPiece = forWhite ? Piece.WK : Piece.BK;
-        var pawnPiece = forWhite ? Piece.WP : Piece.BP;
+        var kingPiece = forWhite ? PieceTypes.WK : PieceTypes.BK;
+        var pawnPiece = forWhite ? PieceTypes.WP : PieceTypes.BP;
         var kingBoard = board.Bitboards.OccupancyByPiece(kingPiece);
 
         var kingSquare = (int)ulong.TrailingZeroCount(kingBoard);
@@ -211,7 +211,7 @@ public static class Evaluator
         var pawnShieldScore = (possibleShields - actualShields) * -20;
 
         var kingFile = RankAndFile.FileIndex((int)ulong.TrailingZeroCount(kingBoard));
-        var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
+        var pawns = board.Bitboards.OccupancyByPiece(PieceTypes.WP) | board.Bitboards.OccupancyByPiece(PieceTypes.BP);
         var openFilePenalty = BoardHelpers.FileIsOpen(kingFile, pawns) ? -30 : 0;
 
         return pawnShieldScore + openFilePenalty;
@@ -220,28 +220,28 @@ public static class Evaluator
     private static MaterialEvaluation EvaluateMaterial(Position board, bool forWhite)
     {
         var materialEvaluation = new MaterialEvaluation();
-        var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
+        var pieces = forWhite ? PieceTypes._whitePieces : PieceTypes._blackPieces;
         foreach (var piece in pieces)
         {
             var occupancyByPiece = board.Bitboards.OccupancyByPiece(piece);
             var pieceCount = ulong.PopCount(occupancyByPiece);
-            materialEvaluation.MaterialScore += (int)pieceCount * PieceValues[Piece.PieceTypeIndex(piece)];
+            materialEvaluation.MaterialScore += (int)pieceCount * PieceValues[PieceTypes.PieceTypeIndex(piece)];
 
-            switch (Piece.PieceType(piece))
+            switch (PieceTypes.PieceType(piece))
             {
-                case Piece.Pawn:
+                case PieceTypes.Pawn:
                     materialEvaluation.Pawns += (int)pieceCount;
                     break;
-                case Piece.Knight:
+                case PieceTypes.Knight:
                     materialEvaluation.Knights += (int)pieceCount;
                     break;
-                case Piece.Rook:
+                case PieceTypes.Rook:
                     materialEvaluation.Rooks += (int)pieceCount;
                     break;
-                case Piece.Queen:
+                case PieceTypes.Queen:
                     materialEvaluation.Queens += (int)pieceCount;
                     break;
-                case Piece.Bishop:
+                case PieceTypes.Bishop:
                     materialEvaluation.Bishops += (int)pieceCount;
                     break;
             }
@@ -253,7 +253,7 @@ public static class Evaluator
     private static int PieceSquareScore(Position board, float enemyEndGameScale, bool forWhite)
     {
         var score = 0;
-        var pieces = forWhite ? Piece._whitePieces : Piece._blackPieces;
+        var pieces = forWhite ? PieceTypes._whitePieces : PieceTypes._blackPieces;
         foreach (var piece in pieces)
         {
             score += PieceSquareScoreByPiece(board, piece, enemyEndGameScale);
@@ -262,9 +262,9 @@ public static class Evaluator
         return score;
     }
 
-    private static int PieceSquareScoreByPiece(Position board, sbyte piece, float enemyEndGameScale)
+    private static int PieceSquareScoreByPiece(Position board, byte piece, float enemyEndGameScale)
     {
-        var bitboardIndex = Piece.BitboardIndex(piece);
+        var bitboardIndex = PieceTypes.BitboardIndex(piece);
         var occupancy = board.Bitboards.Boards[bitboardIndex];
 
         var score = 0;
@@ -272,7 +272,7 @@ public static class Evaluator
         {
             var lowestSetBit = ulong.TrailingZeroCount(occupancy);
             var square = (int)lowestSetBit;
-            if (Piece.PieceType(piece) == Piece.Pawn)
+            if (PieceTypes.PieceType(piece) == PieceTypes.Pawn)
             {
                 // ReSharper disable once RedundantArgumentDefaultValue
                 var earlyGameScore = GetPieceValueOnSquare(square, piece, false);
@@ -290,9 +290,9 @@ public static class Evaluator
     // pawn, knight, bishop, rook, king, queen
     private static readonly int[] PieceValues = [100, 300, 320, 500, 0, 900];
 
-    public static int GetPieceValueOnSquare(int square, sbyte piece, bool endGame = false)
+    public static int GetPieceValueOnSquare(int square, byte piece, bool endGame = false)
     {
-        var index = Piece.IsWhite(piece) ? square ^ 56 : square;
+        var index = PieceTypes.IsWhite(piece) ? square ^ 56 : square;
         return GetArray(piece, endGame)[index];
     }
 
@@ -419,18 +419,18 @@ public static class Evaluator
     ];
     // @formatter:on
 
-    private static int[] GetArray(sbyte piece, bool endGame = false)
+    private static int[] GetArray(byte piece, bool endGame = false)
     {
-        var type = Piece.PieceType(piece);
+        var type = PieceTypes.PieceType(piece);
 
         return type switch
         {
-            Piece.Pawn => endGame ? PawnEnd : PawnStart,
-            Piece.Knight => KnightScores,
-            Piece.Bishop => BishopStart,
-            Piece.Queen => QueenScores,
-            Piece.Rook => endGame ? RookEnd : RookStart,
-            Piece.King => endGame ? KingEnd : KingStart,
+            PieceTypes.Pawn => endGame ? PawnEnd : PawnStart,
+            PieceTypes.Knight => KnightScores,
+            PieceTypes.Bishop => BishopStart,
+            PieceTypes.Queen => QueenScores,
+            PieceTypes.Rook => endGame ? RookEnd : RookStart,
+            PieceTypes.King => endGame ? KingEnd : KingStart,
             _ => ZeroScores
         };
     }

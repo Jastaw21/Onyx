@@ -21,7 +21,7 @@ public class BoardHelperTests
     public void OpenFiles()
     {
         var board = new Position();
-        var pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
+        var pawns = board.Bitboards.OccupancyByPiece(PieceTypes.WP) | board.Bitboards.OccupancyByPiece(PieceTypes.BP);
 
         for (int file = 0; file < 8; file++)
         {
@@ -30,7 +30,7 @@ public class BoardHelperTests
         
         // c file is open (index 2)
         board.SetFen("rnbqkbnr/pp1ppppp/8/8/8/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1");
-        pawns = board.Bitboards.OccupancyByPiece(Piece.WP) | board.Bitboards.OccupancyByPiece(Piece.BP);
+        pawns = board.Bitboards.OccupancyByPiece(PieceTypes.WP) | board.Bitboards.OccupancyByPiece(PieceTypes.BP);
         for (int file = 0; file < 8; file++)
         {
             Assert.That(BoardHelpers.FileIsOpen(file, pawns), Is.EqualTo(file == 2));

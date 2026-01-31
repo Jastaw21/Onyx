@@ -62,24 +62,24 @@ public class ZobristTests
         ];
         List<Move> moves =
         [
-            new(Piece.WK, "e1f2"),
-            new(Piece.BK, "e8e7"),
-            new(Piece.WK, "e1g1"),
-            new(Piece.WK, "e1c1"),
-            new(Piece.BK, "e8g8"),
-            new(Piece.BK, "e8c8"),
-            new(Piece.WP, "d5e6"),
-            new(Piece.BP, "d4e3"),
-            new(Piece.WQ, "d2f4"),
+            new(PieceTypes.WK, "e1f2"),
+            new(PieceTypes.BK, "e8e7"),
+            new(PieceTypes.WK, "e1g1"),
+            new(PieceTypes.WK, "e1c1"),
+            new(PieceTypes.BK, "e8g8"),
+            new(PieceTypes.BK, "e8c8"),
+            new(PieceTypes.WP, "d5e6"),
+            new(PieceTypes.BP, "d4e3"),
+            new(PieceTypes.WQ, "d2f4"),
             
             // loss of castling rights
-            new(Piece.WK, "e1f2"),
-            new(Piece.BK, "e8e7"),
-            new(Piece.WR, "a1b1"),
+            new(PieceTypes.WK, "e1f2"),
+            new(PieceTypes.BK, "e8e7"),
+            new(PieceTypes.WR, "a1b1"),
             
             // Apply en passant
-            new(Piece.WP, "d2d4"),
-            new(Piece.BP, "d7d5")
+            new(PieceTypes.WP, "d2d4"),
+            new(PieceTypes.BP, "d7d5")
         ];
 
         List<string> positionsAfter =
@@ -144,24 +144,24 @@ public class ZobristTests
         ];
         List<Move> moves =
         [
-            new(Piece.WK, "e1f2"),
-            new(Piece.BK, "e8e7"),
-            new(Piece.WK, "e1g1"),
-            new(Piece.WK, "e1c1"),
-            new(Piece.BK, "e8g8"),
-            new(Piece.BK, "e8c8"),
-            new(Piece.WP, "d5e6"),
-            new(Piece.BP, "d4e3"),
-            new (Piece.WQ, "d2f4"),
+            new(PieceTypes.WK, "e1f2"),
+            new(PieceTypes.BK, "e8e7"),
+            new(PieceTypes.WK, "e1g1"),
+            new(PieceTypes.WK, "e1c1"),
+            new(PieceTypes.BK, "e8g8"),
+            new(PieceTypes.BK, "e8c8"),
+            new(PieceTypes.WP, "d5e6"),
+            new(PieceTypes.BP, "d4e3"),
+            new (PieceTypes.WQ, "d2f4"),
             
             // loss of castling rights
-            new(Piece.WK, "e1f2"),
+            new(PieceTypes.WK, "e1f2"),
             
             // undo applying en passant
-            new(Piece.WP, "d5e6"),
-            new(Piece.BP, "d4e3"),
+            new(PieceTypes.WP, "d5e6"),
+            new(PieceTypes.BP, "d4e3"),
             
-            new Move(Piece.WP, "d2d4")
+            new Move(PieceTypes.WP, "d2d4")
         ];
         
 
@@ -180,10 +180,10 @@ public class ZobristTests
     {
         var board = new Position("8/8/8/2k2b2/8/1B1pK3/2pB4/8 b - - 23 69");
         var hashPre = board.ZobristState;
-        board.ApplyMove(new Move(Piece.BB, "f5g6"));
-        board.ApplyMove(new Move(Piece.WB, "b3a2"));
-        board.ApplyMove(new Move(Piece.BB, "g6f5"));
-        board.ApplyMove(new Move(Piece.WB, "a2b3"));
+        board.ApplyMove(new Move(PieceTypes.BB, "f5g6"));
+        board.ApplyMove(new Move(PieceTypes.WB, "b3a2"));
+        board.ApplyMove(new Move(PieceTypes.BB, "g6f5"));
+        board.ApplyMove(new Move(PieceTypes.WB, "a2b3"));
         Assert.That(board.ZobristState, Is.EqualTo(hashPre));
     }
 }

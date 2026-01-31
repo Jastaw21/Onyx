@@ -77,38 +77,38 @@ public static class Fen
     public const FenString Pos4Fen      = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
     public const FenString Pos5Fen      = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
 
-    public static sbyte GetPieceFromChar(char pieceChar)
+    public static byte GetPieceFromChar(char pieceChar)
     {
         return pieceChar switch
         {
-            'K' => Piece.WK,
-            'B' => Piece.WB,
-            'R' => Piece.WR,
-            'N' => Piece.WN,
-            'P' => Piece.WP,
-            'Q' => Piece.WQ,
-            'k' => Piece.BK,
-            'b' => Piece.BB,
-            'r' => Piece.BR,
-            'n' => Piece.BN,
-            'p' => Piece.BP,
-            'q' => Piece.BQ
+            'K' => PieceTypes.WK,
+            'B' => PieceTypes.WB,
+            'R' => PieceTypes.WR,
+            'N' => PieceTypes.WN,
+            'P' => PieceTypes.WP,
+            'Q' => PieceTypes.WQ,
+            'k' => PieceTypes.BK,
+            'b' => PieceTypes.BB,
+            'r' => PieceTypes.BR,
+            'n' => PieceTypes.BN,
+            'p' => PieceTypes.BP,
+            'q' => PieceTypes.BQ
            
         };
     }
 
-    public static char GetCharFromPiece(sbyte piece)
+    public static char GetCharFromPiece(byte piece)
     {
-        var lowerVersion = Piece.PieceType(piece) switch
+        var lowerVersion = PieceTypes.PieceType(piece) switch
         {
-            Piece.King => 'k',
-            Piece.Knight => 'n',
-            Piece.Bishop => 'b',
-            Piece.Rook => 'r',
-            Piece.Queen => 'q',
-            Piece.Pawn => 'p',
+            PieceTypes.King => 'k',
+            PieceTypes.Knight => 'n',
+            PieceTypes.Bishop => 'b',
+            PieceTypes.Rook => 'r',
+            PieceTypes.Queen => 'q',
+            PieceTypes.Pawn => 'p',
         };
 
-        return Piece.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;
+        return PieceTypes.IsWhite(piece) ? char.ToUpper(lowerVersion) : lowerVersion;
     }
 }
