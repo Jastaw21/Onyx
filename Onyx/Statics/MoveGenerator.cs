@@ -31,6 +31,7 @@ public static class MoveGenerator
     public static int GetMoves(byte piece, int square, Position board, Span<Move> moveBuffer, ref int count,
         bool capturesOnly = false)
     {
+        var isWhite = PieceTypes.IsWhite(piece);
         if (PieceTypes.PieceType(piece) != PieceTypes.Pawn)
         {
             GenerateBasicMoves(piece, square, board, moveBuffer, ref count, capturesOnly);
@@ -39,7 +40,7 @@ public static class MoveGenerator
         }
         else
         {
-            UnifiedPawnMoves(piece, square, board, moveBuffer, ref count, capturesOnly);
+            UnifiedPawnMoves(piece, square, board, moveBuffer, ref count, isWhite, capturesOnly);
         }
 
         return count;
@@ -74,17 +75,17 @@ public static class MoveGenerator
     }
 
     private static void UnifiedPawnMoves(byte piece, int square, Position board, Span<Move> moveBuffer, ref int count,
-        bool capturesOnly = false)
+        bool forWhite, bool capturesOnly = false)
     {
-        var isWhite = PieceTypes.IsWhite(piece);
+        
         var rankIndex = RankAndFile.RankIndex(square);
 
-        var opponentOccupancy = board.Bitboards.OccupancyByColour(isWhite);
-        var movingSideOccupancy = board.Bitboards.OccupancyByColour(!isWhite);
+        var opponentOccupancy = board.Bitboards.OccupancyByColour(forWhite);
+        var movingSideOccupancy = board.Bitboards.OccupancyByColour(!forWhite);
         var occupancy = opponentOccupancy | movingSideOccupancy;
 
-        var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(isWhite, square, occupancy);
-        var attacks = MagicBitboards.MagicBitboards.GetPawnAttacks(isWhite, square);
+        var pushes = MagicBitboards.MagicBitboards.GetPawnPushes(forWhite, square, occupancy);
+        var attacks = MagicBitboards.MagicBitboards.GetPawnAttacks(forWhite, square);
 
         var normalAttacks = opponentOccupancy & attacks;
 
@@ -93,8 +94,8 @@ public static class MoveGenerator
         if (board.EnPassantSquare != -1 &&
             Math.Abs(RankAndFile.FileIndex(board.EnPassantSquare) - RankAndFile.FileIndex(square)) == 1)
         {
-            var relevantAttackRank = isWhite ? 5 : 2;
-            var pawnHomeRank = isWhite ? 4 : 3;
+            var relevantAttackRank = forWhite ? 5 : 2;
+            var pawnHomeRank = forWhite ? 4 : 3;
 
             // all other conditions for en passant are met
             if (rankIndex == pawnHomeRank && relevantAttackRank == RankAndFile.RankIndex(board.EnPassantSquare))
@@ -108,37 +109,37 @@ public static class MoveGenerator
         var result = capturesOnly ? normalAttacks : pushes | normalAttacks;
         result &= ~movingSideOccupancy;
 
-        var promotionMask = isWhite ? 0xff00000000000000 : 0xff;
+        var promotionMask = forWhite ? 0xff00000000000000 : 0xff;
         while (result > 0)
         {
-            var lowest = ulong.TrailingZeroCount(result);
-            var move = new Move(piece, square, (int)lowest);
+            var lowest = (int)ulong.TrailingZeroCount(result);
+            var move = new Move(piece, square, lowest);
 
             // is a capture
-            var thisSquare = 1ul << (int)lowest;
-            byte? captured = null;
+            var thisSquare = 1ul << lowest;
+            byte captured = 0;
             if ((thisSquare & opponentOccupancy) != 0)
             {
-                captured = board.Bitboards.PieceAtSquare((int)lowest);
+                captured = board.Bitboards.PieceAtSquare(lowest);
             }
 
             // is an en passant capture
             if ((thisSquare & enPassantAttacks) != 0)
             {
-                captured = PieceTypes.MakePiece(PieceTypes.Pawn, !isWhite);
+                captured = PieceTypes.MakePiece(PieceTypes.Pawn, !forWhite);
             }
 
             var isPromotion = (thisSquare & promotionMask) != 0;
 
             if (isPromotion)
             {
-                var promotionPieces = isWhite ? PieceTypes._whitePromotionTypes : PieceTypes._blackPromotionTypes;
+                var promotionPieces = forWhite ? PieceTypes._whitePromotionTypes : PieceTypes._blackPromotionTypes;
                 foreach (var promotionType in promotionPieces)
                 {
-                    var promotionMove = new Move(piece, square, (int)lowest)
+                    var promotionMove = new Move(piece, square, lowest)
                     {
                         PromotedPiece = promotionType,
-                        CapturedPiece = captured.GetValueOrDefault(0)
+                        CapturedPiece = captured
                     };
                     moveBuffer[count++] = promotionMove;
                 }
@@ -146,7 +147,7 @@ public static class MoveGenerator
 
             if (!isPromotion)
             {
-                move.CapturedPiece = captured.GetValueOrDefault(0);
+                move.CapturedPiece = captured;
                 move.HasCaptureBeenChecked = true;
                 moveBuffer[count++] = move;
             }
@@ -174,9 +175,9 @@ public static class MoveGenerator
 
         // Try kingside
         var pieceAtTargetSquare = board.Bitboards.PieceAtSquare(kingSideRookSquare);
-        if (pieceAtTargetSquare.HasValue
-            && PieceTypes.PieceType(pieceAtTargetSquare.Value) == PieceTypes.Rook
-            && PieceTypes.IsWhite(pieceAtTargetSquare.Value) == isWhite)
+        if (pieceAtTargetSquare != 0
+            && PieceTypes.PieceType(pieceAtTargetSquare) == PieceTypes.Rook
+            && PieceTypes.IsWhite(pieceAtTargetSquare) == isWhite)
             TryCastling(
                 board,
                 piece,
@@ -192,9 +193,9 @@ public static class MoveGenerator
 
         // Try queenside
         pieceAtTargetSquare = board.Bitboards.PieceAtSquare(queenSideRookSquare);
-        if (pieceAtTargetSquare.HasValue
-            && PieceTypes.PieceType(pieceAtTargetSquare.Value) == PieceTypes.Rook
-            && PieceTypes.IsWhite(pieceAtTargetSquare.Value) == isWhite)
+        if (pieceAtTargetSquare != 0
+            && PieceTypes.PieceType(pieceAtTargetSquare) == PieceTypes.Rook
+            && PieceTypes.IsWhite(pieceAtTargetSquare) == isWhite)
             TryCastling(
                 board,
                 piece,
@@ -259,10 +260,8 @@ public static class MoveGenerator
             var thisSquare = (int)ulong.TrailingZeroCount(moves);
             var move = new Move(piece, square, thisSquare);
             if (((1ul << thisSquare) & opponentOccupancy) != 0)
-            {
-                var capturedPiece = board.Bitboards.PieceAtSquare(thisSquare);
-                if (capturedPiece.HasValue)
-                    move.CapturedPiece = capturedPiece.Value;
+            {                
+               move.CapturedPiece = board.Bitboards.PieceAtSquare(thisSquare);
             }
 
             move.HasCaptureBeenChecked = true;

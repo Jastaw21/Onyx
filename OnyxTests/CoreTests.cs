@@ -203,7 +203,7 @@ public class CoreTests
         {
             Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(1, 0)), Is.EqualTo(PieceTypes.MakePiece(PieceTypes.Pawn, true)));
             Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(6, 7)), Is.EqualTo(PieceTypes.MakePiece(PieceTypes.Pawn, false)));
-            Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(3, 3)).HasValue, Is.False);
+            Assert.That(board.PieceAtSquare(RankAndFile.SquareIndex(3, 3)) != 0, Is.False);
         });
     }
 

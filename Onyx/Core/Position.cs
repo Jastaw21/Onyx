@@ -357,7 +357,7 @@ public class Position
         }
 
         if (pieceType == PieceTypes.Pawn && fromFileIndex - toFileIndex != 0 &&
-            !Bitboards.PieceAtSquare(move.To).HasValue)
+            Bitboards.PieceAtSquare(move.To) == 0)
         {
             move.IsEnPassant = true;
         }
@@ -369,7 +369,7 @@ public class Position
             if ((Bitboards.AllPieces & (1ul << move.To)) != 0)
             {
                 var pieceAtSquare = Bitboards.PieceAtSquare(move.To);
-                move.CapturedPiece = pieceAtSquare!.Value;
+                move.CapturedPiece = pieceAtSquare;
             }
             // en passant capture
             else if (move.IsEnPassant)
@@ -455,10 +455,10 @@ public class Position
             var squareFrom = RankAndFile.SquareIndex(from);
 
             var pieceMoved = Bitboards.PieceAtSquare(squareFrom);
-            if (!pieceMoved.HasValue)
+            if (pieceMoved == 0)
                 throw new InvalidOperationException("No piece at moved from square");
 
-            var moveToApply = new Move(pieceMoved.Value, move);
+            var moveToApply = new Move(pieceMoved, move);
             ApplyMove(moveToApply);
         }
     }

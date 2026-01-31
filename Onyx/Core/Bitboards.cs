@@ -8,6 +8,7 @@ public class Bitboards
     public Bitboards()
     {
         Boards = new ulong[12];
+        Pieces = new byte[64];
         AllPieces = 0;
         WhitePieces = 0;
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
@@ -16,6 +17,7 @@ public class Bitboards
     public Bitboards(string fenString)
     {
         Boards = new ulong[12];
+        Pieces = new byte[64];
         AllPieces = 0;
         WhitePieces = 0;
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
@@ -28,6 +30,7 @@ public class Bitboards
         for (var i = 0; i < Boards.Length; i++) Boards[i] = 0ul;
         WhitePieces = 0;
         AllPieces = 0;
+        for (var i = 0; i < Pieces.Length; i++) Pieces[i] = 0;
 
         var rankIndex = 7; // fen starts from the top
         var fileIndex = 0;
@@ -56,7 +59,9 @@ public class Bitboards
             else
             {
                 var piece = Fen.GetPieceFromChar(pieceChar);
-                SetOn(piece, RankAndFile.SquareIndex(rankIndex, fileIndex));
+                var sq = RankAndFile.SquareIndex(rankIndex, fileIndex);
+                SetOn(piece, sq);
+                Pieces[sq] = piece;
                 fileIndex++;
             }
 
@@ -67,6 +72,7 @@ public class Bitboards
     public ulong AllPieces { get; private set; }
     public ulong WhitePieces { get; private set; }
     public ulong[] Boards { get; }
+    public byte[] Pieces { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong OccupancyByPiece(byte piece)
@@ -78,9 +84,7 @@ public class Bitboards
         if (!forBlack)
             return WhitePieces;
 
-        return AllPieces & ~WhitePieces;
-        //var pieces = forBlack ? Piece._blackPieces : Piece._whitePieces;
-        //return pieces.Aggregate(0ul, (current, piece) => current | OccupancyByPiece(piece));
+        return AllPieces & ~WhitePieces;        
     }
 
     public ulong Occupancy()
@@ -97,7 +101,14 @@ public class Bitboards
         {
             if (PieceTypes.IsWhite(PieceTypes.AllPieces[i]))
                 WhitePieces |= Boards[i];
-            AllPieces |= Boards[i];
+            AllPieces |= Boards[i];          
+        }
+        var localBoard = boardByPiece;
+        while (localBoard != 0)
+        {
+            var square = ulong.TrailingZeroCount(localBoard);
+            Pieces[square] = piece;
+            localBoard &= localBoard - 1;
         }
     }
 
@@ -106,6 +117,7 @@ public class Bitboards
         var index = 1ul << square;
         AllPieces &= ~index;
         WhitePieces &= ~index;
+        Pieces[square] = 0;
         for (var i = 0; i < Boards.Length; i++)
         {
             Boards[i] &= ~index;
@@ -120,6 +132,7 @@ public class Bitboards
         if ((Boards[index] & bit) != 0)
         {
             Boards[index] &= ~bit;
+            Pieces[square] = 0;
 
             // Only clear _allPieces if no other piece is on this square
             var stillOccupied = false;
@@ -144,6 +157,7 @@ public class Bitboards
     {
         var index = 1ul << square;
         Boards[PieceTypes.BitboardIndex(piece)] |= index;
+        Pieces[square] = piece;
         AllPieces |= index;
         if (PieceTypes.IsWhite(piece))
             WhitePieces |= index;
@@ -151,22 +165,12 @@ public class Bitboards
 
     public bool SquareOccupied(int squareToTest)
     {
-        return (AllPieces & (1ul << squareToTest)) > 0;
+        return Pieces[squareToTest] != 0;
     }
 
-    public byte? PieceAtSquare(int squareToTest)
+    public byte PieceAtSquare(int squareToTest)
     {
-        var mask = 1UL << squareToTest;
-        if ((AllPieces & (1ul << squareToTest)) == 0) return null;
-        var pieces = PieceTypes.AllPieces;
-        foreach (var piece in pieces)
-        {
-            var board = OccupancyByPiece(piece);
-            if ((board & mask) != 0)
-                return piece;
-        }
-
-        return null;
+        return Pieces[squareToTest];
     }
 
     public string GetFen()
@@ -181,9 +185,9 @@ public class Bitboards
             {
                 var pieceHere = PieceAtSquare(RankAndFile.SquareIndex(rankIndex, fileIndex));
 
-                if (pieceHere.HasValue)
+                if (pieceHere != 0)
                 {
-                    var key = Fen.GetCharFromPiece(pieceHere.Value);
+                    var key = Fen.GetCharFromPiece(pieceHere);
 
                     // we were tracking empty squares, so write them first
                     if (numberEmptySquares > 0)
@@ -195,7 +199,7 @@ public class Bitboards
                     builtFen += key;
                 }
 
-                if (!pieceHere.HasValue)
+                if (pieceHere == 0)
                     numberEmptySquares++;
             }
 
