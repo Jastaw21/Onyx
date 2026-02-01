@@ -250,7 +250,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         // leaf node - continue until the position is quiet before evaluating
         if (depthRemaining == 0)
         {
-            var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
+            var qEval = QuiescenceSearch(alpha, beta, depthFromRoot);
             if (!qEval.Completed)
                 return SearchFlag.Abort;
 
@@ -420,53 +420,91 @@ public class Searcher(Engine engine, int searcherId = 0)
         return false;
     }
 
-    private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
+    private SearchFlag QuiescenceSearch(int alpha, int beta, int depthFromRoot)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
         if (StopFlag)
             return SearchFlag.Abort;
 
-        if (Referee.IsRepetition(position) || position.HalfMoves >= 50)
+        if (Referee.IsRepetition(_currentPosition) || _currentPosition.HalfMoves >= 50)
         {
             _pvLength[depthFromRoot + 1] = depthFromRoot + 1;
             return SearchFlag.Zero;
         }
 
-        // stand pat to prevent explosion. This says that we're not necessarily forced to capture
-        var eval = engine.EvaluationTable.Evaluate(position, engine.CurrentSearchId);
-        if (eval >= beta) return new SearchFlag(true, beta);
-        if (eval > alpha) alpha = eval;
+        var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
 
-        Statistics.Nodes++;
-        Statistics.qNodes++;
+        // stand pat to prevent explosion. This says that we're not necessarily forced to capture
+        var standPat = engine.EvaluationTable.Evaluate(_currentPosition, engine.CurrentSearchId);
+
+        if (!isInCheck)
+        {
+            if (standPat >= beta) return new SearchFlag(true, beta); // beta cutoff
+
+            var originalAlpha = alpha;
+            if (standPat > alpha) alpha = standPat;
+
+            if (standPat + 900 <= originalAlpha)
+            {
+                // delta cutoff
+                Statistics.DeltaCutoffs++;
+                return new SearchFlag(true, alpha);
+            }
+        }
 
         Span<Move> moveBuffer = stackalloc Move[128];
-        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);
+        // if we're in check need to search evasions too.
+        var moveCount =
+            isInCheck
+                ? MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,
+                    alreadyKnowBoardInCheck: true,
+                    isAlreadyInCheck: isInCheck,
+                    capturesOnly: false
+                )
+                : MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,
+                    alreadyKnowBoardInCheck: isInCheck,
+                    isAlreadyInCheck: true,
+                    capturesOnly: true
+                );
 
         var moves = moveBuffer[..moveCount];
-
 
         Evaluator.SortMoves(moves, new Move(), _killerMoves, depthFromRoot);
 
 
         foreach (var move in moves)
         {
+            if (!isInCheck && move.CapturedPiece != 0)
+            {
+                var capturedPiece = PieceTypes.PieceTypeIndex(move.CapturedPiece);
+                var capturedValue = Evaluator.PieceValues[capturedPiece];
+                if (standPat + capturedValue + 200 < alpha)
+                {
+                    Statistics.DeltaPerMove++;
+                    continue;
+                } 
+            }
+           
+            Statistics.Nodes++;
+            Statistics.qNodes++;
+            
             _currentPosition.ApplyMove(move);
-            var child = QuiescenceSearch(-beta, -alpha, _currentPosition, depthFromRoot + 1);
+            var child = QuiescenceSearch(-beta, -alpha, depthFromRoot + 1);
             _currentPosition.UndoMove(move);
             if (!child.Completed) return SearchFlag.Abort;
-            eval = -child.Score;
+            var score = -child.Score;
 
             // beta cutoff - the opponent won't let it get here
-            if (eval >= beta)
+            if (score >= beta)
             {
                 return new SearchFlag(true, beta);
             }
 
-            if (eval > alpha)
+
+            if (score > alpha)
             {
-                alpha = eval;
+                alpha = score;
 
                 _pvTable[depthFromRoot, depthFromRoot] = move;
                 var nextPlyDepth = _pvLength[depthFromRoot + 1];

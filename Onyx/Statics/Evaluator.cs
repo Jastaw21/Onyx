@@ -158,8 +158,6 @@ public static class Evaluator
         if (r - (i + 1) > 0) QuickSort(moves, scores, i + 1, r);
     }
 
-
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Swap(int a, int b, Span<Move> moves, Span<int> scores)
     {
@@ -213,8 +211,8 @@ public static class Evaluator
 
     public static int PawnStructureScore(Position board, bool forWhite)
     {
-        var relevantPawn = forWhite ? Piece.WP : Piece.BP;
-        var enemyPawn = forWhite ? Piece.BP : Piece.WP;
+        var relevantPawn = forWhite ? PieceTypes.WP : PieceTypes.BP;
+        var enemyPawn = forWhite ? PieceTypes.BP : PieceTypes.WP;
         var friendlyPawns = board.Bitboards.OccupancyByPiece(relevantPawn);
         var enemyPawns = board.Bitboards.OccupancyByPiece(enemyPawn);
         var passedPawnsBonus = 0;
@@ -317,7 +315,7 @@ public static class Evaluator
     }
 
     // pawn, knight, bishop, rook, king, queen
-    private static readonly int[] PieceValues = [100, 300, 320, 500, 0, 900];
+    public static readonly int[] PieceValues = [100, 300, 320, 500, 0, 900];
 
     public static int GetPieceValueOnSquare(int square, byte piece, bool endGame = false)
     {
