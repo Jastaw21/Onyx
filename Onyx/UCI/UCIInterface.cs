@@ -20,6 +20,8 @@ public class UciInterface
         _options.AddOption("threads", "spin", "5", "1", "8", SetThreads);
         _options.AddOption("lmrthreshold", "spin", "5", "2", "8", SetLMRValue);
         _options.AddOption("logging", "check", "0", "0", "1", i => Logger.LoggingEnabled = i == 1);
+        _options.AddOption("deltamargin","spin","1000","200","1400", i => _player.PrimaryWorker.DeltaMargin = i);
+        _options.AddOption("delatapm","spin","200","0","500",i => _player.PrimaryWorker.DeltaPerMove = i);
         _player.OnSearchInfoUpdate += Console.WriteLine;
         _searchCts = new CancellationTokenSource();
     }

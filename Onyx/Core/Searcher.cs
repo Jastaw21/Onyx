@@ -28,6 +28,8 @@ public class Searcher(Engine engine, int searcherId = 0)
     public bool IsFinished;
     private const int Reduction = -1;
     public int LmrThreshold = 3;
+    public int DeltaMargin = 1000;
+    public int DeltaPerMove = 100;
 
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
@@ -38,11 +40,10 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
 
-    private bool _searchAsWhite;
-
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition = new();
     public event Action<SearchResults, SearchStatistics> OnDepthFinished = null!;
+
 
     public void Start()
     {
@@ -89,7 +90,6 @@ public class Searcher(Engine engine, int searcherId = 0)
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters)
     {
         Reset();
-        _searchAsWhite = _currentPosition.WhiteToMove;
 
         // some vague diversification stuff
         var startDepth = searcherId == 0 ? 1 : searcherId % 2 == 0 ? 1 : 2;
@@ -215,7 +215,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         var zobristHashValue = _currentPosition.ZobristState;
         var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);
 
-
         if (entryExists)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
@@ -250,7 +249,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         // leaf node - continue until the position is quiet before evaluating
         if (depthRemaining == 0)
         {
-            var qEval = QuiescenceSearch(alpha, beta, _currentPosition, depthFromRoot);
+            var qEval = QuiescenceSearch(alpha, beta, depthFromRoot);
             if (!qEval.Completed)
                 return SearchFlag.Abort;
 
@@ -274,18 +273,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         // no legal moves left - decide if its checkmate or stalemate
         if (legalMoveCount == 0)
         {
-            if (isInCheck)
-                return new SearchFlag(true, -(Engine.MateScore - depthFromRoot));
-
-            // stalemate
-            return SearchFlag.Zero;
+            return isInCheck ? new SearchFlag(true, -(Engine.MateScore - depthFromRoot)) : SearchFlag.Zero;
         }
 
         // order the moves
-        if (entryExists)
-            Evaluator.SortMoves(moves, ttValue.BestMove, _killerMoves, depthFromRoot);
-        else
-            Evaluator.SortMoves(moves, default, _killerMoves, depthFromRoot);
+        Evaluator.SortMoves(moves, entryExists ? ttValue.BestMove : default, _killerMoves, depthFromRoot);
 
         // start to search through each of them
         var moveCount = 0;
@@ -420,63 +412,100 @@ public class Searcher(Engine engine, int searcherId = 0)
         return false;
     }
 
-    private SearchFlag QuiescenceSearch(int alpha, int beta, Position position, int depthFromRoot)
+    private SearchFlag QuiescenceSearch(int alpha, int beta, int depthFromRoot)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
-        if (StopFlag)
+        if (Statistics.Nodes % 2047 == 0 && StopFlag)
             return SearchFlag.Abort;
 
-        if (Referee.IsRepetition(position) || position.HalfMoves >= 50)
+        if (Referee.IsRepetition(_currentPosition) || _currentPosition.HalfMoves >= 50)
         {
             _pvLength[depthFromRoot + 1] = depthFromRoot + 1;
             return SearchFlag.Zero;
         }
 
-        // stand pat to prevent explosion. This says that we're not necessarily forced to capture
-        var eval = engine.EvaluationTable.Evaluate(position, engine.CurrentSearchId);
-        if (eval >= beta) return new SearchFlag(true, beta);
-        if (eval > alpha) alpha = eval;
+        var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
 
-        Statistics.Nodes++;
-        Statistics.qNodes++;
+        // stand pat to prevent explosion. This says that we're not necessarily forced to capture
+        var standPat = engine.EvaluationTable.Evaluate(_currentPosition, engine.CurrentSearchId);
+
+        if (!isInCheck)
+        {
+            if (standPat >= beta) return new SearchFlag(true, beta); // beta cutoff
+
+            var originalAlpha = alpha;
+            if (standPat > alpha) alpha = standPat;
+
+            if (standPat + DeltaMargin <= originalAlpha) // margin tuned
+            {
+                // delta cutoff
+                Statistics.DeltaCutoffs++;
+                return new SearchFlag(true, alpha);
+            }
+        }
 
         Span<Move> moveBuffer = stackalloc Move[128];
-        var moveCount = MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer, capturesOnly: true);
+        // if we're in check need to search evasions too.
+        var moveCount =
+            isInCheck
+                ? MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,
+                    alreadyKnowBoardInCheck: true,
+                    isAlreadyInCheck: isInCheck,
+                    capturesOnly: false
+                )
+                : MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,
+                    alreadyKnowBoardInCheck: true,
+                    isAlreadyInCheck: isInCheck,
+                    capturesOnly: true
+                );
 
         var moves = moveBuffer[..moveCount];
-
 
         Evaluator.SortMoves(moves, new Move(), _killerMoves, depthFromRoot);
 
 
         foreach (var move in moves)
         {
+            if (!isInCheck && move.CapturedPiece != 0)
+            {
+                var capturedPiece = PieceTypes.PieceTypeIndex(move.CapturedPiece);
+                var capturedValue = Evaluator.PieceValues[capturedPiece];
+                if (standPat + capturedValue + DeltaPerMove < alpha)
+                {
+                    Statistics.DeltaPerMove++;
+                    continue;
+                } 
+            }
+
+            Statistics.Nodes++;
+            Statistics.qNodes++;
+
             _currentPosition.ApplyMove(move);
-            var child = QuiescenceSearch(-beta, -alpha, _currentPosition, depthFromRoot + 1);
+            var child = QuiescenceSearch(-beta, -alpha, depthFromRoot + 1);
             _currentPosition.UndoMove(move);
             if (!child.Completed) return SearchFlag.Abort;
-            eval = -child.Score;
+            var score = -child.Score;
 
             // beta cutoff - the opponent won't let it get here
-            if (eval >= beta)
+            if (score >= beta)
             {
                 return new SearchFlag(true, beta);
             }
 
-            if (eval > alpha)
+            if (score <= alpha) continue;
+            
+            
+            // we've improved
+            alpha = score;
+            _pvTable[depthFromRoot, depthFromRoot] = move;
+            var nextPlyDepth = _pvLength[depthFromRoot + 1];
+            for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
             {
-                alpha = eval;
-
-                _pvTable[depthFromRoot, depthFromRoot] = move;
-                var nextPlyDepth = _pvLength[depthFromRoot + 1];
-                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
-                {
-                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
-                }
-
-                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+                _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
             }
+
+            _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
         }
 
         return new SearchFlag(true, alpha);

@@ -16,6 +16,9 @@ public struct SearchStatistics : ILoggable
     public int FullResearches;
     public int FirstMoveCutoffs; // first move cutoffs
     public int FailedNullMoveCutoffs;
+    
+    public int DeltaCutoffs;
+    public int DeltaPerMove;
 
 
     public void WriteStats()
@@ -25,14 +28,36 @@ public struct SearchStatistics : ILoggable
     
     public string Get()
     {
-        return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}, Null Move Comp {NullMoveCutoffs}, Failed Null Move{FailedNullMoveCutoffs}, qNodes {qNodes}, reduced {ReducedSearches}, full {FullResearches}, fmc {FirstMoveCutoffs}";
+        var runtimeMs = Math.Max(RunTime, 2);
+        var nps = Nodes / (float)(runtimeMs / 1000.0);
+        var ebf = Depth > 0 ? Math.Pow(Nodes, 1.0 / Depth) : 0.0;
+
+        string[] parts =
+        [
+            $"Depth: {Depth}",
+            $"Nodes Searched: {Nodes}",
+            $"Time (ms): {RunTime}",
+            $"NPS: {nps}",
+            $"HashCutoffs: {HashCutoffs}",
+            $"BetaCutoffs: {BetaCutoffs}",
+            $"ebf: {ebf}",
+            $"Null Move Comp: {NullMoveCutoffs}",
+            $"Failed Null Move: {FailedNullMoveCutoffs}",
+            $"qNodes: {qNodes}",
+            $"reduced: {ReducedSearches}",
+            $"full: {FullResearches}",
+            $"fmc: {FirstMoveCutoffs}",
+            $"delta: {DeltaCutoffs}",
+            $"delta/move: {DeltaPerMove}"
+        ];
+
+        return string.Join("\n", parts);
     }
 
     public override string ToString()
     {
         return
-            $"Depth: {Depth}, Nodes Searched: {Nodes}, Time (ms): {RunTime}, NPS {Nodes / (float)(Math.Max(RunTime, 2) / 1000.0)}, HashCutoffs {HashCutoffs}, BetaCutoffs {BetaCutoffs}, ebf {Math.Pow(Nodes, 1.0 / Depth)}, Null Move Comp {NullMoveCutoffs}, Failed Null Move{FailedNullMoveCutoffs}, qNodes {qNodes}, reduced {ReducedSearches}, full {FullResearches}, fmc {FirstMoveCutoffs}";
+            Get();
     }
 }
 
