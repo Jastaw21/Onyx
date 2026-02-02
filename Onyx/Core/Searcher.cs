@@ -28,6 +28,8 @@ public class Searcher(Engine engine, int searcherId = 0)
     public bool IsFinished;
     private const int Reduction = -1;
     public int LmrThreshold = 3;
+    public int DeltaMargin = 1000;
+    public int DeltaPerMove = 200;
 
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
@@ -38,11 +40,10 @@ public class Searcher(Engine engine, int searcherId = 0)
     private readonly Move[,] _pvTable = new Move[128, 128];
     private readonly int[] _pvLength = new int[128];
 
-    private bool _searchAsWhite;
-
     private SearcherInstructions _currentInstructions;
     private Position _currentPosition = new();
     public event Action<SearchResults, SearchStatistics> OnDepthFinished = null!;
+
 
     public void Start()
     {
@@ -89,7 +90,6 @@ public class Searcher(Engine engine, int searcherId = 0)
     private void IterativeDeepeningSearch(SearcherInstructions searchParameters)
     {
         Reset();
-        _searchAsWhite = _currentPosition.WhiteToMove;
 
         // some vague diversification stuff
         var startDepth = searcherId == 0 ? 1 : searcherId % 2 == 0 ? 1 : 2;
@@ -215,7 +215,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         var zobristHashValue = _currentPosition.ZobristState;
         var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);
 
-
         if (entryExists)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
@@ -274,18 +273,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         // no legal moves left - decide if its checkmate or stalemate
         if (legalMoveCount == 0)
         {
-            if (isInCheck)
-                return new SearchFlag(true, -(Engine.MateScore - depthFromRoot));
-
-            // stalemate
-            return SearchFlag.Zero;
+            return isInCheck ? new SearchFlag(true, -(Engine.MateScore - depthFromRoot)) : SearchFlag.Zero;
         }
 
         // order the moves
-        if (entryExists)
-            Evaluator.SortMoves(moves, ttValue.BestMove, _killerMoves, depthFromRoot);
-        else
-            Evaluator.SortMoves(moves, default, _killerMoves, depthFromRoot);
+        Evaluator.SortMoves(moves, entryExists ? ttValue.BestMove : default, _killerMoves, depthFromRoot);
 
         // start to search through each of them
         var moveCount = 0;
@@ -424,7 +416,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     {
         _pvLength[depthFromRoot] = depthFromRoot;
 
-        if (StopFlag)
+        if (Statistics.Nodes % 2047 == 0 && StopFlag)
             return SearchFlag.Abort;
 
         if (Referee.IsRepetition(_currentPosition) || _currentPosition.HalfMoves >= 50)
@@ -445,7 +437,7 @@ public class Searcher(Engine engine, int searcherId = 0)
             var originalAlpha = alpha;
             if (standPat > alpha) alpha = standPat;
 
-            if (standPat + 900 <= originalAlpha)
+            if (standPat + DeltaMargin <= originalAlpha) // margin tuned
             {
                 // delta cutoff
                 Statistics.DeltaCutoffs++;
@@ -463,8 +455,8 @@ public class Searcher(Engine engine, int searcherId = 0)
                     capturesOnly: false
                 )
                 : MoveGenerator.GetLegalMoves(_currentPosition, moveBuffer,
-                    alreadyKnowBoardInCheck: isInCheck,
-                    isAlreadyInCheck: true,
+                    alreadyKnowBoardInCheck: true,
+                    isAlreadyInCheck: isInCheck,
                     capturesOnly: true
                 );
 
@@ -479,16 +471,16 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 var capturedPiece = PieceTypes.PieceTypeIndex(move.CapturedPiece);
                 var capturedValue = Evaluator.PieceValues[capturedPiece];
-                if (standPat + capturedValue + 200 < alpha)
+                if (standPat + capturedValue + DeltaPerMove < alpha)
                 {
                     Statistics.DeltaPerMove++;
                     continue;
                 } 
             }
-           
+
             Statistics.Nodes++;
             Statistics.qNodes++;
-            
+
             _currentPosition.ApplyMove(move);
             var child = QuiescenceSearch(-beta, -alpha, depthFromRoot + 1);
             _currentPosition.UndoMove(move);
@@ -501,20 +493,19 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return new SearchFlag(true, beta);
             }
 
-
-            if (score > alpha)
+            if (score <= alpha) continue;
+            
+            
+            // we've improved
+            alpha = score;
+            _pvTable[depthFromRoot, depthFromRoot] = move;
+            var nextPlyDepth = _pvLength[depthFromRoot + 1];
+            for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
             {
-                alpha = score;
-
-                _pvTable[depthFromRoot, depthFromRoot] = move;
-                var nextPlyDepth = _pvLength[depthFromRoot + 1];
-                for (var nextPly = depthFromRoot + 1; nextPly < nextPlyDepth; nextPly++)
-                {
-                    _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
-                }
-
-                _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
+                _pvTable[depthFromRoot, nextPly] = _pvTable[depthFromRoot + 1, nextPly];
             }
+
+            _pvLength[depthFromRoot] = Math.Max(depthFromRoot + 1, nextPlyDepth);
         }
 
         return new SearchFlag(true, alpha);
