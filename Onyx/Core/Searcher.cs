@@ -29,7 +29,7 @@ public class Searcher(Engine engine, int searcherId = 0)
     private const int Reduction = -1;
     public int LmrThreshold = 3;
     public int DeltaMargin = 1000;
-    public int DeltaPerMove = 200;
+    public int DeltaPerMove = 100;
 
     private readonly AutoResetEvent _startSignal = new(false);
     private bool _isQuitting;
