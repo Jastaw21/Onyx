@@ -259,7 +259,7 @@ public class Searcher(Engine engine, int searcherId = 0)
         if (!isInCheck && depthRemaining is <= 6 and > 0 && !lastMoveNulled && depthFromRoot > 0)
         {
             var staticEval = Evaluator.Evaluate(_currentPosition);
-            var margin = staticEval + depthRemaining * 80;
+            var margin = depthRemaining * 80;
             if (staticEval - margin >= beta && Math.Abs(beta) < 20000) // seeks to avoid mate scores
             {
                 Statistics.RFPCutoffs++;
