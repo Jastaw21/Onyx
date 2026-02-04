@@ -214,7 +214,6 @@ public class Searcher(Engine engine, int searcherId = 0)
         // See if this position has already been searched for
         var zobristHashValue = _currentPosition.ZobristState;
         var entryExists = engine.TranspositionTable.TryRetrieve(zobristHashValue, out var ttValue);
-
         if (entryExists)
         {
             // it has, now check if it's usable (bounds, sufficient depth etc)
@@ -253,8 +252,23 @@ public class Searcher(Engine engine, int searcherId = 0)
             return new SearchFlag(true, qEval.Score);
         }
 
-        // try to cut off a node if it's null
+       
         var isInCheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
+
+        // we're so far ahead that it's not worth searching the remainder
+        if (!isInCheck && depthRemaining is <= 6 and > 0 && !lastMoveNulled && depthFromRoot > 0)
+        {
+            var staticEval = Evaluator.Evaluate(_currentPosition);
+            var margin = staticEval + depthRemaining * 80;
+            if (staticEval - margin >= beta && Math.Abs(beta) < 20000) // seeks to avoid mate scores
+            {
+                Statistics.RFPCutoffs++;
+                return new SearchFlag(true, staticEval - margin);
+            }
+        }
+        
+        // try to cut off a node if making no move has no effect on our position. We can skip a move and still be winning
+        // so why would we search it?
         if (!isInCheck && depthRemaining >= 3 && depthFromRoot > 0 && !lastMoveNulled)
         {
             if (NullMoveReduction(depthRemaining, depthFromRoot, beta, out var searchFlag)) return searchFlag;
@@ -279,46 +293,18 @@ public class Searcher(Engine engine, int searcherId = 0)
         var moveCount = 0;
         var storingFlag = BoundFlag.Upper;
         Move bestMove = default;
-        var foundNonRepeatingMove = false;
         foreach (var move in moves)
         {
             moveCount++;
             _currentPosition.ApplyMove(move);
+            
+            // extend in scenarios it'd be beneficial
+            var extension = GetExtension();
+            
             var childResult = new SearchFlag(false, 0);
 
-
-            // extend in scenarios it'd be beneficial
-            var incheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
-            var extension = incheck ? 1 : 0;
-
             // reduce later moves as the best ones should be up front
-            var needsFullSearch = true;
-
-            var lmrThreshold = depthRemaining <= 3 ? 5 : 4;
-            if (moveCount >= lmrThreshold && depthRemaining > 2 && move.CapturedPiece == 0 && extension == 0)
-            {
-                var reduction = 1;
-                
-                if (depthRemaining > 6 && moveCount > 8)
-                    reduction = -2;  // Only go to 2 ply in deep searches of late moves
-
-                if (IsKillerMove(move, depthFromRoot))
-                    reduction = Math.Min(reduction + 1, 0);
-                
-                if (reduction >0)
-
-                {
-                    // search with a super narrow window - basically only checking if any of these are better than alpha
-                    Statistics.ReducedSearches++;
-                    childResult = Search(depthRemaining - 1 - reduction,
-                        depthFromRoot + 1, -alpha - 1, -alpha, lastMoveNulled: false);
-
-                    var reducedEval = -childResult.Score;
-                    needsFullSearch = reducedEval > alpha;
-                    if (needsFullSearch)
-                        Statistics.FullResearches++;
-                }
-            }
+            var needsFullSearch = TryLateMoveReduction(depthRemaining, depthFromRoot, alpha, moveCount, move, extension, ref childResult);
 
             // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
             if (needsFullSearch)
@@ -385,6 +371,47 @@ public class Searcher(Engine engine, int searcherId = 0)
 
 
         return new SearchFlag(true, alpha);
+    }
+
+    private int GetExtension()
+    {
+        var incheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
+        var extension = incheck ? 1 : 0;
+        return extension;
+    }
+
+    private bool TryLateMoveReduction(int depthRemaining, int depthFromRoot, int alpha, int moveCount, Move move,
+        int extension, ref SearchFlag childResult)
+    {
+        var needsFullSearch = true;
+        var lmrThreshold = depthRemaining <= 3 ? 5 : 4;
+        if (moveCount < lmrThreshold || depthRemaining <= 2 || move.CapturedPiece != 0 || extension != 0)
+            return true;
+        
+        
+        var reduction = 1;
+                
+        if (depthRemaining > 6 && moveCount > 8)
+            reduction = -2;  // Only go to 2 ply in deep searches of late moves
+
+        if (IsKillerMove(move, depthFromRoot))
+            reduction = Math.Min(reduction + 1, 0);
+                
+        if (reduction >0)
+
+        {
+            // search with a super narrow window - basically only checking if any of these are better than alpha
+            Statistics.ReducedSearches++;
+            childResult = Search(depthRemaining - 1 - reduction,
+                depthFromRoot + 1, -alpha - 1, -alpha, lastMoveNulled: false);
+
+            var reducedEval = -childResult.Score;
+            needsFullSearch = reducedEval > alpha;
+            if (needsFullSearch)
+                Statistics.FullResearches++;
+        }
+
+        return needsFullSearch;
     }
 
     private bool NullMoveReduction(int depthRemaining, int depthFromRoot, int beta, out SearchFlag searchFlag)

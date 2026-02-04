@@ -19,6 +19,7 @@ public struct SearchStatistics : ILoggable
     
     public int DeltaCutoffs;
     public int DeltaPerMove;
+    public int RFPCutoffs;
 
 
     public void WriteStats()
@@ -48,7 +49,8 @@ public struct SearchStatistics : ILoggable
             $"full: {FullResearches}",
             $"fmc: {FirstMoveCutoffs}",
             $"delta: {DeltaCutoffs}",
-            $"delta/move: {DeltaPerMove}"
+            $"delta/move: {DeltaPerMove}",
+            $"rfpc: {RFPCutoffs}"
         ];
 
         return string.Join("\n", parts);
