@@ -222,24 +222,20 @@ public class Searcher(Engine engine, int searcherId = 0)
             {
                 var ttEval = DecodeMateScore(ttValue.Eval, depthFromRoot);
 
-                // cutoff at depth 0 - this is our new best move
                 if (depthFromRoot == 0)
                 {
                     if (ttValue.BestMove.Data != 0)
                         _thisIterationResults.BestMove = ttValue.BestMove;
                     _thisIterationResults.Score = ttEval;
                 }
-
-                // the value is usable
-                if (ttValue.BestMove.Data != 0)
+                else // Only cutoff if not at root
                 {
-                    // PV extract
-                    ExtractPvData(depthRemaining, depthFromRoot, ttValue);
-                }
+                    if (ttValue.BestMove.Data != 0)
+                        ExtractPvData(depthRemaining, depthFromRoot, ttValue);
 
-                // cutoff with hash node
-                Statistics.HashCutoffs++;
-                return new SearchFlag(true, ttEval);
+                    Statistics.HashCutoffs++;
+                    return new SearchFlag(true, ttEval); // Return on ANY bound!
+                }
             }
         }
 
@@ -288,40 +284,47 @@ public class Searcher(Engine engine, int searcherId = 0)
         {
             moveCount++;
             _currentPosition.ApplyMove(move);
-            var isRepetition = Referee.IsRepetition(_currentPosition);
-
             var childResult = new SearchFlag(false, 0);
 
-            if (isRepetition)
-            {
-                childResult = SearchFlag.Zero;
-                _pvLength[depthFromRoot + 1] = depthFromRoot + 1;
-            }
-            else
-            {
-                // extend in scenarios it'd be beneficial
-                var extension = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition) ? 1 : 0;
 
-                // reduce later moves as the best ones should be up front
-                var needsFullSearch = true;
+            // extend in scenarios it'd be beneficial
+            var incheck = Referee.IsInCheck(_currentPosition.WhiteToMove, _currentPosition);
+            var extension = incheck ? 1 : 0;
 
-                if (moveCount >= LmrThreshold && extension == 0 && depthRemaining > 2 && move.CapturedPiece == 0)
+            // reduce later moves as the best ones should be up front
+            var needsFullSearch = true;
+
+            var lmrThreshold = depthRemaining <= 3 ? 5 : 4;
+            if (moveCount >= lmrThreshold && depthRemaining > 2 && move.CapturedPiece == 0 && extension == 0)
+            {
+                var reduction = 1;
+                
+                if (depthRemaining > 6 && moveCount > 8)
+                    reduction = -2;  // Only go to 2 ply in deep searches of late moves
+
+                if (IsKillerMove(move, depthFromRoot))
+                    reduction = Math.Min(reduction + 1, 0);
+                
+                if (reduction >0)
+
                 {
                     // search with a super narrow window - basically only checking if any of these are better than alpha
                     Statistics.ReducedSearches++;
-                    childResult = Search(depthRemaining: depthRemaining - 1 + Reduction,
-                        depthFromRoot: depthFromRoot + 1, alpha: -alpha - 1, beta: -alpha, lastMoveNulled: false);
+                    childResult = Search(depthRemaining - 1 - reduction,
+                        depthFromRoot + 1, -alpha - 1, -alpha, lastMoveNulled: false);
 
-                    needsFullSearch = -childResult.Score > alpha;
+                    var reducedEval = -childResult.Score;
+                    needsFullSearch = reducedEval > alpha;
                     if (needsFullSearch)
                         Statistics.FullResearches++;
                 }
-
-                // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
-                if (needsFullSearch)
-                    childResult = Search(depthRemaining - 1 + extension,
-                        depthFromRoot + 1, -beta, -alpha, false);
             }
+
+            // either we didn't reduce, or we did and unexpectedly got a good move. Either way, do a full search.
+            if (needsFullSearch)
+                childResult = Search(depthRemaining - 1 + extension,
+                    depthFromRoot + 1, -beta, -alpha, false);
+
 
             _currentPosition.UndoMove(move);
 
@@ -330,7 +333,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 return SearchFlag.Abort;
 
             var eval = -childResult.Score;
-            foundNonRepeatingMove |= !isRepetition;
+
 
             // move was too good, opponent will avoid it as had a better move available earlier.
             if (eval >= beta)
@@ -340,7 +343,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 Statistics.BetaCutoffs++;
 
                 // store as a lower bound, as we know we might be able to get better if the opponent doesn't avoid it
-                engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(beta, depthFromRoot), depthRemaining,
+                engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot), depthRemaining,
                     engine.CurrentSearchId,
                     BoundFlag.Lower, move);
 
@@ -376,11 +379,10 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
         }
 
-        if (foundNonRepeatingMove)
-        {
-            engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot),
-                depthRemaining, engine.CurrentSearchId, storingFlag, bestMove);
-        }
+
+        engine.TranspositionTable.Store(zobristHashValue, EncodeMateScore(alpha, depthFromRoot),
+            depthRemaining, engine.CurrentSearchId, storingFlag, bestMove);
+
 
         return new SearchFlag(true, alpha);
     }
@@ -475,7 +477,7 @@ public class Searcher(Engine engine, int searcherId = 0)
                 {
                     Statistics.DeltaPerMove++;
                     continue;
-                } 
+                }
             }
 
             Statistics.Nodes++;
@@ -494,8 +496,8 @@ public class Searcher(Engine engine, int searcherId = 0)
             }
 
             if (score <= alpha) continue;
-            
-            
+
+
             // we've improved
             alpha = score;
             _pvTable[depthFromRoot, depthFromRoot] = move;
@@ -509,6 +511,11 @@ public class Searcher(Engine engine, int searcherId = 0)
         }
 
         return new SearchFlag(true, alpha);
+    }
+
+    private bool IsKillerMove(Move move, int ply)
+    {
+        return _killerMoves[ply, 0] == move || _killerMoves[ply, 1] == move;
     }
 
     private void ExtractPvData(int depthRemaining, int depthFromRoot, [DisallowNull] TtEntry? ttValue)
